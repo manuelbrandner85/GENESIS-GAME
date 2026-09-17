@@ -4,8 +4,10 @@
 #include "DisplayDebugHelpers.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
 #include "GameFramework/HUD.h"
+#include "Containers/Ticker.h"
 #include "HAL/IConsoleManager.h"
 #include "Misc/ScopeLock.h"
 
@@ -23,6 +25,46 @@ namespace GenesisDebug
 			TEXT("Zeigt im GENESIS Developer HUD nur die Seite mit dieser Id (leer = alle Seiten)."));
 
 		const FName GenesisDebugCategory(TEXT("Genesis"));
+
+#if !UE_BUILD_SHIPPING
+		// Führt Befehle nach einer Wartezeit aus – z. B. damit automatische Screenshots einen eingeschwungenen Zustand zeigen.
+		// Mehrere Befehle mit ';' trennen (',' trennt bereits die -ExecCmds der Kommandozeile).
+		FAutoConsoleCommandWithWorldAndArgs DelayedExecCommand(
+			TEXT("genesis.Debug.After"),
+			TEXT("Entwickler: genesis.Debug.After <Sekunden> <Befehl>[; <Befehl>...] – führt die Befehle verzögert aus."),
+			FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+			{
+				if (Args.Num() < 2)
+				{
+					return;
+				}
+				const float Seconds = FMath::Max(0.0f, FCString::Atof(*Args[0]));
+				const FString Commands = FString::Join(TArrayView<const FString>(Args).RightChop(1), TEXT(" "));
+				const TWeakObjectPtr<UWorld> WeakWorld(World);
+				FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([WeakWorld, Commands](float)
+				{
+					UWorld* TargetWorld = WeakWorld.Get();
+					if (TargetWorld && GEngine)
+					{
+						TArray<FString> Parts;
+						Commands.ParseIntoArray(Parts, TEXT(";"));
+						for (const FString& Part : Parts)
+						{
+							// Über den Viewport wie eine Konsoleneingabe – nur so erreichen Viewport-Befehle (z. B. "shot") ihr Ziel
+							if (GEngine->GameViewport && GEngine->GameViewport->GetWorld() == TargetWorld)
+							{
+								GEngine->GameViewport->ConsoleCommand(Part.TrimStartAndEnd());
+							}
+							else
+							{
+								GEngine->Exec(TargetWorld, *Part.TrimStartAndEnd());
+							}
+						}
+					}
+					return false;
+				}), Seconds);
+			}));
+#endif
 
 		void DrawOnHud(AHUD* HUD, UCanvas* Canvas, const FDebugDisplayInfo& DisplayInfo, float& YL, float& YPos)
 		{

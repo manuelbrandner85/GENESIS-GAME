@@ -64,6 +64,8 @@ Im laufenden Spiel (PIE) die Konsole mit `^` öffnen:
 | `genesis.Body.Birth` | Geburt des Entwicklerkörpers |
 | `genesis.Body.Activity 0-4` | Schlaf, Ruhe, leicht, mittel, intensiv |
 | `genesis.Body.Injure [Schwere]` | Armverletzung |
+| `genesis.Audio.SimulateDialogue [Sekunden] [Wichtigkeit]` | Dialog im Mix anmelden (Ducking prüfen) |
+| `genesis.Debug.After <Sekunden> <Befehl>[; Befehl]` | Befehle verzögert ausführen (z. B. `shot showui` für Screenshots) |
 
 ## Automatisierte Sichtprüfung
 

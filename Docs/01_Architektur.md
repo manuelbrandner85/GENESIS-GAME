@@ -24,7 +24,7 @@ Abhängigkeiten zeigen **nur nach unten**. Nach oben wird ausschließlich über 
 
 ```
  ┌───────────────────────────────────────────────────────────────────────────┐
- │ L6  Präsentation   GenesisUI · GenesisCinematics · GenesisAudio            │
+ │ L6  Präsentation   GenesisUI · GenesisCinematics · GenesisAudio*           │
  ├───────────────────────────────────────────────────────────────────────────┤
  │ L5  Kreislauf      GenesisDeath · GenesisAfterlife · GenesisReincarnation  │
  │                    GenesisCreation                                         │
@@ -182,7 +182,9 @@ Muster für testbare Systeme:
 | GenesisAfterlife | L5 | Lebensrückblick, Karma-Gericht, Jenseitsbereiche, Kosmische Bibliothek | Memory, Soul, LifeSimulation | später |
 | GenesisReincarnation | L5 | Neuer Körper/Kultur/Epoche, Echo-Entscheidungen, Seelenbegegnungen | Soul, Genetics, World | später |
 | GenesisCreation | L5 | Schöpfungsmodus, Welt-Parameter, Beobachtung | World, Society | Endgame |
-| GenesisAudio | L6 | MetaSounds-Layer, Seelenmotiv, emotionale Mischung | Soul, Mind | später |
+| GenesisAudioCore | L6 | Hörwahrnehmung aus dem Körper, Körperklang-Parameter, Mix-Engine (Prioritäten, Ducking) | Core, Body | 008 |
+| GenesisSoulMusic · GenesisMusicDirector | L6 | Seelenmotiv, Charaktermotive, Musikschichten, Emotion → Musik | AudioCore, Soul, Memory | 009–010 |
+| GenesisVoiceSystem · GenesisDialogueSystem | L6 | Stimmprofile, Dialog-Datenbank, Lokalisierung, Weltwahrheit, Untertitel | AudioCore, Memory, LifeSimulation | 012–013 |
 | GenesisCinematics | L6 | Adaptive Cinematic Director, Kamera-Hybrid FP/TP | Mind, World | später |
 | GenesisUI | L6 | Phasenabhängige UI, Startmenü-Reflexion | Soul, Mind | später |
 | GenesisPerformance | L1 | Skalierbarkeitsprofile, Budgets, Simulation-LOD-Budgets | Core | später |

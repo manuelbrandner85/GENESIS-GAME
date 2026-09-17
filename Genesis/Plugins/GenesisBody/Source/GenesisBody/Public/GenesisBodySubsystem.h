@@ -91,6 +91,8 @@ public:
 	float GetSenseAcuity(const FGuid& EntityId, EGenesisBodySense Sense) const;
 
 	const FGenesisBodyState* FindBody(const FGuid& EntityId) const;
+	const FGenesisBodyState* GetBodyByIndex(int32 BodyIndex) const { return Registry.Bodies.IsValidIndex(BodyIndex) ? &Registry.Bodies[BodyIndex] : nullptr; }
+	int32 GetBodyCount() const { return Registry.Bodies.Num(); }
 	FGenesisBodyState* FindBodyMutable(const FGuid& EntityId);
 
 	FGenesisOnVitalFailure OnVitalFailure;

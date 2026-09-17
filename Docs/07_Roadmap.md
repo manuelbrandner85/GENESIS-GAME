@@ -19,14 +19,21 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-005 | Life Simulation Core | Karma, die 14 Prozessoren, Konsequenz-Netzwerk, Gerüchte, Simulation LOD | DONE |
 | GENESIS-006 | Decision Engine | Entscheidungssituationen, NPC-Bewertung, Unterbewusstseins-Impulse | DONE |
 | GENESIS-007 | Body Simulation | Organsysteme, Hormone, Stress, Schlaf, Symptome, Alterung | DONE |
-| GENESIS-008 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
-| GENESIS-009 | Relationships & NPC Memory | Beziehungsdimensionen, NPC-Erinnerungssätze | OFFEN |
-| GENESIS-010 | Sperm Environment | Blender-Assets, Niagara-Schwarm, Flüssigkeit, Strömung | OFFEN |
-| GENESIS-011 | Fertilization | Befruchtung, Genom-Erzeugung, Übergang | OFFEN |
-| GENESIS-012 | Embryo | Zellteilung, Organe, Minispiele | OFFEN |
-| GENESIS-013 | Birth | Geburts-Cinematic, First-Person-Sequenz | OFFEN |
-| GENESIS-014 | Early Childhood | Unscharfe Wahrnehmung, erste Minuten | OFFEN |
-| GENESIS-015 | Vertical Slice Polish | Performance, Audio, Übergänge | OFFEN |
+| GENESIS-008 | Audio Core | Hörwahrnehmung aus dem Körper (Mutterleib, Geburtssprung, Alter, Tunnel, Tinnitus), Körperklang-Parameter, Mix-Engine mit Prioritäten und weichem Ducking | DONE |
+| GENESIS-009 | Soul Music | Seelenmotiv, Phasen-Instrumentierung, Charaktermotive, Vererbung, Erinnerungsfragmente, Lebens-Soundtrack | OFFEN |
+| GENESIS-010 | Music Director | Musikschichten, Emotion → musikalische Parameter, Stille, subjektive Zeit, Quartz | OFFEN |
+| GENESIS-011 | MetaSounds-Basis | Submixes/Sound Classes, prozedurale MetaSounds (Herz, Atem, Mutterleib, Motiv), Wiedergabe, Aufnahme-Prüfung | OFFEN |
+| GENESIS-012 | Voice System | VoiceProfile, Stimmalterung, Gesundheit, Babylaute → Sprache | OFFEN |
+| GENESIS-013 | Dialogue System | Dialog-Datenbank, Lokalisierung DE/EN/IT, Weltwahrheit, Gerüchte, Untertitel | OFFEN |
+| GENESIS-014 | Vertical-Slice-Audio | Entstehung, Embryo, Geburt, erste Minuten | OFFEN |
+| GENESIS-015 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
+| GENESIS-016 | Relationships & NPC Memory | Beziehungsdimensionen, NPC-Erinnerungssätze | OFFEN |
+| GENESIS-017 | Sperm Environment | Blender-Assets, Niagara-Schwarm, Flüssigkeit, Strömung | OFFEN |
+| GENESIS-018 | Fertilization | Befruchtung, Genom-Erzeugung, Übergang | OFFEN |
+| GENESIS-019 | Embryo | Zellteilung, Organe, Minispiele | OFFEN |
+| GENESIS-020 | Birth | Geburts-Cinematic, First-Person-Sequenz | OFFEN |
+| GENESIS-021 | Early Childhood | Unscharfe Wahrnehmung, erste Minuten | OFFEN |
+| GENESIS-022 | Vertical Slice Polish | Performance, Übergänge | OFFEN |
 
 ## Protokoll
 
@@ -87,3 +94,18 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-17: **Sichtprüfung im Spiel:** Befruchtung → 38 Wochen → Geburt: 50 cm, 3,8 kg, Puls 160, Atmung 45, Sehschärfe 0,05, Symptome unscharfes Sehen 0,95 / Herzklopfen / Zittern. `Docs/Media/GENESIS-007_NewbornBodyHUD.png`.
 - Persistenz-Doku präzisiert: Körper liegen in der World-Ebene (Ahnen bleiben erhalten).
 - **Status: DONE.**
+
+### GENESIS-008 – Audio Core
+- 2026-09-17: Audio-/Narrative-Auftrag eingeplant: Audio-Blöcke 008–014 vor Mind/Beziehungen/Vertical Slice eingeschoben (Nummern der folgenden Blöcke verschoben). Audioquelle laut Game Director: Unreal-Engine-Bibliothek → prozedurale MetaSounds aus Engine-Nodes. Freie Fab-Pakete werden bei Bedarf angefragt.
+- 2026-09-17: GenesisAudioCore implementiert: Hörwahrnehmung aus der Body Simulation (Mutterleib-Tiefpass nach Gehörreife, Frequenzsprung bei der Geburt, Tunnel-Hören, Fieber, Altersschwerhörigkeit begrenzt auf −12 dB, Tinnitus), Körperklang-Parameter (Mutterherz, eigenes Herz, Atem, Zittern), Mix-Engine (6 Busse, Ducking-Regeln nach Wichtigkeit, Summen-Begrenzung, exponentielle Zeitkonstanten), Subsystem, Settings, HUD-Seite, Befehl genesis.Audio.SimulateDialogue. Doku 11_Audio_Core.md.
+- 2026-09-17: Test fand einen Fehler: Der schnelle Geburtsübergang galt nur bis zur halben Strecke, danach zog der Tiefpass träge nach. Behoben durch einen expliziten Übergangszustand bis zum Ankommen (2 %).
+- 2026-09-17: Sichtprüfung fand einen Fehler in GenesisBody: Nach einem Zeitsprung blieben die Vitalwerte voll simulierter Körper bis zum nächsten Stundenschritt auf dem alten Stand (Herz 0 bpm im Mutterleib). Behoben: Nach dem Sprung wird einmal die Stunden-Physiologie am neuen Zeitpunkt berechnet.
+- 2026-09-17: Neu für automatische Sichtprüfungen: genesis.Debug.After <Sekunden> <Befehl> und Capture-GameScreenshot.ps1 -ShotDelaySeconds. Screenshots zeigen damit eingeschwungene Zustände statt den ersten Frame.
+- 2026-09-17: **Build erfolgreich. Tests: 3/3 Audio, gesamt 50/50 grün, 0 Warnungen.**
+- 2026-09-17: **Sichtprüfung im Spiel:** 30. Woche: Mutterleib, Tiefpass 803 Hz, Mutterherz 72 bpm, eigenes Herz 140 bpm, Körper hörbar 1,0, Musik −2 dB. Neugeborenes mit Dialog: Luft, Tiefpass 16,8 kHz, Tunnel 0,38, Herz 160 bpm, Atem 45/min; Musik −7,9 dB / Ambient −4,9 dB / Foley −3,0 dB bei laufendem Dialog. Die grünen senkrechten Linien im Bild sind die Kollisionskapsel des Pawns aus showdebug (Engine). Docs/Media/GENESIS-008_AudioWomb.png, Docs/Media/GENESIS-008_AudioNewborn.png.
+- 2026-09-17: **Performance gemessen:** Audio-Core-Tick 0,004–0,013 ms pro Frame.
+- Offen und bewusst verschoben: **noch kein hörbarer Klang.** Die Parameter steuern ab GENESIS-011 Submixes und MetaSounds. Räumliche Prüfung und Mix-Abhören folgen dort.
+- **Status: DONE** (Umfang: Audio-Kernlogik und Integration, ohne Wiedergabe).
+
+![Audio im Mutterleib](Media/GENESIS-008_AudioWomb.png)
+![Audio nach der Geburt](Media/GENESIS-008_AudioNewborn.png)

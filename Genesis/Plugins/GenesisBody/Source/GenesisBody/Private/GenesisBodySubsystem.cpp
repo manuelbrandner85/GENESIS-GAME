@@ -231,6 +231,13 @@ void UGenesisBodySubsystem::HandleSimulationStep(const FGenesisSimulationStep& S
 				OnVitalFailure.Broadcast(Body.EntityId, Body.DeathTime);
 			}
 		}
+
+		// Nach einem Zeitsprung Vitalwerte am neuen Zeitpunkt einmal einschwingen – sonst zeigen Herz/Atem
+		// bis zum nächsten regulären Stundenschritt den Stand von vor dem Sprung
+		if (Step.bIsTimeSkip && Body.bAlive && Body.SimulationLevel == EGenesisSimulationLevel::Full)
+		{
+			GenesisBodyLogic::AdvanceHours(Body, Step.To, 1.0, Stress);
+		}
 	}
 }
 

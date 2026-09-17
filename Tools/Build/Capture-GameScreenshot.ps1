@@ -1,4 +1,4 @@
-# GENESIS – startet das Spiel (Standalone), führt Konsolenbefehle aus und lässt die Engine einen Screenshot inkl. HUD erzeugen.
+﻿# GENESIS – startet das Spiel (Standalone), führt Konsolenbefehle aus und lässt die Engine einen Screenshot inkl. HUD erzeugen.
 # Dient der visuellen Prüfung (z. B. Developer HUD) ohne manuelle Bedienung. Ein geöffneter Editor stört nicht.
 # Aufruf:
 #   powershell -ExecutionPolicy Bypass -File Tools\Build\Capture-GameScreenshot.ps1 -ExecCmds "showdebug Genesis" -Output Docs\Media\hud.png
@@ -7,6 +7,8 @@ param(
     [string]$ExecCmds = "showdebug Genesis",
     [string]$Output = "Genesis\Saved\Screenshots\genesis_capture.png",
     [int]$TimeoutSeconds = 180,
+    # >0: Screenshot erst nach dieser Spielzeit (Einschwingen von Übergängen), via genesis.Debug.After
+    [float]$ShotDelaySeconds = 0,
     [string]$EngineRoot = "C:\Program Files\Epic Games\UE_5.8"
 )
 
@@ -19,7 +21,7 @@ $OutputPath = if ([IO.Path]::IsPathRooted($Output)) { $Output } else { Join-Path
 New-Item -ItemType Directory -Force -Path (Split-Path $OutputPath) | Out-Null
 
 # "shot showui" als letzter Befehl: Die Engine speichert das nächste Bild inklusive HUD
-$Commands = "$ExecCmds,shot showui"
+$Commands = if ($ShotDelaySeconds -gt 0) { "$ExecCmds,genesis.Debug.After $ShotDelaySeconds shot showui" } else { "$ExecCmds,shot showui" }
 $Started = Get-Date
 $Arguments = @("`"$Project`"", "-game", "-windowed", "-ResX=1600", "-ResY=900", "-nosplash", "-ExecCmds=`"$Commands`"")
 $Process = Start-Process -FilePath $Editor -ArgumentList $Arguments -PassThru
