@@ -120,3 +120,9 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE** (Umfang: musikalische Logik, Persistenz, Integration, ohne Wiedergabe).
 
 ![Soul Music HUD](Media/GENESIS-009_SoulMusicHUD.png)
+
+### TRAILER – Cinematic Reveal Trailer (parallel zu den Blöcken)
+- 2026-09-17: Pre-Production nach Trailer-Briefing: Asset-Analyse, Lückenliste, 120-s-Timeline mit 65 Shots (`Docs/Trailer/ShotList.json` als einzige Datenquelle, Tabelle `Docs/Trailer/01_ShotList.md`), Voice-over-Timing, Musikdramaturgie. Doku `Docs/Trailer/00_Trailer_Produktion.md`.
+- 2026-09-17: Soul Theme (eigene Komposition, 60 BPM, D-Moll → D-Dur) mit Unreal-Harmonix-Instrumenten; Stimmen über kie.ai (Gemini 3.1 Flash TTS, 2 Takes je Zeile; ElevenLabs über kie.ai war gestört); prozedurales Sound Design; Mix mit gemessener absoluter Stille bei 27,5 und 88–90 s.
+- 2026-09-17: **Animatic v1** (Blender-VSE, 1080p, 120 s, mit Ton) und **Unreal-Sequencer**: `L_Trailer_Stage`, `LS_GENESIS_REVEAL_TRAILER` (24 fps, 2880 Frames), 12 Sub-Sequences, 65 CineCameras mit Brennweite und Bewegungs-Blocking, 3 Audio-Tracks, Fade-Track, 65 Marker. Zurückgelesen und geprüft; nur API-Veraltet-Warnungen.
+- **Status: ANIMATIC.** Noch kein finales Bildmaterial, keine MetaHumans, Stimmen und Sound als PLACEHOLDER.
