@@ -16,7 +16,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-002 | Soul Engine | Soul Seed, Resonanzen, Echos, Seelenbindungen, Motiv, Inkarnationen, Übertrag zwischen Leben | DONE |
 | GENESIS-003 | Genetic Code | Genom, Vererbung, Mutation, Ausprägung, Epigenetik, Gen-Katalog-Asset | DONE |
 | GENESIS-004 | Causal Memory Graph | Kausalgraph, Ursachen-/Folgen-Traversierung, Verdichtung, subjektive Erinnerungen, Verzerrung, Zerfall, Sinnes-Trigger | DONE |
-| GENESIS-005 | Life Simulation Core | Karma, die 14 Prozessoren, Konsequenz-Netzwerk, Gerüchte, Simulation LOD | OFFEN |
+| GENESIS-005 | Life Simulation Core | Karma, die 14 Prozessoren, Konsequenz-Netzwerk, Gerüchte, Simulation LOD | DONE |
 | GENESIS-006 | Decision Engine | Entscheidungssituationen, NPC-Bewertung, Unterbewusstseins-Impulse | OFFEN |
 | GENESIS-007 | Body Simulation | Organsysteme, Hormone, Stress, Schlaf, Symptome, Alterung | OFFEN |
 | GENESIS-008 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
@@ -61,4 +61,13 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-17: `GenesisMemory` implementiert: azyklischer Kausalgraph (Sequence-Invariante), Beleg-Kombination, Max-Produkt-Traversierung vorwärts/rückwärts, Ereignissuche, Themen-Wiederholung, Verdichtung mit Kettenerhalt; subjektive Erinnerungsspuren (Intensität, Genauigkeit, Valenz, Verdrängung, Verzerrung, Zerfall, ruhende Spuren, Reiz-Trigger mit Geruchsgewichtung); Memory World, Subsystem mit Zerfall über die Weltuhr, Settings, HUD-Seite, Befehl `genesis.Memory.SimulateLieChain`. Doku `05_Causal_Memory_Graph.md`.
 - 2026-09-17: **Build erfolgreich. Tests: 4/4 Memory, gesamt 23/23 grün, 0 Warnungen.** Testskript zählt jetzt auch Tests mit Warnungen.
 - 2026-09-17: **Sichtprüfung im Spiel:** Kette Lüge 1408 → Vertrauensverlust → Bindungsangst 1416 → übernommenes Verhalten 1440 → Familienkonflikt 1470 (Pfadstärke 0,34), offene Fäden markiert. `Docs/Media/GENESIS-004_MemoryGraphHUD.png`.
+- **Status: DONE.**
+
+### GENESIS-005 – Life Simulation Core
+- 2026-09-17: `GenesisLifeSimulation` implementiert: verborgenes 6D-Karma (Sättigung, Gewohnheit), 14 Prozessoren in 4 Stufen mit gemeinsamem Frame, Handlungs-Data-Asset, Lebensprofile, Vertrauensnetz, Ruf, Gerüchte (Verbreitung/Verzerrung/Hörensagen), Zeitgeist, Gruppenzwang, Doppelmoral, verzögerte Konsequenzen, automatische Kausalverknüpfung, Simulation LOD, Engine + Subsystem, Settings, HUD-Seite, Befehl `genesis.Life.SimulateScenario`. Doku `03_Life_Simulation_Core.md`.
+- 2026-09-17: Build: 2 Compilerfehler behoben (fehlender Include, Sortier-Prädikat für `TObjectPtr`). Test `Karma.SaturationAndHabit` hatte eine falsche Erwartung (Sättigung dominiert Gewohnheit) → Test korrigiert, Logik unverändert.
+- 2026-09-17: **Tests: 9/9 Life, gesamt 32/32 grün, 0 Warnungen.**
+- 2026-09-17: **Performance gemessen:** 0,015 ms pro Handlung, 0,106 ms pro Tagesschritt (300 Personen, 3000 Ereignisse).
+- 2026-09-17: **Sichtprüfung im Spiel:** Szenario Lüge → Predigt → 2 Jahre: Ehrlichkeit −8,7, Vertrauen Mutter 0,70 → 0,21 (Verrat), Konsequenz ausgelöst, Gerücht an Dritten weitergegeben und verklungen. `Docs/Media/GENESIS-005_LifeSimulationHUD.png`.
+- Bekannte Grenze: Gerüchte werden noch nicht je Person/Thema zusammengefasst (geplant mit GenesisSociety).
 - **Status: DONE.**

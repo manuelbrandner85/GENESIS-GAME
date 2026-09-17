@@ -1,0 +1,33 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Genesis Life Simulation",
+	"Description": "Life Simulation Engine: verborgenes Karma und 14 verbundene Systeme (Konsequenzen, Indoktrination, Vertrauen, Ruf, Gruppenzwang, Zeitgeist, Kultur, Glaube, Propaganda, Doppelmoral, Missverständnis, Epigenetik).",
+	"Category": "Genesis",
+	"CreatedBy": "GENESIS Team",
+	"CanContainContent": false,
+	"EnabledByDefault": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "GenesisLifeSimulation",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "GenesisCore",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisMemory",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisGenetics",
+			"Enabled": true
+		}
+	]
+}

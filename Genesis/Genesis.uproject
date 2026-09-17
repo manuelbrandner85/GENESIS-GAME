@@ -32,6 +32,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GenesisLifeSimulation",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [
