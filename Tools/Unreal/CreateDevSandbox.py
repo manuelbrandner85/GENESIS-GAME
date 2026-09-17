@@ -35,3 +35,21 @@ else:
     else:
         unreal.EditorAssetLibrary.save_asset(TARGET_MAP, only_if_is_dirty=False)
         unreal.log("GENESIS: Map angelegt " + TARGET_MAP)
+
+# Bereinigung: Die Engine-Vorlage enthält zusätzlich zum physikalischen Himmel (SkyAtmosphere + VolumetricCloud)
+# eine alte Himmelskugel. Sie ist doppelt und erzeugt die Warnung "skydome mesh ... does not cover that part of the screen".
+LEGACY_SKY_MESH = "/Engine/EngineSky/SM_SkySphere.SM_SkySphere"
+world = unreal.EditorLoadingAndSavingUtils.load_map(TARGET_MAP)
+actor_subsystem = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
+removed = 0
+for actor in unreal.GameplayStatics.get_all_actors_of_class(world, unreal.StaticMeshActor):
+    component = actor.static_mesh_component
+    if component and component.static_mesh and component.static_mesh.get_path_name() == LEGACY_SKY_MESH:
+        if actor_subsystem.destroy_actor(actor):
+            removed += 1
+if removed > 0:
+    saved = unreal.EditorAssetLibrary.save_loaded_asset(world, only_if_is_dirty=False)
+    unreal.log("GENESIS: Map gespeichert: " + str(saved))
+    if not saved:
+        unreal.log_error("GENESIS: Map konnte nicht gespeichert werden")
+unreal.log("GENESIS: Alte Himmelskugeln entfernt: " + str(removed))

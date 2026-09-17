@@ -14,7 +14,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 |---|---|---|---|
 | GENESIS-001 | Project Foundation | Repo, LFS, C++-Projekt, Plugin-Architektur, GenesisCore (Zeit, RNG, Persistenz, Tags, Developer HUD), GenesisSave, Build-/Test-Skripte, Architektur-Doku | DONE |
 | GENESIS-002 | Soul Engine | Soul Seed, Resonanzen, Echos, Seelenbindungen, Motiv, Inkarnationen, Übertrag zwischen Leben | DONE |
-| GENESIS-003 | Genetic Code | Genom, Vererbung, Mutation, Ausprägung, Epigenetik, Gen-Katalog-Asset | OFFEN |
+| GENESIS-003 | Genetic Code | Genom, Vererbung, Mutation, Ausprägung, Epigenetik, Gen-Katalog-Asset | DONE |
 | GENESIS-004 | Causal Memory Graph | Kausalgraph, Ursachen-/Folgen-Traversierung, Verdichtung, subjektive Erinnerungen, Verzerrung, Zerfall, Sinnes-Trigger | OFFEN |
 | GENESIS-005 | Life Simulation Core | Karma, die 14 Prozessoren, Konsequenz-Netzwerk, Gerüchte, Simulation LOD | OFFEN |
 | GENESIS-006 | Decision Engine | Entscheidungssituationen, NPC-Bewertung, Unterbewusstseins-Impulse | OFFEN |
@@ -48,4 +48,11 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-17: `GenesisSoul` implementiert (Soul Seed, Resonanzen, Echos, Bindungen, Motiv, Inkarnationen, Übertrag, Subsystem, Settings, HUD-Seite). Doku `04_Soul_System.md`.
 - 2026-09-17: **Build erfolgreich (ohne Fehler). Tests: 5/5 Soul, gesamt 14/14 grün.**
 - 2026-09-17: Entwicklerbefehle `genesis.Soul.Create`, `genesis.Soul.SimulateLife`; Seele über mehrere simulierte Leben im HUD geprüft (Echos, Resonanzen, Motiv-Entwicklung).
+- **Status: DONE.**
+
+### GENESIS-003 – Genetic Code
+- 2026-09-17: `GenesisGenetics` implementiert: Genom mit polygenen und Mendel-Merkmalen, Befruchtung mit Allel-Auswahl und Mutation, Merkmalsausprägung, Epigenetik (Exposition, Rückbildung, transgenerationale Weitergabe), Genom-Pool, Gen-Katalog-Data-Asset, Projekteinstellungen, HUD-Seite, Befehl `genesis.Genetics.SimulateFamily`. Doku `08_Genetik.md`.
+- 2026-09-17: **Build erfolgreich. Tests: 5/5 Genetik, gesamt 19/19 grün.**
+- 2026-09-17: **Sichtprüfung im Spiel:** Mutter nach 15 Jahren Belastung Stress-Markierung 0,79 / Angstempfindlichkeit 0,48; Kind (Gen. 1) erbt 0,12 (erwartet ½·0,79·0,3 = 0,12). `Docs/Media/GENESIS-003_GeneticsHUD.png`.
+- 2026-09-17: Fehler gefunden und behoben: (1) Sandbox-Map enthielt doppelten Himmel (alte SkySphere) → Engine-Warnung im Bild; entfernt per `CreateDevSandbox.py`. (2) Git-LFS `lockable` setzte Maps/Assets schreibgeschützt → Speichern im Editor unmöglich; `lockable` entfernt.
 - **Status: DONE.**
