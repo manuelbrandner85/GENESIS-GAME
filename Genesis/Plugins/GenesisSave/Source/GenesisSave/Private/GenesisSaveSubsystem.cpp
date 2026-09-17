@@ -3,7 +3,9 @@
 #include "GenesisSaveSubsystem.h"
 #include "Async/Async.h"
 #include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "GenesisDebug.h"
+#include "HAL/IConsoleManager.h"
 #include "GenesisLog.h"
 #include "GenesisSaveGame.h"
 #include "Kismet/GameplayStatics.h"
@@ -25,6 +27,41 @@ namespace
 	const TCHAR* BackupSuffix = TEXT("_Backup");
 	const int32 SaveUserIndex = 0;
 }
+
+#if !UE_BUILD_SHIPPING
+namespace
+{
+	UGenesisSaveSubsystem* GetSaveSubsystem(UWorld* World)
+	{
+		const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+		return GameInstance ? GameInstance->GetSubsystem<UGenesisSaveSubsystem>() : nullptr;
+	}
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisSaveAllCommand(
+		TEXT("genesis.Save.All"),
+		TEXT("Speichert Soul, World und Life. Optional: Profil-ID (Standard: Dev)."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (UGenesisSaveSubsystem* Save = GetSaveSubsystem(World))
+			{
+				Save->SetActiveProfile(Args.Num() > 0 ? Args[0] : TEXT("Dev"));
+				UE_LOG(LogGenesis, Display, TEXT("genesis.Save.All → %d"), static_cast<int32>(Save->SaveAll()));
+			}
+		}));
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisLoadAllCommand(
+		TEXT("genesis.Save.LoadAll"),
+		TEXT("Lädt Soul, World und Life. Optional: Profil-ID (Standard: Dev)."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (UGenesisSaveSubsystem* Save = GetSaveSubsystem(World))
+			{
+				Save->SetActiveProfile(Args.Num() > 0 ? Args[0] : TEXT("Dev"));
+				UE_LOG(LogGenesis, Display, TEXT("genesis.Save.LoadAll → %d"), static_cast<int32>(Save->LoadAll()));
+			}
+		}));
+}
+#endif
 
 void UGenesisSaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {

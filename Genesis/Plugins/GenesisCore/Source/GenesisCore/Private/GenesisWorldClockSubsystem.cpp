@@ -2,7 +2,49 @@
 
 #include "GenesisWorldClockSubsystem.h"
 #include "Engine/GameInstance.h"
+#include "Engine/World.h"
+#include "GenesisDebug.h"
 #include "GenesisLog.h"
+#include "HAL/IConsoleManager.h"
+
+#if !UE_BUILD_SHIPPING
+namespace
+{
+	UGenesisWorldClockSubsystem* GetClock(UWorld* World)
+	{
+		const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+		return GameInstance ? GameInstance->GetSubsystem<UGenesisWorldClockSubsystem>() : nullptr;
+	}
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisClockSkipCommand(
+		TEXT("genesis.Clock.SkipDays"),
+		TEXT("Springt die Weltzeit um N Tage vorwärts (Zeitsprung). Beispiel: genesis.Clock.SkipDays 365"),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (UGenesisWorldClockSubsystem* Clock = GetClock(World))
+			{
+				const double Days = Args.Num() > 0 ? FCString::Atod(*Args[0]) : 1.0;
+				Clock->SkipTime(FGenesisTimestamp::DaysToSeconds(Days));
+				UE_LOG(LogGenesis, Display, TEXT("Weltzeit: %s"), *Clock->GetNow().ToString());
+			}
+		}));
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisClockScaleCommand(
+		TEXT("genesis.Clock.TimeScale"),
+		TEXT("Setzt Weltsekunden pro Echtzeitsekunde. Beispiel: genesis.Clock.TimeScale 3600"),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (UGenesisWorldClockSubsystem* Clock = GetClock(World))
+			{
+				if (Args.Num() > 0)
+				{
+					Clock->SetTimeScale(FCString::Atod(*Args[0]));
+				}
+				UE_LOG(LogGenesis, Display, TEXT("TimeScale: %.1f"), Clock->GetTimeScale());
+			}
+		}));
+}
+#endif
 
 void UGenesisWorldClockSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -15,11 +57,31 @@ void UGenesisWorldClockSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 
 	ResetState();
 	bInitialized = true;
+
+#if !UE_BUILD_SHIPPING
+	TWeakObjectPtr<UGenesisWorldClockSubsystem> WeakThis(this);
+	GenesisDebug::RegisterPage({
+		TEXT("Clock"),
+		TEXT("Weltzeit"),
+		[WeakThis](const UWorld*, TArray<FString>& OutLines)
+		{
+			if (const UGenesisWorldClockSubsystem* Self = WeakThis.Get())
+			{
+				OutLines.Add(FString::Printf(TEXT("%s | TimeScale %.1f | Schritt %lld s | %s"),
+					*Self->GetNow().ToString(), Self->GetTimeScale(), Self->GetStepSeconds(), Self->IsPaused() ? TEXT("pausiert") : TEXT("läuft")));
+			}
+		}
+	});
+#endif
 }
 
 void UGenesisWorldClockSubsystem::Deinitialize()
 {
 	bInitialized = false;
+
+#if !UE_BUILD_SHIPPING
+	GenesisDebug::UnregisterPage(TEXT("Clock"));
+#endif
 
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{

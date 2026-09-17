@@ -12,8 +12,8 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 
 | Block | Titel | Inhalt | Status |
 |---|---|---|---|
-| GENESIS-001 | Project Foundation | Repo, LFS, C++-Projekt, Plugin-Architektur, GenesisCore (Zeit, RNG, Persistenz, Tags, Developer HUD), GenesisSave, Build-/Test-Skripte, Architektur-Doku | IN ARBEIT |
-| GENESIS-002 | Soul Engine | Soul Seed, Resonanzen, Echos, Seelenbindungen, Motiv, Inkarnationen, Übertrag zwischen Leben | Build ✔ Tests ✔ – HUD-Sichtprüfung mit 001 |
+| GENESIS-001 | Project Foundation | Repo, LFS, C++-Projekt, Plugin-Architektur, GenesisCore (Zeit, RNG, Persistenz, Tags, Developer HUD), GenesisSave, Build-/Test-Skripte, Architektur-Doku | DONE |
+| GENESIS-002 | Soul Engine | Soul Seed, Resonanzen, Echos, Seelenbindungen, Motiv, Inkarnationen, Übertrag zwischen Leben | DONE |
 | GENESIS-003 | Genetic Code | Genom, Vererbung, Mutation, Ausprägung, Epigenetik, Gen-Katalog-Asset | OFFEN |
 | GENESIS-004 | Causal Memory Graph | Kausalgraph, Ursachen-/Folgen-Traversierung, Verdichtung, subjektive Erinnerungen, Verzerrung, Zerfall, Sinnes-Trigger | OFFEN |
 | GENESIS-005 | Life Simulation Core | Karma, die 14 Prozessoren, Konsequenz-Netzwerk, Gerüchte, Simulation LOD | OFFEN |
@@ -36,8 +36,16 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-17: Visual Studio 2026 (18.10, MSVC 14.51, Windows SDK 22621) über `Genesis/.vsconfig` installiert.
 - 2026-09-17: **Build GenesisEditor Win64 Development: erfolgreich.** 1 Fehler (`FStatId` → `TStatId`) behoben.
 - 2026-09-17: **Tests: 9/9 grün** (`Genesis.Core.*`, `Genesis.Save.*`). Log ohne Fehler aus Genesis-Modulen.
-- Offen: Editor mit C++-Modulen starten, Developer HUD im PIE sichtprüfen, Vorlagen-Content auslagern, Entwickler-Sandbox-Map.
+- 2026-09-17: Vorlagen-Content (168 MB, First-Person-Template) nach `%LOCALAPPDATA%\GenesisArchive` ausgelagert (nicht gelöscht). Template-Konfiguration entfernt.
+- 2026-09-17: Entwickler-Map `/Game/Genesis/Maps/L_DevSandbox` headless per Python erzeugt (`Tools/Unreal/CreateDevSandbox.py`), als Start- und Spiel-Map gesetzt.
+- 2026-09-17: Editor lädt die C++-Module ohne Rebuild-Abfrage. **Sichtprüfung im Spiel:** Developer HUD mit Seiten Weltzeit, Save und Soul Engine (`Docs/Media/GENESIS-001_DeveloperHUD.png`).
+- 2026-09-17: Performance grob (Code-Review, nicht gemessen): Weltuhr begrenzt auf max. 8 Schritte pro Frame plus einen Nachhol-Schritt, HUD-Seiten nur bei aktivem `showdebug`. Messung mit `stat unit` / Insights ab den ersten sichtbaren Systemen (Body/NPC).
+- **Status: DONE.**
+
+![Developer HUD](Media/GENESIS-001_DeveloperHUD.png)
 
 ### GENESIS-002 – Soul Engine
 - 2026-09-17: `GenesisSoul` implementiert (Soul Seed, Resonanzen, Echos, Bindungen, Motiv, Inkarnationen, Übertrag, Subsystem, Settings, HUD-Seite). Doku `04_Soul_System.md`.
 - 2026-09-17: **Build erfolgreich (ohne Fehler). Tests: 5/5 Soul, gesamt 14/14 grün.**
+- 2026-09-17: Entwicklerbefehle `genesis.Soul.Create`, `genesis.Soul.SimulateLife`; Seele über mehrere simulierte Leben im HUD geprüft (Echos, Resonanzen, Motiv-Entwicklung).
+- **Status: DONE.**

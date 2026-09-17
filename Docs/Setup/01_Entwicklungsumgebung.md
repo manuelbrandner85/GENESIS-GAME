@@ -45,3 +45,24 @@ Im Editor alternativ: **Tools → Session Frontend → Automation** → Filter `
 Im laufenden Spiel (PIE) die Konsole mit `^` öffnen:
 - `showdebug Genesis` blendet alle Seiten ein und aus.
 - `genesis.Debug.Page Save` zeigt nur eine Seite.
+
+## Entwicklerbefehle (nicht in Shipping)
+
+| Befehl | Wirkung |
+|---|---|
+| `genesis.Clock.SkipDays 365` | Zeitsprung um N Tage |
+| `genesis.Clock.TimeScale 3600` | Weltsekunden pro Echtzeitsekunde |
+| `genesis.Save.All [Profil]` | Soul, World und Life speichern |
+| `genesis.Save.LoadAll [Profil]` | Soul, World und Life laden |
+| `genesis.Soul.Create [Seed]` | Spielerseele anlegen und erste Inkarnation beginnen |
+| `genesis.Soul.SimulateLife` | Beispiel-Lebensabschluss und nächste Inkarnation |
+
+## Automatisierte Sichtprüfung
+
+`Tools\Build\Capture-GameScreenshot.ps1` startet das Spiel, führt Konsolenbefehle aus und speichert ein Bildschirmfoto. In der Engine geht das auch über `shot showui` als letzten Befehl in `-ExecCmds`.
+
+## Entwickler-Map neu erzeugen
+
+```bash
+"C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "Genesis\Genesis.uproject" -run=pythonscript -script="Tools/Unreal/CreateDevSandbox.py" -unattended -nullrhi
+```

@@ -6,6 +6,71 @@
 #include "GenesisLog.h"
 #include "GenesisSoulLogic.h"
 #include "GenesisSoulSettings.h"
+#include "Engine/World.h"
+#include "GenesisGameplayTags.h"
+#include "GenesisRandom.h"
+#include "GenesisSoulGameplayTags.h"
+#include "HAL/IConsoleManager.h"
+
+#if !UE_BUILD_SHIPPING
+namespace
+{
+	UGenesisSoulSubsystem* GetSoulSubsystem(UWorld* World)
+	{
+		const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+		return GameInstance ? GameInstance->GetSubsystem<UGenesisSoulSubsystem>() : nullptr;
+	}
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisSoulCreateCommand(
+		TEXT("genesis.Soul.Create"),
+		TEXT("Entwickler: legt die Spielerseele an und beginnt die erste Inkarnation. Optional: Seed."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (UGenesisSoulSubsystem* Soul = GetSoulSubsystem(World))
+			{
+				const uint64 Seed = Args.Num() > 0 ? FCString::Strtoui64(*Args[0], nullptr, 10) : 20260917ull;
+				Soul->CreatePlayerSoul(Seed);
+				Soul->BeginIncarnation(FGenesisIncarnationRecord());
+			}
+		}));
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisSoulSimulateLifeCommand(
+		TEXT("genesis.Soul.SimulateLife"),
+		TEXT("Entwickler: schließt die aktuelle Inkarnation mit einem deterministischen Beispiel-Lebensabschluss ab und beginnt die nächste."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			UGenesisSoulSubsystem* Soul = GetSoulSubsystem(World);
+			if (!Soul || !Soul->HasPlayerSoul())
+			{
+				UE_LOG(LogGenesis, Warning, TEXT("genesis.Soul.SimulateLife: zuerst genesis.Soul.Create ausführen."));
+				return;
+			}
+
+			const FGenesisSoulSeed& Seed = Soul->GetPlayerSoul();
+			FGenesisRandomStream Rng = FGenesisRandomStream(Seed.OriginSeed).Derive(0xDE7ull + Seed.Incarnations.Num());
+
+			static const FGameplayTag Themes[] = { GenesisTags::Theme_Abandonment, GenesisTags::Theme_Love, GenesisTags::Theme_Courage, GenesisTags::Theme_Deception, GenesisTags::Theme_Forgiveness };
+			static const FGameplayTag Patterns[] = { GenesisSoulTags::Pattern_Affinity, GenesisSoulTags::Pattern_Melody, GenesisSoulTags::Pattern_Fear };
+
+			FGenesisLifeClosure Closure;
+			Closure.Warmth = Rng.NextFloat();
+			Closure.LettingGo = Rng.NextFloat();
+			Closure.ExperiencedPatterns.Emplace(Patterns[Rng.RandRange(0, UE_ARRAY_COUNT(Patterns) - 1)], Rng.FRandRange(0.3f, 1.0f));
+
+			FGenesisLifeClosureTheme Theme;
+			Theme.Theme = Themes[Rng.RandRange(0, UE_ARRAY_COUNT(Themes) - 1)];
+			Theme.Intensity = Rng.FRandRange(0.4f, 1.0f);
+			Theme.bResolved = Rng.Bernoulli(0.5f);
+			Closure.CourtThemes.Add(Theme);
+
+			if (!Soul->CloseIncarnation(Closure))
+			{
+				return;
+			}
+			Soul->BeginIncarnation(FGenesisIncarnationRecord());
+		}));
+}
+#endif
 
 void UGenesisSoulSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {

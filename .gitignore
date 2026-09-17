@@ -11,6 +11,9 @@ Genesis/Saved/
 Genesis/Plugins/**/Binaries/
 Genesis/Plugins/**/Intermediate/
 
+# --- Persönliche Entwickler-Ordner im Content ---
+Genesis/Content/Developers/
+
 # --- IDE / Projektdateien (werden per "Generate Project Files" erzeugt) ---
 *.sln
 *.slnx
