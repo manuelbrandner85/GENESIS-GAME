@@ -38,6 +38,7 @@ if (-not (Test-Path $Index)) {
 # Der Bericht kann ein BOM enthalten
 $Report = Get-Content $Index -Raw -Encoding UTF8 | ConvertFrom-Json
 $Failed = @($Report.tests | Where-Object { $_.state -ne "Success" })
+$WithWarnings = @($Report.tests | Where-Object { $_.warnings -gt 0 })
 
 foreach ($Test in $Report.tests) {
     $Color = if ($Test.state -eq "Success") { "Green" } else { "Red" }
@@ -49,6 +50,6 @@ foreach ($Test in $Report.tests) {
     }
 }
 
-Write-Host ("Erfolgreich: {0}  Fehlgeschlagen: {1}" -f $Report.succeeded, $Report.failed)
+Write-Host ("Tests: {0}  Erfolgreich: {1}  davon mit Warnungen: {2}  Fehlgeschlagen: {3}" -f $Report.tests.Count, ($Report.tests.Count - $Failed.Count), $WithWarnings.Count, $Failed.Count)
 if ($Failed.Count -gt 0 -or $Report.tests.Count -eq 0) { exit 1 }
 exit 0

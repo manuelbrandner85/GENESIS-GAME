@@ -28,6 +28,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GenesisMemory",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [

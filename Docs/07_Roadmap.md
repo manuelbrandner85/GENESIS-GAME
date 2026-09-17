@@ -15,7 +15,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-001 | Project Foundation | Repo, LFS, C++-Projekt, Plugin-Architektur, GenesisCore (Zeit, RNG, Persistenz, Tags, Developer HUD), GenesisSave, Build-/Test-Skripte, Architektur-Doku | DONE |
 | GENESIS-002 | Soul Engine | Soul Seed, Resonanzen, Echos, Seelenbindungen, Motiv, Inkarnationen, Übertrag zwischen Leben | DONE |
 | GENESIS-003 | Genetic Code | Genom, Vererbung, Mutation, Ausprägung, Epigenetik, Gen-Katalog-Asset | DONE |
-| GENESIS-004 | Causal Memory Graph | Kausalgraph, Ursachen-/Folgen-Traversierung, Verdichtung, subjektive Erinnerungen, Verzerrung, Zerfall, Sinnes-Trigger | OFFEN |
+| GENESIS-004 | Causal Memory Graph | Kausalgraph, Ursachen-/Folgen-Traversierung, Verdichtung, subjektive Erinnerungen, Verzerrung, Zerfall, Sinnes-Trigger | DONE |
 | GENESIS-005 | Life Simulation Core | Karma, die 14 Prozessoren, Konsequenz-Netzwerk, Gerüchte, Simulation LOD | OFFEN |
 | GENESIS-006 | Decision Engine | Entscheidungssituationen, NPC-Bewertung, Unterbewusstseins-Impulse | OFFEN |
 | GENESIS-007 | Body Simulation | Organsysteme, Hormone, Stress, Schlaf, Symptome, Alterung | OFFEN |
@@ -55,4 +55,10 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-17: **Build erfolgreich. Tests: 5/5 Genetik, gesamt 19/19 grün.**
 - 2026-09-17: **Sichtprüfung im Spiel:** Mutter nach 15 Jahren Belastung Stress-Markierung 0,79 / Angstempfindlichkeit 0,48; Kind (Gen. 1) erbt 0,12 (erwartet ½·0,79·0,3 = 0,12). `Docs/Media/GENESIS-003_GeneticsHUD.png`.
 - 2026-09-17: Fehler gefunden und behoben: (1) Sandbox-Map enthielt doppelten Himmel (alte SkySphere) → Engine-Warnung im Bild; entfernt per `CreateDevSandbox.py`. (2) Git-LFS `lockable` setzte Maps/Assets schreibgeschützt → Speichern im Editor unmöglich; `lockable` entfernt.
+- **Status: DONE.**
+
+### GENESIS-004 – Causal Memory Graph
+- 2026-09-17: `GenesisMemory` implementiert: azyklischer Kausalgraph (Sequence-Invariante), Beleg-Kombination, Max-Produkt-Traversierung vorwärts/rückwärts, Ereignissuche, Themen-Wiederholung, Verdichtung mit Kettenerhalt; subjektive Erinnerungsspuren (Intensität, Genauigkeit, Valenz, Verdrängung, Verzerrung, Zerfall, ruhende Spuren, Reiz-Trigger mit Geruchsgewichtung); Memory World, Subsystem mit Zerfall über die Weltuhr, Settings, HUD-Seite, Befehl `genesis.Memory.SimulateLieChain`. Doku `05_Causal_Memory_Graph.md`.
+- 2026-09-17: **Build erfolgreich. Tests: 4/4 Memory, gesamt 23/23 grün, 0 Warnungen.** Testskript zählt jetzt auch Tests mit Warnungen.
+- 2026-09-17: **Sichtprüfung im Spiel:** Kette Lüge 1408 → Vertrauensverlust → Bindungsangst 1416 → übernommenes Verhalten 1440 → Familienkonflikt 1470 (Pfadstärke 0,34), offene Fäden markiert. `Docs/Media/GENESIS-004_MemoryGraphHUD.png`.
 - **Status: DONE.**

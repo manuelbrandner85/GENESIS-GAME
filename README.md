@@ -21,7 +21,7 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 2. [Datenarchitektur & Save-/Persistence-Konzept](Docs/02_Daten_und_Persistenz.md)
 3. Life Simulation Core – `Docs/03_Life_Simulation_Core.md` (folgt mit GENESIS-005)
 4. [Soul-System](Docs/04_Soul_System.md)
-5. Causal Memory Graph – `Docs/05_Causal_Memory_Graph.md` (folgt mit GENESIS-004)
+5. [Causal Memory Graph](Docs/05_Causal_Memory_Graph.md)
 6. [Coding Standards](Docs/06_Coding_Standards.md)
 7. [Roadmap & Entwicklungsblöcke](Docs/07_Roadmap.md)
 8. [Genetik & Epigenetik](Docs/08_Genetik.md)

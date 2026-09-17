@@ -57,6 +57,7 @@ Im laufenden Spiel (PIE) die Konsole mit `^` öffnen:
 | `genesis.Soul.Create [Seed]` | Spielerseele anlegen und erste Inkarnation beginnen |
 | `genesis.Soul.SimulateLife` | Beispiel-Lebensabschluss und nächste Inkarnation |
 | `genesis.Genetics.SimulateFamily [Jahre]` | Zwei Gründer, Mutter N Jahre Stress, Kind zeugen |
+| `genesis.Memory.SimulateLieChain` | Beispiel-Kausalkette über Generationen mit Erinnerungen |
 
 ## Automatisierte Sichtprüfung
 
