@@ -59,6 +59,7 @@ Im laufenden Spiel (PIE) die Konsole mit `^` öffnen:
 | `genesis.Genetics.SimulateFamily [Jahre]` | Zwei Gründer, Mutter N Jahre Stress, Kind zeugen |
 | `genesis.Memory.SimulateLieChain` | Beispiel-Kausalkette über Generationen mit Erinnerungen |
 | `genesis.Life.SimulateScenario` | Lüge, Predigt, 2 Jahre: Karma, Vertrauen, Konsequenz, Gerücht |
+| `genesis.Decision.SimulateDilemma [1]` | Zwei Charaktere vor derselben Wahl (1 = unter Zeitdruck) |
 
 ## Automatisierte Sichtprüfung
 

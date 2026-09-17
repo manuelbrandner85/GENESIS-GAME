@@ -17,7 +17,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-003 | Genetic Code | Genom, Vererbung, Mutation, Ausprägung, Epigenetik, Gen-Katalog-Asset | DONE |
 | GENESIS-004 | Causal Memory Graph | Kausalgraph, Ursachen-/Folgen-Traversierung, Verdichtung, subjektive Erinnerungen, Verzerrung, Zerfall, Sinnes-Trigger | DONE |
 | GENESIS-005 | Life Simulation Core | Karma, die 14 Prozessoren, Konsequenz-Netzwerk, Gerüchte, Simulation LOD | DONE |
-| GENESIS-006 | Decision Engine | Entscheidungssituationen, NPC-Bewertung, Unterbewusstseins-Impulse | OFFEN |
+| GENESIS-006 | Decision Engine | Entscheidungssituationen, NPC-Bewertung, Unterbewusstseins-Impulse | DONE |
 | GENESIS-007 | Body Simulation | Organsysteme, Hormone, Stress, Schlaf, Symptome, Alterung | OFFEN |
 | GENESIS-008 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
 | GENESIS-009 | Relationships & NPC Memory | Beziehungsdimensionen, NPC-Erinnerungssätze | OFFEN |
@@ -70,4 +70,11 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-17: **Performance gemessen:** 0,015 ms pro Handlung, 0,106 ms pro Tagesschritt (300 Personen, 3000 Ereignisse).
 - 2026-09-17: **Sichtprüfung im Spiel:** Szenario Lüge → Predigt → 2 Jahre: Ehrlichkeit −8,7, Vertrauen Mutter 0,70 → 0,21 (Verrat), Konsequenz ausgelöst, Gerücht an Dritten weitergegeben und verklungen. `Docs/Media/GENESIS-005_LifeSimulationHUD.png`.
 - Bekannte Grenze: Gerüchte werden noch nicht je Person/Thema zusammengefasst (geplant mit GenesisSociety).
+- **Status: DONE.**
+
+### GENESIS-006 – Decision Engine
+- 2026-09-17: `GenesisDecision` implementiert: Entscheidungssituationen, 8 Considerations (Charakter, Motiv, Überzeugung, Kultur, Umfeld, Beziehung, Erfahrung, Unterbewusstsein inkl. Seelen-Echos), Kopf/Bauch/Zeitdruck-Modell, Zögern, innerer Konflikt, Softmax-NPC-Wahl, Spielerwahl mit Timeout → Impuls, prägende Erinnerungen als Kausal-Ursachen, Subsystem, Settings, HUD-Seite, Befehl `genesis.Decision.SimulateDilemma`. Doku `09_Decision_Engine.md`.
+- 2026-09-17: Beim Vorab-Nachrechnen der Tests gefunden und behoben: Erfahrung ignorierte die Zugänglichkeit (fast verdrängte Erinnerung prägte so stark wie lebendige); Test hielt ungültige Profil-Referenz; wirkungslose Testzeile entfernt. Build: 1 Fehler (C4458 Variablenüberdeckung) behoben.
+- 2026-09-17: **Tests: 7/7 Decision, gesamt 39/39 grün, 0 Warnungen.** **Performance:** 0,071 ms pro Entscheidung mit 5000 Erinnerungen.
+- 2026-09-17: **Sichtprüfung im Spiel:** ehrliche Person gesteht (p 0,77); täuschende Person hatte 0,88 für Leugnen und gestand in diesem Lauf trotzdem – gewollt nicht-deterministisch, Aufschlüsselung im HUD korrekt. `Docs/Media/GENESIS-006_DecisionHUD.png`.
 - **Status: DONE.**

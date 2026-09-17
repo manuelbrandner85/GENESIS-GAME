@@ -25,7 +25,8 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 6. [Coding Standards](Docs/06_Coding_Standards.md)
 7. [Roadmap & Entwicklungsblöcke](Docs/07_Roadmap.md)
 8. [Genetik & Epigenetik](Docs/08_Genetik.md)
-9. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
+9. [Decision Engine](Docs/09_Decision_Engine.md)
+10. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
 
 ## Voraussetzungen
 

@@ -36,6 +36,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GenesisDecision",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [
