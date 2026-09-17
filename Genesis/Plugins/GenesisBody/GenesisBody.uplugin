@@ -2,8 +2,8 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "0.1.0",
-	"FriendlyName": "Genesis Decision",
-	"Description": "Decision Engine: Entscheidungssituationen, Utility-Abwägung aus Charakter, Werten, Umfeld und Erfahrung, unterbewusste Impulse, Zögern und inneren Konflikt.",
+	"FriendlyName": "Genesis Body",
+	"Description": "Body Simulation: Organsysteme, pränatale Entwicklung, Geburt, Sinne, Hormone, Vitalwerte, Schlaf, Ernährung, Fitness, Verletzungen, Krankheiten, Alterung – erlebt als Symptome.",
 	"Category": "Genesis",
 	"CreatedBy": "GENESIS Team",
 	"CanContainContent": false,
@@ -11,7 +11,7 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "GenesisDecision",
+			"Name": "GenesisBody",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}
@@ -27,10 +27,6 @@
 		},
 		{
 			"Name": "GenesisGenetics",
-			"Enabled": true
-		},
-		{
-			"Name": "GenesisSoul",
 			"Enabled": true
 		},
 		{

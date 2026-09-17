@@ -18,7 +18,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-004 | Causal Memory Graph | Kausalgraph, Ursachen-/Folgen-Traversierung, Verdichtung, subjektive Erinnerungen, Verzerrung, Zerfall, Sinnes-Trigger | DONE |
 | GENESIS-005 | Life Simulation Core | Karma, die 14 Prozessoren, Konsequenz-Netzwerk, Gerüchte, Simulation LOD | DONE |
 | GENESIS-006 | Decision Engine | Entscheidungssituationen, NPC-Bewertung, Unterbewusstseins-Impulse | DONE |
-| GENESIS-007 | Body Simulation | Organsysteme, Hormone, Stress, Schlaf, Symptome, Alterung | OFFEN |
+| GENESIS-007 | Body Simulation | Organsysteme, Hormone, Stress, Schlaf, Symptome, Alterung | DONE |
 | GENESIS-008 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
 | GENESIS-009 | Relationships & NPC Memory | Beziehungsdimensionen, NPC-Erinnerungssätze | OFFEN |
 | GENESIS-010 | Sperm Environment | Blender-Assets, Niagara-Schwarm, Flüssigkeit, Strömung | OFFEN |
@@ -77,4 +77,13 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-17: Beim Vorab-Nachrechnen der Tests gefunden und behoben: Erfahrung ignorierte die Zugänglichkeit (fast verdrängte Erinnerung prägte so stark wie lebendige); Test hielt ungültige Profil-Referenz; wirkungslose Testzeile entfernt. Build: 1 Fehler (C4458 Variablenüberdeckung) behoben.
 - 2026-09-17: **Tests: 7/7 Decision, gesamt 39/39 grün, 0 Warnungen.** **Performance:** 0,071 ms pro Entscheidung mit 5000 Erinnerungen.
 - 2026-09-17: **Sichtprüfung im Spiel:** ehrliche Person gesteht (p 0,77); täuschende Person hatte 0,88 für Leugnen und gestand in diesem Lauf trotzdem – gewollt nicht-deterministisch, Aufschlüsselung im HUD korrekt. `Docs/Media/GENESIS-006_DecisionHUD.png`.
+- **Status: DONE.**
+
+### GENESIS-007 – Body Simulation
+- 2026-09-17: `GenesisBody` implementiert: 9 Organsysteme (Entwicklung, Kapazität, Schaden, Verschleiß), pränataler Zeitplan für Organe und Sinne, Geburt mit Lungenreife, Sinnesreifung und -alterung, Hormone mit Tagesrhythmus, Vitalwerte, Schlaf/Hunger/Durst/Energie, Fitness, Schlafschuld, chronischer Stress, biologisches Alter, Genetik-Anbindung, Verletzungen/Krankheiten/Narben, Vitalversagen, 13 Symptome, Subsystem mit Simulation LOD, HUD-Seite, Entwicklerbefehle. Doku `10_Body_Simulation.md`.
+- 2026-09-17: Vor dem Build beim Durchrechnen gefunden: Stress-Herzschaden wurde durch Reparatur sofort neutralisiert (→ dauerhafter Verschleiß eingeführt), Sehschärfe hing fälschlich an Nervensystem-Kapazität, Wachstumskurve zu langsam, Melatonin-Testaussage zu weich.
+- 2026-09-17: **Build im ersten Versuch erfolgreich. Tests: 8/8 Body, gesamt 47/47 grün, 0 Warnungen.**
+- 2026-09-17: **Gemessen:** biologisches Alter mit 60 bei Dauerstress 67,3 vs. aktiv 53,4; natürliches Lebensende 91,1 Jahre; 0,005 ms Stundenschritt (50 Körper), 0,28 ms Tagesschritt (1000 Körper).
+- 2026-09-17: **Sichtprüfung im Spiel:** Befruchtung → 38 Wochen → Geburt: 50 cm, 3,8 kg, Puls 160, Atmung 45, Sehschärfe 0,05, Symptome unscharfes Sehen 0,95 / Herzklopfen / Zittern. `Docs/Media/GENESIS-007_NewbornBodyHUD.png`.
+- Persistenz-Doku präzisiert: Körper liegen in der World-Ebene (Ahnen bleiben erhalten).
 - **Status: DONE.**

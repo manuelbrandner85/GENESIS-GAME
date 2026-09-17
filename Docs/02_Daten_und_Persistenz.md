@@ -37,8 +37,8 @@ Ort (LocationId) ──1:n──► Ereignis        Gegenstand (ItemId) ──1:
 | Ebene | Datei (Slot) | Lebensdauer | Inhalt |
 |---|---|---|---|
 | **Soul** | `Genesis_<Profil>_Soul` | Alle Leben, alle Welten | Soul Seed, Echos, Seelenbindungen, Motiv, Inkarnationshistorie, Vermächtnis-Briefe, letzte Worte, Meta-Muster (Spieler-Ebene), Startmenü-Reflexion |
-| **World** | `Genesis_<Profil>_World` | Generationen einer Welt | Weltuhr, Kausalgraph, NPC-Erinnerungen, Profile aller simulierten Personen, Genome, Vertrauen, Gerüchte, Zeitgeist, Orte, Gegenstände, Familien |
-| **Life** | `Genesis_<Profil>_Life_<n>` | Aktuelle Inkarnation | Körperzustand, Emotion, Gedankeninventar, laufende Situationen, Position und Streaming-Zustand |
+| **World** | `Genesis_<Profil>_World` | Generationen einer Welt | Weltuhr, Kausalgraph, Erinnerungen, Profile, Körper und Genome aller simulierten Personen (auch Verstorbener – Ahnen), Vertrauen, Gerüchte, Zeitgeist, Orte, Gegenstände, Familien |
+| **Life** | `Genesis_<Profil>_Life_<n>` | Aktuelle Inkarnation | Wahrnehmungs- und Präsentationszustand des Spielers (Emotion, Gedankeninventar, laufende Situationen, Position, Streaming) |
 
 **Tod als atomarer Übergang:** Lebensrückblick → Karma-Gericht → Soul-Ebene aktualisieren (synchron speichern) → Kausalgraph des Lebens verdichten (World) → Life-Slot abschließen. Bricht der Vorgang ab, bleibt der letzte gültige Stand erhalten (Backup).
 

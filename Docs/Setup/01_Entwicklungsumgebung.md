@@ -60,6 +60,10 @@ Im laufenden Spiel (PIE) die Konsole mit `^` öffnen:
 | `genesis.Memory.SimulateLieChain` | Beispiel-Kausalkette über Generationen mit Erinnerungen |
 | `genesis.Life.SimulateScenario` | Lüge, Predigt, 2 Jahre: Karma, Vertrauen, Konsequenz, Gerücht |
 | `genesis.Decision.SimulateDilemma [1]` | Zwei Charaktere vor derselben Wahl (1 = unter Zeitdruck) |
+| `genesis.Body.Conceive [Vitalität]` | Befruchtung eines Entwicklerkörpers |
+| `genesis.Body.Birth` | Geburt des Entwicklerkörpers |
+| `genesis.Body.Activity 0-4` | Schlaf, Ruhe, leicht, mittel, intensiv |
+| `genesis.Body.Injure [Schwere]` | Armverletzung |
 
 ## Automatisierte Sichtprüfung
 

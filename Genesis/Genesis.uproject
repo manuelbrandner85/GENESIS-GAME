@@ -40,6 +40,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GenesisBody",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [
