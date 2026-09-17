@@ -28,7 +28,8 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 9. [Decision Engine](Docs/09_Decision_Engine.md)
 10. [Body Simulation](Docs/10_Body_Simulation.md)
 11. [Audio Core](Docs/11_Audio_Core.md)
-12. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
+12. [Soul Music](Docs/12_Soul_Music.md)
+13. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
 
 ## Voraussetzungen
 

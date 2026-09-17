@@ -17,6 +17,9 @@ namespace GenesisSoulLogic
 	 */
 	GENESISSOUL_API FGenesisSoulSeed CreateSoulSeed(uint64 OriginSeed, const TArray<FGameplayTag>& InnatePatternPool);
 
+	/** Erzeugt ein Motiv nach denselben Regeln wie für Seelen (auch für Charakter- und Begleitermotive in GenesisSoulMusic). */
+	GENESISSOUL_API FGenesisSoulMotif GenerateMotifFromSeed(uint64 Seed);
+
 	/** Beginnt eine neue Inkarnation. Schlägt fehl (nullptr), wenn die aktuelle noch nicht abgeschlossen ist. */
 	GENESISSOUL_API FGenesisIncarnationRecord* BeginIncarnation(FGenesisSoulSeed& Soul, const FGenesisIncarnationRecord& Template);
 

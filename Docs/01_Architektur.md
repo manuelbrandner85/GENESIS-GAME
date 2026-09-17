@@ -183,7 +183,8 @@ Muster für testbare Systeme:
 | GenesisReincarnation | L5 | Neuer Körper/Kultur/Epoche, Echo-Entscheidungen, Seelenbegegnungen | Soul, Genetics, World | später |
 | GenesisCreation | L5 | Schöpfungsmodus, Welt-Parameter, Beobachtung | World, Society | Endgame |
 | GenesisAudioCore | L6 | Hörwahrnehmung aus dem Körper, Körperklang-Parameter, Mix-Engine (Prioritäten, Ducking) | Core, Body | 008 |
-| GenesisSoulMusic · GenesisMusicDirector | L6 | Seelenmotiv, Charaktermotive, Musikschichten, Emotion → Musik | AudioCore, Soul, Memory | 009–010 |
+| GenesisSoulMusic | L6 | Leitmotive, Phasen-Instrumentierung, Familienmotive, Beziehungsmotive, Erinnerungsfragmente, Todeskomposition | Core, Soul, Memory | 009 |
+| GenesisMusicDirector | L6 | Musikschichten, Emotion → Musik, Stille, subjektive Zeit | AudioCore, SoulMusic | 010 |
 | GenesisVoiceSystem · GenesisDialogueSystem | L6 | Stimmprofile, Dialog-Datenbank, Lokalisierung, Weltwahrheit, Untertitel | AudioCore, Memory, LifeSimulation | 012–013 |
 | GenesisCinematics | L6 | Adaptive Cinematic Director, Kamera-Hybrid FP/TP | Mind, World | später |
 | GenesisUI | L6 | Phasenabhängige UI, Startmenü-Reflexion | Soul, Mind | später |

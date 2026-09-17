@@ -20,7 +20,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-006 | Decision Engine | Entscheidungssituationen, NPC-Bewertung, Unterbewusstseins-Impulse | DONE |
 | GENESIS-007 | Body Simulation | Organsysteme, Hormone, Stress, Schlaf, Symptome, Alterung | DONE |
 | GENESIS-008 | Audio Core | Hörwahrnehmung aus dem Körper (Mutterleib, Geburtssprung, Alter, Tunnel, Tinnitus), Körperklang-Parameter, Mix-Engine mit Prioritäten und weichem Ducking | DONE |
-| GENESIS-009 | Soul Music | Seelenmotiv, Phasen-Instrumentierung, Charaktermotive, Vererbung, Erinnerungsfragmente, Lebens-Soundtrack | OFFEN |
+| GENESIS-009 | Soul Music | Seelenmotiv, Phasen-Instrumentierung, Charaktermotive, Vererbung, Erinnerungsfragmente, Lebens-Soundtrack, Todeskomposition | DONE |
 | GENESIS-010 | Music Director | Musikschichten, Emotion → musikalische Parameter, Stille, subjektive Zeit, Quartz | OFFEN |
 | GENESIS-011 | MetaSounds-Basis | Submixes/Sound Classes, prozedurale MetaSounds (Herz, Atem, Mutterleib, Motiv), Wiedergabe, Aufnahme-Prüfung | OFFEN |
 | GENESIS-012 | Voice System | VoiceProfile, Stimmalterung, Gesundheit, Babylaute → Sprache | OFFEN |
@@ -109,3 +109,14 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 
 ![Audio im Mutterleib](Media/GENESIS-008_AudioWomb.png)
 ![Audio nach der Geburt](Media/GENESIS-008_AudioNewborn.png)
+
+### GENESIS-009 – Soul Music
+- 2026-09-17: GenesisSoulMusic implementiert: Leitmotiv je Person (Seelenmotiv der Spielerinkarnation, sonst Charaktermotiv), Instrumentierung für alle 13 Lebensphasen (Spieluhr → Klavier/Gitarre → Streicher → reduziertes Klavier → Orchester → Chor/kosmisch → kaum hörbare Spieluhr), Modus-Raster mit Konturschutz, Motiv-Ähnlichkeit, Familienmotive mit Vererbung, Verschmelzen und Trennen mit Narbe, Erinnerungsfragmente mit emotionaler Färbung und fehlbarem Erinnern, Lebens-Soundtrack mit Verdichtung, Todeskomposition, Seelen-Archiv (Soul-Ebene), Subsystem, Settings, HUD-Seite, Befehl genesis.Music.SimulateLife. GenesisSoul: GenerateMotifFromSeed öffentlich. Doku 12_Soul_Music.md.
+- 2026-09-17: Testerwartungen vor dem Build von Hand nachgerechnet. **Build im ersten Versuch erfolgreich. Tests: 6/6 Soul Music, gesamt 56/56 grün, 0 Warnungen.**
+- 2026-09-17: **Gemessen:** Ähnlichkeit Kind–Eltern 0,70 / Kind–Fremde 0,43 / Enkel–Großeltern 0,56; ungenaues Erinnern (Genauigkeit 0,2) verändert 50/50 Fragmente; 0,01 ms pro Todeskomposition mit 64 Fragmenten.
+- 2026-09-17: Sichtprüfung fand einen musikalischen Fehler: Beim Einrasten in den Modus fielen Halbtonschritte auf denselben Ton („G#5 G#5 G#5“), und die Kontur des Motivs ging verloren. Behoben durch Konturschutz (nächster Modus-Ton in Schrittrichtung), abgesichert durch einen Test über 200 Motive in allen Modi.
+- 2026-09-17: **Sichtprüfung im Spiel:** Seelenmotiv in 8 Phasen (Kindheit „C6 A#5 G5 G#5 A#5 G#5“, Alter reduziert auf 4 Noten bei gleicher Länge), Familienmotiv ~ Mutter 0,77 / Vater 0,79 / Seele 0,47, Bindung Fusion 0,9 → Narbe 0,31 nach dem Tod des Partners, 5 Fragmente (schwache Erinnerung ohne Musik), Erinnern genau „C6 B5 G5 A5“ vs. ungenau „C6 B5 F#5 A5“, Todeskomposition 9 Abschnitte / 68 s. Docs/Media/GENESIS-009_SoulMusicHUD.png.
+- Offen und bewusst verschoben: hörbare Wiedergabe (GENESIS-011), Schichtung und Emotion → Musik (GENESIS-010), Verschmelzen von Motiven im Jenseits (Afterlife-Audio).
+- **Status: DONE** (Umfang: musikalische Logik, Persistenz, Integration, ohne Wiedergabe).
+
+![Soul Music HUD](Media/GENESIS-009_SoulMusicHUD.png)

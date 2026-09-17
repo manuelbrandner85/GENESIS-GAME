@@ -63,7 +63,7 @@ Das Karma-Gericht (GenesisAfterlife) wählt automatisch 1–3 Themen. Grundlage 
   - **Spannung** folgt den offenen Echos.
   - **Wärme** folgt der Liebe des Lebens.
   - Der Modus folgt dieser Grundfarbe.
-- GenesisAudio (MetaSounds) interpretiert das Motiv. Die Soul Engine liefert nur die Daten.
+- GenesisSoulMusic interpretiert das Motiv (Phasen-Instrumentierung, Erinnerungen, Todeskomposition – siehe `12_Soul_Music.md`). Die Soul Engine liefert nur die Daten.
 
 ## 6. Ablauf einer Wiedergeburt
 

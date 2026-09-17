@@ -91,6 +91,14 @@ namespace GenesisSoulLogic
 		}
 	}
 
+	FGenesisSoulMotif GenerateMotifFromSeed(uint64 Seed)
+	{
+		FGenesisRandomStream Rng(Seed);
+		FGenesisSoulMotif Motif;
+		GenerateMotif(Motif, Rng);
+		return Motif;
+	}
+
 	FGenesisSoulSeed CreateSoulSeed(uint64 OriginSeed, const TArray<FGameplayTag>& InnatePatternPool)
 	{
 		FGenesisRandomStream Rng(OriginSeed);
