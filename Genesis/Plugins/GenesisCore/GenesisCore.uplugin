@@ -1,0 +1,19 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Genesis Core",
+	"Description": "Fundament aller GENESIS-Systeme: Weltzeit, deterministischer Zufall, Persistenz-Schnittstellen, native Gameplay Tags, Logging.",
+	"Category": "Genesis",
+	"CreatedBy": "GENESIS Team",
+	"CanContainContent": false,
+	"EnabledByDefault": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "GenesisCore",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault"
+		}
+	]
+}

@@ -1,0 +1,19 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+
+[*.{cpp,h,inl,cs}]
+indent_style = tab
+indent_size = 4
+tab_width = 4
+
+[*.{uproject,uplugin,json}]
+indent_style = tab
+indent_size = 4
+
+[*.{md,py,ini}]
+indent_style = space
+indent_size = 4

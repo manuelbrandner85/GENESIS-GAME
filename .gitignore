@@ -1,0 +1,49 @@
+# ============================================================
+# GENESIS – Git Ignore
+# Repo-Struktur:  /Genesis (Unreal-Projekt)  /Docs  /ArtSource  /Tools
+# ============================================================
+
+# --- Unreal Engine: generierte Ordner (werden lokal neu erzeugt) ---
+Genesis/Binaries/
+Genesis/DerivedDataCache/
+Genesis/Intermediate/
+Genesis/Saved/
+Genesis/Plugins/**/Binaries/
+Genesis/Plugins/**/Intermediate/
+
+# --- IDE / Projektdateien (werden per "Generate Project Files" erzeugt) ---
+*.sln
+*.slnx
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+.vs/
+.idea/
+.vscode/
+Genesis/*.code-workspace
+
+# --- Build-Artefakte ---
+*.pdb
+*.obj
+*.lib
+*.exp
+*.ilk
+*.dll
+*.exe
+!Tools/**/*.exe
+
+# --- Blender ---
+*.blend1
+*.blend2
+*.blend@
+
+# --- Python ---
+__pycache__/
+*.pyc
+
+# --- Betriebssystem ---
+Thumbs.db
+Desktop.ini
+.DS_Store
