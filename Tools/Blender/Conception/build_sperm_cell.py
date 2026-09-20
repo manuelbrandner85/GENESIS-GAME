@@ -57,9 +57,10 @@ def tail_radius(s):
     if s < PRINCIPAL_END:
         t = (s - MIDPIECE_END) / (PRINCIPAL_END - MIDPIECE_END)
         start = 0.46 * 0.78
-        return lerp(start, 0.30, smoothstep(0.0, 0.08, t)) * (1.0 - 0.42 * t)
+        return lerp(start, 0.30, smoothstep(0.0, 0.08, t)) * (1.0 - 0.34 * t)
     t = (s - PRINCIPAL_END) / (TOTAL_LENGTH - PRINCIPAL_END)
-    return lerp(0.30 * 0.58, 0.03, t ** 0.8)
+    # Endstück nicht unter 0,12 µm: Darunter liegt die Geißel unter einem Bildpunkt und zerfällt zu einer Punktreihe
+    return lerp(0.30 * 0.66, 0.12, t ** 0.8)
 
 
 def pnorm(a, b, p=4.0):

@@ -471,20 +471,12 @@ def place_oocyte(meshes, materials):
         component.set_editor_property("affect_distance_field_lighting", False)
         component.set_editor_property("visible_in_ray_tracing", ray_tracing)
 
-    # Hyaluronsäure-Gallerte des Cumulus als lokales Streumedium statt als Kugel mit harter Kante:
-    # So bekommt der Komplex den milchigen Hof, den ein Cumulus im Gegenlicht hat, ohne sichtbare Silhouette.
+    # Cumulus-Gallerte: Als lokales Nebelvolumen (LocalFogVolume) getestet und wieder entfernt – zwischen
+    # Extinktion 3,5 und 45 war im gemessenen Bild kein Unterschied (Median 0,310 gegen 0,309).
+    # Ein Objekt, das nichts tut, bleibt nicht in der Szene. Der Cumulus entsteht aus den Zellen selbst.
     for actor in actors.get_all_level_actors():
         if isinstance(actor, unreal.LocalFogVolume):
             actors.destroy_actor(actor)
-    gel = actors.spawn_actor_from_class(unreal.LocalFogVolume, OOCYTE_LOCATION)
-    gel.set_actor_label("CumulusGel")
-    gel.set_actor_scale3d(unreal.Vector(1.45, 1.45, 1.45))  # Radius ≈ 145 µm um den Komplex
-    gel_component = gel.get_component_by_class(unreal.LocalFogVolumeComponent)
-    gel_component.set_editor_property("radial_fog_extinction", 3.5)
-    gel_component.set_editor_property("height_fog_extinction", 0.0)
-    gel_component.set_editor_property("fog_phase_g", 0.55)   # vorwärtsstreuend wie wässrige Gallerte
-    gel_component.set_editor_property("fog_albedo", unreal.LinearColor(0.96, 0.94, 0.92, 1.0))
-    log("Cumulus-Gallerte als lokales Streuvolumen gesetzt (Radius ≈ 145 µm)")
 
     # Streulicht der Eileiterflüssigkeit dämpfen: Direkt vor der Optik entsteht im Lichtkegel sonst ein weißer
     # Schleier, der jeden Materialunterschied überdeckt (nachgewiesen mit einer grün eingefärbten Probe,

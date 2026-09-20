@@ -655,5 +655,7 @@ create_cilia_material()
 if not os.environ.get("GENESIS_SKIP_CILIA_IMPORT"):
     import_mesh("SM_GEN_OviductCilia.fbx", "SM_GEN_OviductCilia", ROOT + "/Environment", nanite=False)
 oviduct_wall = eal.load_asset(ROOT + "/Environment/SM_GEN_OviductWall") if os.environ.get("GENESIS_SKIP_WALL_IMPORT") else import_wall()
-if sperm_mesh:
+# Mit GENESIS_SKIP_LEVEL bleibt das bestehende Level unangetastet (z. B. wenn nur ein Mesh neu importiert wird):
+# build_level legt die Karte neu an und würde alles verlieren, was danach hineingesetzt wurde (Eizelle, Gallerte).
+if sperm_mesh and not os.environ.get("GENESIS_SKIP_LEVEL"):
     build_level(sperm_mesh, sperm_material, oviduct_wall, mucosa_material)

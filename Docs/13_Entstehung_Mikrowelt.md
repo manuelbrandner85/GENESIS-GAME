@@ -235,9 +235,11 @@ Deshalb die ehrliche Dramaturgie:
 
 ### Offen (bewusst, nicht versteckt)
 
-- Die **Cumulus-Gallerte** liegt als lokales Streuvolumen in der Szene (`r.SupportLocalFogVolumes=1`), ist aber
-  bei der gewählten Stärke kaum sichtbar. Als volumetrisches Medium mit Dichteverlauf hätte sie mehr Wirkung.
-- Die **Geißel flimmert** an den dünnsten Stellen (Treppenmuster bei unter einem Bildpunkt Breite).
+- Die **Cumulus-Gallerte** wurde als lokales Nebelvolumen getestet und wieder entfernt: zwischen Extinktion 3,5
+  und 45 lag im gemessenen Bild kein Unterschied (Median 0,310 gegen 0,309). Ein wirksames Streumedium bräuchte
+  ein eigenes Volumenmaterial.
+- Die **Geißel** zerfiel an den dünnsten Stellen zu einer Punktreihe, weil das Endstück mit 0,03 µm unter einem
+  Bildpunkt lag. Jetzt läuft es auf 0,12 µm aus (anatomisch weiterhin korrekt) und bleibt eine durchgehende Linie.
 - Das **Ooplasma** ist nur durch die Lücken im Zellkranz zu sehen; seine Körnung ist dort noch zu gleichmäßig.
 - Die automatische **Lichtregelung** ist eingebaut, aber aus: Zellansicht und Eizelle sind bei derselben
   Lichtstärke richtig belichtet; mit Regelung säuft die Umgebung ab.
