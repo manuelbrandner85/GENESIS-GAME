@@ -228,6 +228,14 @@ def lerp3(material, x, y, a, b, alpha, alpha_out=""):
     return node
 
 
+def smoothstep(material, x, y, value, value_out, low, high):
+    """Weicher Übergang zwischen zwei Schwellen – für Fugen, Kanten und Übergänge."""
+    node = expression(material, unreal.MaterialExpressionSmoothStep, x, y,
+                      const_min=low, const_max=high)
+    connect(value, value_out, node, ["Value"])
+    return node
+
+
 def multiply(material, x, y, a, b, a_out="", b_out=""):
     node = expression(material, unreal.MaterialExpressionMultiply, x, y)
     connect(a, a_out, node, ["A"])
@@ -385,20 +393,37 @@ def create_corona_material():
     variation = add(material, -800, 280, multiply(material, -950, 380, vertex, constant(material, -1150, 430, 0.75), "R"),
                     multiply(material, -950, 470, cell_tint, constant(material, -1150, 520, 0.25)))
 
+    # Berührungstiefe aus dem Blender-Aufbau (Vertexfarbe B): 1 = freie Oberfläche, kleiner = an den
+    # Nachbarn gedrückt. Dort, wo zwei Zellen aneinander liegen, kommt kein Licht hin – ohne diese
+    # dunklen Fugen verschmelzen die Zellen zu einer hellen Masse, und der Komplex sieht aus wie Popcorn.
+    # Gemessen aus dem Aufbau: freie Oberflächen liegen bei 1,0, der Median bei 0,91, das untere
+    # Zehntel bei 0,71. Die Schwellen liegen deshalb dort, wo die Zellen einander wirklich drücken.
+    crease = smoothstep(material, -950, 620, vertex, "B", 0.70, 0.95)
+
     # Deutlich dunkler als Papier: Eine Zellwolke unter dem Endoskoplicht ist keine weiße Wand.
     # Mit hellem Grundton frisst das nahe Licht jede Zeichnung weg (gemessen: Median 0,87 bei 0,04 Tonumfang).
-    dark = color(material, -900, -200, 0.018, 0.011, 0.009)
+    dark = color(material, -900, -200, 0.055, 0.036, 0.029)
     light = color(material, -900, -60, 0.22, 0.155, 0.125)
-    base = lerp3(material, -650, -120, dark, light, variation)
+    base_tone = lerp3(material, -650, -120, dark, light, variation)
+    # Die Fuge behält ein Viertel ihrer Helligkeit: Sie ist dunkel, aber nicht schwarz
+    base = multiply(material, -450, -120, base_tone, add(material, -600, -40, constant(material, -750, -20, 0.25),
+                                                         multiply(material, -750, 60, crease, constant(material, -900, 80, 0.75))))
     mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
-    # Durchleuchtung: warmes Rot, wie Licht durch eine dünne Gewebeschicht
+    # Durchleuchtung: warmes Rot, wie Licht durch eine dünne Gewebeschicht.
+    # An den Berührungsflächen ist der Weg durch das Gewebe am längsten – dort dringt am wenigsten durch.
     transmission_dark = color(material, -900, 140, 0.16, 0.055, 0.035)
     transmission_light = color(material, -900, 220, 0.34, 0.14, 0.09)
-    transmission = lerp3(material, -650, 180, transmission_dark, transmission_light, variation)
+    transmission_tone = lerp3(material, -650, 180, transmission_dark, transmission_light, variation)
+    transmission = multiply(material, -450, 180, transmission_tone,
+                            add(material, -600, 260, constant(material, -750, 240, 0.12),
+                                multiply(material, -750, 320, crease, constant(material, -900, 340, 0.88))))
     mel.connect_material_property(transmission, "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
 
-    roughness = constant(material, -650, 420, 0.38)
+    # Mikrovilli: Die Oberfläche einer lebenden Zelle ist auf Bruchteilen eines Mikrometers zottelig.
+    # Zu sehen ist davon keine Struktur, sondern ein Streuen – also Rauheit, die mit dem Korn schwankt.
+    roughness = add(material, -650, 420, constant(material, -820, 400, 0.34),
+                    multiply(material, -820, 470, grain, constant(material, -980, 490, 0.22)))
     mel.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
     spec = constant(material, -650, 500, 0.03)
     mel.connect_material_property(spec, "", unreal.MaterialProperty.MP_SPECULAR)

@@ -160,6 +160,8 @@ AGenesisMicroscopeCameraRig::AGenesisMicroscopeCameraRig()
 	FillLight->SetSourceRadius(60.0f);
 	FillLight->SetAttenuationRadius(6000.0f);
 	FillLight->SetCastShadows(false);
+	// Kaum Volumenstreuung: Sonst legt sich ein heller Schleier über das Bild, wie beim Endoskoplicht
+	FillLight->SetVolumetricScatteringIntensity(0.12f);
 	FillLight->SetIntensity(FillCandelas);
 }
 

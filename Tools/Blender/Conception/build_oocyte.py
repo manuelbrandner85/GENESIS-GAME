@@ -78,7 +78,7 @@ def write_vertices(obj, coordinates):
     obj.data.update()
 
 
-def add_uv_and_attribute(obj, radial_fraction=None, tint=None):
+def add_uv_and_attribute(obj, radial_fraction=None, tint=None, contact=None):
     """
     Kugel-UV plus Farbattribut: R = Zufall je Region (oder je Zelle, wenn tint übergeben wird),
     G = radialer Anteil, B = Rauschen.
@@ -98,8 +98,11 @@ def add_uv_and_attribute(obj, radial_fraction=None, tint=None):
         # Jede Zelle bekommt ihren eigenen Ton – ohne das sehen 950 Zellen aus wie gegossen
         noise = tint
     fraction = radial_fraction if radial_fraction is not None else np.clip(length / 120.0, 0.0, 1.0)
+    # Dritter Kanal: normalerweise nur das Gegenstück zum Ton, bei gepackten Zellen die Berührungstiefe.
+    # Sie sagt dem Material, wo eine Zelle an der nächsten anliegt – dort kommt kein Licht hin.
+    third = contact if contact is not None and len(contact) == len(co) else 1.0 - noise
     color = mesh.color_attributes.new(name="Cell", type="FLOAT_COLOR", domain="POINT")
-    color.data.foreach_set("color", np.stack([noise, fraction, 1.0 - noise, np.ones(len(co))], axis=1).astype(np.float32).ravel())
+    color.data.foreach_set("color", np.stack([noise, fraction, third, np.ones(len(co))], axis=1).astype(np.float32).ravel())
 
 
 def build_ooplasm():
@@ -149,43 +152,46 @@ def build_polar_body():
 
 def build_corona():
     """
-    Corona radiata: radial gestreckte Cumuluszellen in mehreren Lagen, dazwischen Lücken (Matrix).
-    Die inneren Zellen schicken Fortsätze bis an die Zona – daran erkennt man den Komplex.
+    Corona radiata und Cumulus: dicht gepackte Zellen, die sich gegenseitig platt drücken.
+
+    Der entscheidende Punkt ist die Packung. Einzelne Ellipsoide nebeneinander sehen aus wie Popcorn;
+    lebendes Gewebe besteht aus Zellen, die aneinander anliegen und dort **flache Berührungsflächen**
+    bilden – wie Schaum. Deshalb wird jede Zelle an der Mittelebene zu jedem Nachbarn abgeschnitten
+    (radiusgewichtet, also eine Art Potenz-Voronoi).
+
+    Was dabei entsteht, steht in der Vertexfarbe:
+      R = Ton der Zelle, G = Lage im Komplex, B = Berührungstiefe (1 = freie Oberfläche, 0 = platt gedrückt).
+    Die Berührungsflächen bekommen im Material kein Licht – erst dadurch sieht man einzelne Zellen
+    statt einer Masse aus hellen Kugeln.
     """
-    cells = bmesh.new()
-    count = 0
     centers = np.zeros((0, 3))
-    tints = []
+    radii = np.zeros(0)
+    axes = []
+    layers = []
+    tints_per_cell = []
+
     attempts = 0
-    while count < 2100 and attempts < 400000:
+    while len(centers) < 2600 and attempts < 600000:
         attempts += 1
         direction = rng.normal(size=3)
         direction /= np.linalg.norm(direction)
-        # Fünf sich überlappende Lagen: Die Zellen liegen dicht gepackt wie bei einer Brombeere und berühren sich.
-        # Eine einzelne Schale aus abstehenden Zellen sieht aus wie ein Seeigel, nicht wie ein Cumulus.
+        # Fünf sich überlappende Lagen: dicht gepackt wie bei einer Brombeere
         layer = int(rng.choice([0, 0, 0, 1, 1, 1, 2, 2, 3, 3, 4]))
-        distance = ZONA_INNER + ZONA_THICKNESS + 6.0 + layer * 10.5 + rng.normal(0.0, 3.0)
+        distance = ZONA_INNER + ZONA_THICKNESS + 6.0 + layer * 10.0 + rng.normal(0.0, 2.8)
         # Lücken in der Matrix: nicht überall sitzen Zellen, nach außen immer weniger
         if 0.5 + 0.5 * value_noise(direction[None, :], 1.7, 41)[0] < 0.10 + 0.17 * layer:
             continue
         position = direction * distance
-        # Abstand kleiner als die Zellgröße: Die Hüllen überlappen und verschmelzen optisch zu einer Masse
-        if len(centers) and np.min(np.linalg.norm(centers - position, axis=1)) < 6.2:
+        # Enger als die Zellgröße: Die Zellen müssen sich berühren, sonst gibt es nichts zu drücken
+        if len(centers) and np.min(np.linalg.norm(centers - position, axis=1)) < 5.4:
             continue
-        centers = np.vstack([centers, position])
 
-        # Kaum noch gestreckt: Cumuluszellen sind rundlich-polygonal, nur die innerste Lage steht radial
-        long_axis = rng.uniform(8.5, 13.0)
-        cross = rng.uniform(6.5, 10.0)
-        temp = bmesh.new()
-        # Unterteilung 3: Lebende Zellen haben keine Facetten. Bei 80 Flächen je Zelle bleiben harte Kanten sichtbar.
-        bmesh.ops.create_icosphere(temp, subdivisions=3, radius=1.0)
-        local = np.array([vert.co[:] for vert in temp.verts])
-        local *= np.array([long_axis * 0.5, cross * 0.5, cross * 0.5 * rng.uniform(0.85, 1.05)])
-        local *= (1.0 + 0.20 * value_noise(local / cross, 0.7, int(rng.integers(1e6))))[:, None]
+        # Größenstreuung wie im Gewebe: Cumuluszellen messen 7–16 µm, keine zwei sind gleich
+        long_axis = rng.uniform(7.5, 15.5)
+        cross = long_axis * rng.uniform(0.62, 0.92)
+        third = cross * rng.uniform(0.82, 1.08)
 
-        # Nur die innerste Lage richtet sich radial aus (ihre Fortsätze reichen zur Zona);
-        # weiter außen liegen die Zellen fast beliebig – sonst entsteht ein Strahlenkranz
+        # Nur die innerste Lage richtet sich radial aus (ihre Fortsätze reichen zur Zona)
         jitter = rng.normal(size=3) * (0.35 + 0.45 * layer)
         x_axis = direction + jitter
         x_axis /= np.linalg.norm(x_axis)
@@ -195,24 +201,86 @@ def build_corona():
         z_axis = np.cross(x_axis, y_axis)
         roll = rng.uniform(0.0, 2.0 * math.pi)
         y_axis, z_axis = y_axis * math.cos(roll) + z_axis * math.sin(roll), -y_axis * math.sin(roll) + z_axis * math.cos(roll)
-        world = local @ np.stack([x_axis, y_axis, z_axis]) + position
+
+        centers = np.vstack([centers, position])
+        radii = np.append(radii, 0.5 * (long_axis + cross) * 0.5)
+        axes.append((np.stack([x_axis, y_axis, z_axis]), np.array([long_axis * 0.5, cross * 0.5, third * 0.5])))
+        layers.append(layer)
+        tints_per_cell.append(float(rng.uniform(0.15, 1.0)))
+
+    # Eine Vorlage für alle Zellen: Unterteilung 3, damit keine Facetten stehenbleiben.
+    # Punkte und Flächen werden einmal gelesen und dann 2 600-mal wiederverwendet.
+    template = bmesh.new()
+    bmesh.ops.create_icosphere(template, subdivisions=3, radius=1.0)
+    template.verts.ensure_lookup_table()
+    unit = np.array([vert.co[:] for vert in template.verts])
+    template_faces = [tuple(vert.index for vert in face.verts) for face in template.faces]
+    template.free()
+
+    cells = bmesh.new()
+    tints = []
+    contacts = []
+    clipped_total = 0
+
+    for index in range(len(centers)):
+        position = centers[index]
+        basis, scale = axes[index]
+        layer = layers[index]
+
+        local = unit * scale
+        local *= (1.0 + 0.24 * value_noise(local / max(scale[1], 1e-3), 0.7, int(rng.integers(1e6))))[:, None]
+        world = local @ basis + position
+        free = np.linalg.norm(world - position, axis=1)
+
+        # Nachbarn: An jeder Mittelebene wird abgeschnitten – dort liegen die Zellen aneinander
+        distances = np.linalg.norm(centers - position, axis=1)
+        neighbours = np.where((distances > 1e-6) & (distances < 26.0))[0]
+        for other in neighbours:
+            delta = centers[other] - position
+            gap = np.linalg.norm(delta)
+            normal = delta / gap
+            # Radiusgewichtete Mittelebene: Die größere Zelle drückt die kleinere stärker
+            plane = gap * radii[index] / max(radii[index] + radii[other], 1e-6)
+            # Ein schmaler Spalt bleibt: Zellmembranen liegen an, verschmelzen aber nicht
+            plane -= 0.35
+            projection = (world - position) @ normal
+            # Weicher Schnitt statt harter Kante: Eine Zellmembran knickt nicht, sie wölbt sich.
+            # Der Übergang von der freien Rundung in die Berührungsfläche bekommt deshalb einen
+            # Radius von etwa einem Mikrometer (Softplus statt Maximum) – sonst sehen die Zellen
+            # aus wie geschliffene Steine.
+            fillet = 0.9
+            smoothed = plane - fillet * np.log1p(np.exp(np.clip((plane - projection) / fillet, -30.0, 30.0)))
+            moved = smoothed < projection - 1e-6
+            if np.any(moved):
+                world[moved] -= normal[None, :] * (projection[moved] - smoothed[moved])[:, None]
+                clipped_total += int(np.count_nonzero(projection > plane))
+
+        # Berührungstiefe: Wie weit ist dieser Punkt gegenüber der freien Form eingedrückt?
+        pressed = np.linalg.norm(world - position, axis=1)
+        contact = np.clip(pressed / np.maximum(free, 1e-6), 0.0, 1.0)
 
         mesh_temp = bpy.data.meshes.new("tmp")
+        temp = bmesh.new()
+        added = [temp.verts.new(Vector(point * UM)) for point in world]
         temp.verts.ensure_lookup_table()
-        for vert, point in zip(temp.verts, world):
-            vert.co = Vector(point * UM)
+        for face in template_faces:
+            temp.faces.new([added[i] for i in face])
+        bmesh.ops.recalc_face_normals(temp, faces=temp.faces)
         temp.to_mesh(mesh_temp)
         temp.free()
-        cell_tint = float(rng.uniform(0.15, 1.0))
-        tints.extend([cell_tint] * len(mesh_temp.vertices))
+
+        tints.extend([tints_per_cell[index]] * len(mesh_temp.vertices))
+        contacts.extend(contact.tolist())
         cells.from_mesh(mesh_temp)
         bpy.data.meshes.remove(mesh_temp)
 
         # Fortsatz der innersten Lage zur Zona: dünner Kegel
         if layer == 0 and rng.random() < 0.75:
+            direction = position / np.linalg.norm(position)
+            y_axis, z_axis = basis[1], basis[2]
             process = bmesh.new()
             tip = direction * (ZONA_INNER + ZONA_THICKNESS * 0.35)
-            base = position - direction * long_axis * 0.4
+            base = position - direction * scale[0] * 0.8
             axis = tip - base
             height = np.linalg.norm(axis)
             axis_dir = axis / max(height, 1e-6)
@@ -235,10 +303,10 @@ def build_corona():
             mesh_process = bpy.data.meshes.new("tmp_process")
             process.to_mesh(mesh_process)
             process.free()
-            tints.extend([cell_tint] * len(mesh_process.vertices))
+            tints.extend([tints_per_cell[index]] * len(mesh_process.vertices))
+            contacts.extend([1.0] * len(mesh_process.vertices))
             cells.from_mesh(mesh_process)
             bpy.data.meshes.remove(mesh_process)
-        count += 1
 
     mesh = bpy.data.meshes.new("SM_GEN_OocyteCorona")
     cells.to_mesh(mesh)
@@ -249,8 +317,13 @@ def build_corona():
     bpy.context.scene.collection.objects.link(obj)
     co = read_vertices(obj)
     add_uv_and_attribute(obj, np.clip((np.linalg.norm(co, axis=1) - ZONA_INNER - ZONA_THICKNESS) / 60.0, 0.0, 1.0),
-                         tint=np.array(tints))
-    print("GENESIS: Corona-Zellen", count, "Farbwerte", len(tints), "Vertices", len(co))
+                         tint=np.array(tints), contact=np.array(contacts))
+    contact_array = np.array(contacts)
+    pressed_share = 100.0 * float(np.mean(contact_array < 0.90))
+    print("GENESIS: Corona-Zellen", len(centers), "Vertices", len(co),
+          "| deutlich gedrueckte Punkte", round(pressed_share, 1), "%",
+          "| Beruehrungstiefe P10", round(float(np.percentile(contact_array, 10)), 3),
+          "Median", round(float(np.percentile(contact_array, 50)), 3))
     return obj
 
 

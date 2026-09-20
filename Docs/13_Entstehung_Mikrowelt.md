@@ -330,3 +330,40 @@ Kosten: 130 FPS statt 138 (Frame 7,66 ms, GPU 5,38 ms) – das Streulicht wirft 
 
 Offen: Die Coronazellen sehen aus der Nähe weiterhin wie weiche Klumpen aus – Form und Oberfläche der
 Zellen sind ein eigener Block; die Belichtung macht das jetzt nur besser sichtbar.
+
+## GENESIS-027 – Die Coronazellen: gepacktes Gewebe statt Popcorn
+
+Mit der richtigen Belichtung wurde sichtbar, was vorher im Weiß unterging: Die Zellen der Corona sahen
+aus wie lose Kugeln, die aneinandergelegt wurden. Lebendes Gewebe sieht anders aus – **Zellen drücken
+sich gegenseitig platt.** Wo zwei aneinander liegen, entsteht eine ebene Berührungsfläche, wie in einem
+Schaum. Erst das macht aus einem Haufen Kugeln ein Gewebe.
+
+**Im Aufbau:** Jede Zelle wird an der Mittelebene zu jedem Nachbarn abgeschnitten, radiusgewichtet
+(die größere Zelle drückt die kleinere stärker). Der Schnitt ist weich: Eine Zellmembran knickt nicht,
+sie wölbt sich – der Übergang bekommt einen Radius von etwa einem Mikrometer. Ohne diesen Radius sehen
+die Zellen aus wie geschliffene Steine.
+
+Dazu 2 600 statt 2 100 Zellen, enger gepackt (Mindestabstand 5,4 statt 6,2 µm) und mit größerer
+Streuung: 7,5–15,5 µm lange Achse, Querachsen 62–92 % davon. Im Gewebe ist keine Zelle wie die nächste.
+
+**Gemessen im Aufbau:** Berührungstiefe P10 = 0,709, Median = 0,912; 46,1 % der Punkte sind deutlich
+gedrückt (unter 0,90). 849 275 Flächen.
+
+**Im Material** trägt die Vertexfarbe diese Berührungstiefe (Kanal B). Wo Zellen aneinander liegen,
+kommt kein Licht hin: Grundfarbe auf ein Viertel, Durchleuchtung auf ein Achtel. Ohne diese dunklen
+Fugen verschmelzen die Zellen im Endoskoplicht zu einer hellen Masse. Dazu schwankt die Rauheit mit dem
+Zellkorn (0,34–0,56) – die Mikrovilli einer lebenden Zelle sind viel zu klein, um sichtbar zu sein,
+aber sie streuen das Licht.
+
+Der Tonumfang zwischen den Zellen wurde zurückgenommen (dunkelster Ton 0,018 → 0,055): Vorher wirkten
+einzelne Zellen fast schwarz, was nach Schatten aussah statt nach Zelle.
+
+![Coronazellen in der Nahaufnahme](Media/GENESIS-027_CoronaSharp.png)
+
+![Der Komplex aus 260 µm](Media/GENESIS-027_Corona.png)
+
+Kosten: unverändert (Frame 7,76 ms, GPU 4,78 ms) – die Corona ist ein Nanite-Mesh.
+
+Offen: Die Oberfläche ist noch glatt; echte Mikrovilli-Zotteligkeit bräuchte eine Verdrängung im
+Material. Und der Komplex hat keine sichtbare Matrix zwischen den Zellen – die Gallerte ist bisher nur
+eine Hülle um das Ganze.

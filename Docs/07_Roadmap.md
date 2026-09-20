@@ -38,6 +38,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-024 | Befruchtung: Feinschliff | Makro-Schärfentiefe, dichter Cumulus, Zellton je Zelle, Kameraführung der Befruchtung | DONE |
 | GENESIS-025 | Schwarm: Richtung und Dichte | Strömung im ganzen Lumen, weniger Taumeln, Vortrieb hyperaktivierter Zellen, Lockwirkung für alle, 6 000 Zellen als Pulk | DONE (LODs offen) |
 | GENESIS-026 | Mikrowelt: Licht und Belichtung | Geregeltes Endoskoplicht in zwei Bereichen, Streulicht der Umgebung, keine ausgebrannten Flächen mehr | DONE (Form der Coronazellen offen) |
+| GENESIS-027 | Coronazellen | Zellen drücken sich gegenseitig platt (Potenz-Voronoi mit weichem Schnitt), dunkle Fugen, Mikrovilli-Rauheit | DONE (Matrix zwischen den Zellen offen) |
 
 ## Protokoll
 
@@ -279,3 +280,14 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Corona ohne Überstrahlung](Media/GENESIS-026_Corona.png)
+
+### GENESIS-027 – Die Coronazellen
+- 2026-09-20: Mit der neuen Belichtung wurde sichtbar, was vorher im Weiß unterging: Die Zellen sahen aus wie lose aneinandergelegte Kugeln. Lebendes Gewebe besteht aus Zellen, die sich gegenseitig platt drücken.
+- 2026-09-20: **Aufbau in Blender:** Jede Zelle wird an der Mittelebene zu jedem Nachbarn abgeschnitten, radiusgewichtet (Potenz-Voronoi). Der Schnitt ist weich – eine Zellmembran knickt nicht, sie wölbt sich; der Übergang bekommt einen Radius von etwa einem Mikrometer. Ohne ihn sehen die Zellen aus wie geschliffene Steine. Dazu 2 600 statt 2 100 Zellen, enger gepackt (5,4 statt 6,2 µm Mindestabstand) und mit größerer Größenstreuung (7,5–15,5 µm).
+- 2026-09-20: **Gemessen im Aufbau:** Berührungstiefe P10 0,709, Median 0,912; 46,1 % der Punkte deutlich gedrückt (unter 0,90); 849 275 Flächen.
+- 2026-09-20: **Im Material:** Die Berührungstiefe steht in der Vertexfarbe (Kanal B) und verdunkelt die Fugen – Grundfarbe auf ein Viertel, Durchleuchtung auf ein Achtel. Ohne diese Fugen verschmelzen die Zellen im Endoskoplicht zu einer hellen Masse. Die Rauheit schwankt mit dem Zellkorn (0,34–0,56, Mikrovilli), und der Tonumfang zwischen den Zellen wurde zurückgenommen (dunkelster Ton 0,018 → 0,055), weil einzelne Zellen vorher wie Schatten wirkten.
+- 2026-09-20: Kosten unverändert (Frame 7,76 ms, GPU 4,78 ms); die Corona ist ein Nanite-Mesh. 105 von 105 Tests bestanden.
+- Offen: Die Oberfläche ist noch glatt (echte Mikrovilli bräuchten eine Verdrängung im Material), und zwischen den Zellen fehlt sichtbare Matrix – die Gallerte ist bisher nur eine Hülle um das Ganze.
+- **Status: DONE.**
+
+![Coronazellen in der Nahaufnahme](Media/GENESIS-027_CoronaSharp.png)
