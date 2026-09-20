@@ -50,3 +50,6 @@ __pycache__/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Aus Skripten reproduzierbare Zwischendateien (FBX, Look-Dev-Renders, .blend-Zwischenstaende)
+ArtSource/Generated/

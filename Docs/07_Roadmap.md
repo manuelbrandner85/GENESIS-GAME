@@ -21,19 +21,20 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-007 | Body Simulation | Organsysteme, Hormone, Stress, Schlaf, Symptome, Alterung | DONE |
 | GENESIS-008 | Audio Core | Hörwahrnehmung aus dem Körper (Mutterleib, Geburtssprung, Alter, Tunnel, Tinnitus), Körperklang-Parameter, Mix-Engine mit Prioritäten und weichem Ducking | DONE |
 | GENESIS-009 | Soul Music | Seelenmotiv, Phasen-Instrumentierung, Charaktermotive, Vererbung, Erinnerungsfragmente, Lebens-Soundtrack, Todeskomposition | DONE |
-| GENESIS-010 | Music Director | Musikschichten, Emotion → musikalische Parameter, Stille, subjektive Zeit, Quartz | OFFEN |
-| GENESIS-011 | MetaSounds-Basis | Submixes/Sound Classes, prozedurale MetaSounds (Herz, Atem, Mutterleib, Motiv), Wiedergabe, Aufnahme-Prüfung | OFFEN |
-| GENESIS-012 | Voice System | VoiceProfile, Stimmalterung, Gesundheit, Babylaute → Sprache | OFFEN |
-| GENESIS-013 | Dialogue System | Dialog-Datenbank, Lokalisierung DE/EN/IT, Weltwahrheit, Gerüchte, Untertitel | OFFEN |
-| GENESIS-014 | Vertical-Slice-Audio | Entstehung, Embryo, Geburt, erste Minuten | OFFEN |
-| GENESIS-015 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
-| GENESIS-016 | Relationships & NPC Memory | Beziehungsdimensionen, NPC-Erinnerungssätze | OFFEN |
-| GENESIS-017 | Sperm Environment | Blender-Assets, Niagara-Schwarm, Flüssigkeit, Strömung | OFFEN |
-| GENESIS-018 | Fertilization | Befruchtung, Genom-Erzeugung, Übergang | OFFEN |
-| GENESIS-019 | Embryo | Zellteilung, Organe, Minispiele | OFFEN |
-| GENESIS-020 | Birth | Geburts-Cinematic, First-Person-Sequenz | OFFEN |
-| GENESIS-021 | Early Childhood | Unscharfe Wahrnehmung, erste Minuten | OFFEN |
-| GENESIS-022 | Vertical Slice Polish | Performance, Übergänge | OFFEN |
+| GENESIS-010 | Entstehung: Mikrowelt | Eileiter-Ampulle (Blender, Nanite), Spermienzelle, Schwimmmodell (CASA, Rheotaxis, Wandbindung), Schwarm, Schwebeteilchen, Mikroskop-Kamera mit Endoskoplicht | DONE |
+| GENESIS-011 | Music Director | Musikschichten, Emotion → musikalische Parameter, Stille, subjektive Zeit, Quartz | OFFEN |
+| GENESIS-012 | MetaSounds-Basis | Submixes/Sound Classes, prozedurale MetaSounds (Herz, Atem, Mutterleib, Motiv), Wiedergabe, Aufnahme-Prüfung | OFFEN |
+| GENESIS-013 | Voice System | VoiceProfile, Stimmalterung, Gesundheit, Babylaute → Sprache | OFFEN |
+| GENESIS-014 | Dialogue System | Dialog-Datenbank, Lokalisierung DE/EN/IT, Weltwahrheit, Gerüchte, Untertitel | OFFEN |
+| GENESIS-015 | Vertical-Slice-Audio | Entstehung, Embryo, Geburt, erste Minuten | OFFEN |
+| GENESIS-016 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
+| GENESIS-017 | Relationships & NPC Memory | Beziehungsdimensionen, NPC-Erinnerungssätze | OFFEN |
+| GENESIS-018 | Entstehung: Feinschliff | Flimmerhärchen, Schleimfilm, Epithel-Zellmosaik, sichtbare Schwebeteilchen | OFFEN |
+| GENESIS-019 | Fertilization | Befruchtung, Eizelle, Corona radiata, Genom-Erzeugung, Übergang | OFFEN |
+| GENESIS-020 | Embryo | Zellteilung, Organe, Minispiele | OFFEN |
+| GENESIS-021 | Birth | Geburts-Cinematic, First-Person-Sequenz | OFFEN |
+| GENESIS-022 | Early Childhood | Unscharfe Wahrnehmung, erste Minuten | OFFEN |
+| GENESIS-023 | Vertical Slice Polish | Performance, Übergänge | OFFEN |
 
 ## Protokoll
 
@@ -126,3 +127,16 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-17: Soul Theme (eigene Komposition, 60 BPM, D-Moll → D-Dur) mit Unreal-Harmonix-Instrumenten; Stimmen über kie.ai (Gemini 3.1 Flash TTS, 2 Takes je Zeile; ElevenLabs über kie.ai war gestört); prozedurales Sound Design; Mix mit gemessener absoluter Stille bei 27,5 und 88–90 s.
 - 2026-09-17: **Animatic v1** (Blender-VSE, 1080p, 120 s, mit Ton) und **Unreal-Sequencer**: `L_Trailer_Stage`, `LS_GENESIS_REVEAL_TRAILER` (24 fps, 2880 Frames), 12 Sub-Sequences, 65 CineCameras mit Brennweite und Bewegungs-Blocking, 3 Audio-Tracks, Fade-Track, 65 Marker. Zurückgelesen und geprüft; nur API-Veraltet-Warnungen.
 - **Status: ANIMATIC.** Noch kein finales Bildmaterial, keine MetaHumans, Stimmen und Sound als PLACEHOLDER.
+
+### GENESIS-010 – Entstehung: Mikrowelt
+- 2026-09-20: Auf Wunsch des Game Directors vorgezogen (vorher GENESIS-017), damit endlich etwas Sichtbares entsteht. Audio-Blöcke rücken nach hinten.
+- 2026-09-20: Maßstab festgelegt: **1 µm = 1 Unreal-Einheit**. Begründung und Folgen (Licht, Schärfentiefe) in `13_Entstehung_Mikrowelt.md`.
+- 2026-09-20: Blender-Pipeline headless (kein MCP nötig): `build_sperm_cell.py` (Zelle nach WHO-Maßen, 21.600 Flächen, Farbattribut für Zonen) und `build_oviduct_wall.py` (Ampullen-Abschnitt 1.500 µm, 9 Primärfalten mit Sekundärfalten, Vereinigung über OpenVDB, nahtlos kachelbar, 2,7 Mio. Flächen, Nanite).
+- 2026-09-20: Plugin `GenesisConception`: Schwimmmodell (progressiv/hyperaktiviert/träge, Rotationsdiffusion, Rheotaxis, Wandbindung), `AGenesisSpermSwarm` (Instanzen, Geißelschlag im Material), `AGenesisFluidParticles`, `AGenesisMicroscopeCameraRig` (Endoskoplicht, Schärfenachführung). **Tests: 4/4 grün.**
+- 2026-09-20: **Gemessen:** progressiv VSL 42,5 µm/s, VCL 129 µm/s; hyperaktiviert VCL 255 µm/s, LIN 0,04; Wandansammlung 98 % vs. 23 % bei Gleichverteilung; Rheotaxis +471 µm in 30 s; 187 ns je Zellschritt.
+- 2026-09-20: Beim Sichtprüfen gefunden und behoben: (1) FBX-Import verwarf die Geißel als „entartet“ (Einheiten), (2) Kamera erzwang 3:2 mit schwarzen Balken, (3) Belichtung und Lichtstärke passten nicht zusammen (gemessen statt geschätzt: −6,5 EV bei 3.000 cd), (4) Cordsamt-Rippen aus Loft und Voxelraster, (5) offene Schnittflächen zwischen den Wandabschnitten, (6) zu starke Flüssigkeitsstreuung (graue Suppe), (7) Facetten durch zu harte Reduktion.
+- 2026-09-20: **Sichtprüfung im Spiel:** `Docs/Media/GENESIS-010_OviductScene.png` – Gewebetunnel mit Falten, zwei Spermien mit sichtbarer Geißelwelle, indirektes Licht in den Falten, Belichtung gemessen (Median 0,29, nichts ausgebrannt).
+- Offen (siehe GENESIS-018): Flimmerhärchen, Schleimfilm-Glanz, feines Epithel-Zellmosaik, sichtbare Schwebeteilchen.
+- **Status: DONE** (Umfang: erste sichtbare Szene mit Simulation; Feinschliff bewusst als eigener Block).
+
+![Eileiter-Szene](Media/GENESIS-010_OviductScene.png)

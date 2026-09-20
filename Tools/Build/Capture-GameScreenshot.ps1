@@ -9,6 +9,8 @@ param(
     [int]$TimeoutSeconds = 180,
     # >0: Screenshot erst nach dieser Spielzeit (Einschwingen von Übergängen), via genesis.Debug.After
     [float]$ShotDelaySeconds = 0,
+    # Optional: Map statt der Standard-Map (z. B. /Game/Genesis/Conception/Maps/L_GEN_OviductAmpulla)
+    [string]$Map = "",
     [string]$EngineRoot = "C:\Program Files\Epic Games\UE_5.8"
 )
 
@@ -23,7 +25,7 @@ New-Item -ItemType Directory -Force -Path (Split-Path $OutputPath) | Out-Null
 # "shot showui" als letzter Befehl: Die Engine speichert das nächste Bild inklusive HUD
 $Commands = if ($ShotDelaySeconds -gt 0) { "$ExecCmds,genesis.Debug.After $ShotDelaySeconds shot showui" } else { "$ExecCmds,shot showui" }
 $Started = Get-Date
-$Arguments = @("`"$Project`"", "-game", "-windowed", "-ResX=1600", "-ResY=900", "-nosplash", "-ExecCmds=`"$Commands`"")
+$Arguments = @("`"$Project`"") + $(if ($Map) { @($Map) } else { @() }) + @("-game", "-windowed", "-ResX=1600", "-ResY=900", "-nosplash", "-ExecCmds=`"$Commands`"")
 $Process = Start-Process -FilePath $Editor -ArgumentList $Arguments -PassThru
 
 $Shot = $null
