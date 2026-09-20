@@ -1,0 +1,41 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Genesis Embryo",
+	"Description": "Erste Lebenswoche: Furchungsteilungen, Kompaktierung, Blastozyste, Schlüpfen aus der Zona und Einnistung – in echten Zeiten und mit echten Größen.",
+	"Category": "Genesis",
+	"CreatedBy": "GENESIS Team",
+	"CanContainContent": true,
+	"EnabledByDefault": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "GenesisEmbryo",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "GenesisCore",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisBody",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisGenetics",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisConception",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisSoulMusic",
+			"Enabled": true
+		}
+	]
+}

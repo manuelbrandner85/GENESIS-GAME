@@ -56,6 +56,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GenesisEmbryo",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [

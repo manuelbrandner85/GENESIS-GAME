@@ -31,7 +31,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-017 | Relationships & NPC Memory | Beziehungsdimensionen, NPC-Erinnerungssätze | OFFEN |
 | GENESIS-018 | Entstehung: Feinschliff | Flimmerhärchen mit metachronem Schlag, Akrosomkappe, Epithel-Zellmosaik, durchscheinendes Gewebe | DONE |
 | GENESIS-019 | Fertilization | Befruchtung, Eizelle, Corona radiata, Genom-Erzeugung, Übergang | DONE (Bildqualität der Corona offen) |
-| GENESIS-020 | Embryo | Zellteilung, Organe, Minispiele | OFFEN |
+| GENESIS-020 | Embryo | Furchung, Kompaktierung, Blastozyste, Schlüpfen, Einnistung, Übergabe an den Körper | DONE (Minispiele offen) |
 | GENESIS-021 | Birth | Geburts-Cinematic, First-Person-Sequenz | OFFEN |
 | GENESIS-022 | Early Childhood | Unscharfe Wahrnehmung, erste Minuten | OFFEN |
 | GENESIS-023 | Vertical Slice Polish | Performance, Übergänge | OFFEN |
@@ -164,3 +164,14 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Cumulus-Oozyten-Komplex](Media/GENESIS-024_Cumulus.png)
+
+### GENESIS-020 – Embryo: die erste Woche
+- 2026-09-20: Plugin `GenesisEmbryo`: Furchungsteilungen mit eigener Uhr je Zelle (nicht synchron), Kompaktierung ab 8 Zellen, Blastozyste mit Embryoblast und Trophoblast, Ausdehnung, Schlüpfen aus der Zona, Einnistung.
+- 2026-09-20: Der Keim wächst während der Furchung **nicht** – aus einer Zelle von 110 µm werden viele kleine im selben Raum (im Test geprüft: Volumenverhältnis 1,00).
+- 2026-09-20: **Übergabe an die Körpersimulation**: Die Entwicklungsqualität der ersten Woche prägt die Organanlagen; mit der Einnistung erklingt die Lebensphase „Embryo".
+- 2026-09-20: **Darstellung**: Zellen als Instanzen der Eizell-Kugel, Farbton je Zelle aus der Simulation; Trophoblastzellen liegen flach an der Hülle, damit das Deckgewebe dicht ist. Zellkranz, Polkörper und Zona verschwinden nacheinander.
+- 2026-09-20: **Gemessen:** 34 h → 2 Zellen, Tag 3 → 11 Zellen (Morula), Tag 5 → 66 Zellen (Schlüpfen, Embryoblast 22), Tag 10 → eingenistet. 38 % der fremden Keime bleiben stehen (biologisch etwa die Hälfte); der Keim des Spielers nie. 68 von 68 Tests bestanden.
+- Offen: Minispiele der Embryonalphase; Zelltrümmer werden gezählt, aber nicht dargestellt; Gebärmutterschleimhaut als Ort fehlt; Zellen wirken noch porzellanartig hell.
+- **Status: DONE** (Umfang: Simulation der ersten Woche und ihre Darstellung; Minispiele als eigener Block).
+
+![Blastozyste](Media/GENESIS-020_Blastocyst.png)

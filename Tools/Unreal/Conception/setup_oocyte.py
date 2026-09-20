@@ -331,14 +331,14 @@ def create_zona_material():
     cortical = scalar(material, -1500, 300, "CorticalReaction", 0.0)
 
     # Farbe: fast farblos, nach der Cortikalreaktion leicht bernsteinfarben und dichter
-    clear = color(material, -1200, -200, 0.15, 0.16, 0.175)
-    hardened = color(material, -1200, -60, 0.26, 0.20, 0.14)
+    clear = color(material, -1200, -200, 0.11, 0.12, 0.13)
+    hardened = color(material, -1200, -60, 0.20, 0.16, 0.11)
     base = lerp3(material, -950, -120, clear, hardened, cortical)
     mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
     # Durchsichtigkeit: dünne, klare Hülle; die Fasern zeichnen sie, die Verhärtung macht sie milchig
-    thin = constant(material, -1200, 200, 0.06)
-    dense = constant(material, -1200, 280, 0.34)
+    thin = constant(material, -1200, 200, 0.03)
+    dense = constant(material, -1200, 280, 0.075)
     opacity_level = lerp3(material, -950, 220, thin, dense, cortical)
     fibre_amount = multiply(material, -1200, 380, fibres, constant(material, -1400, 430, 0.12))
     rim = fresnel(material, -1200, 520, 2.2, 0.04)
@@ -351,7 +351,7 @@ def create_zona_material():
     roughness = lerp3(material, -950, 720, smooth, rough, cortical)
     mel.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
 
-    spec = constant(material, -700, 640, 0.035)
+    spec = constant(material, -700, 640, 0.02)
     mel.connect_material_property(spec, "", unreal.MaterialProperty.MP_SPECULAR)
 
     # Relativer Brechungsindex gegen die Eileiterflüssigkeit (1,38 / 1,335): kaum Versatz, aber sichtbarer Rand
