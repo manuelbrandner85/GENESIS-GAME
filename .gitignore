@@ -53,3 +53,6 @@ Desktop.ini
 
 # Aus Skripten reproduzierbare Zwischendateien (FBX, Look-Dev-Renders, .blend-Zwischenstaende)
 ArtSource/Generated/
+
+# Gebaute, spielbare Fassung (wird aus dem Projekt erzeugt)
+/Build/

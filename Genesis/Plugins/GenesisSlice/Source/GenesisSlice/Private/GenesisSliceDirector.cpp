@@ -11,6 +11,8 @@
 #include "GenesisBodySubsystem.h"
 #include "GenesisBodyTypes.h"
 #include "GenesisConceptionSubsystem.h"
+#include "GenesisSpermSwarm.h"
+#include "EngineUtils.h"
 #include "GenesisDebug.h"
 #include "GenesisEarlyLifeSubsystem.h"
 #include "GenesisEarlyLifeTypes.h"
@@ -180,6 +182,23 @@ FGenesisSliceSignals UGenesisSliceDirector::ReadSignals() const
 
 bool UGenesisSliceDirector::Tick(float DeltaSeconds)
 {
+	// Die spielbare Fassung startet von selbst: Sie wird mit -genesisplay aufgerufen und soll
+	// nichts weiter verlangen als einen Doppelklick. Im Editor und in den Messläufen bleibt der
+	// Schalter aus, sonst würde jede Aufnahme ihren eigenen Durchlauf anwerfen.
+	if (!bAutoStartChecked)
+	{
+		const UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+		if (World && World->HasBegunPlay())
+		{
+			bAutoStartChecked = true;
+			if (FParse::Param(FCommandLine::Get(), TEXT("genesisplay")) && State.Phase == EGenesisSlicePhase::Idle)
+			{
+				UE_LOG(LogGenesis, Display, TEXT("Durchlauf: startet von selbst (spielbare Fassung)."));
+				StartRun(0);
+			}
+		}
+	}
+
 	if (!State.IsRunning())
 	{
 		return true;
@@ -212,6 +231,18 @@ void UGenesisSliceDirector::DrivePhase(float DeltaSeconds)
 
 	switch (State.Phase)
 	{
+	case EGenesisSlicePhase::Conception:
+	{
+		// Der Schwarm läuft im Editor in Zeitlupe (Hochgeschwindigkeitsaufnahme). Für einen Durchlauf,
+		// den jemand spielt, gilt die echte Geschwindigkeit: Die Zellen schwimmen mit 30–55 µm/s,
+		// und die Befruchtung ist nach gut zwanzig Sekunden geschehen statt nach vier Minuten.
+		for (TActorIterator<AGenesisSpermSwarm> It(GameInstance->GetWorld()); It; ++It)
+		{
+			It->TimeScale = Tuning.ConceptionTimeScale;
+		}
+		break;
+	}
+
 	case EGenesisSlicePhase::Embryo:
 	{
 		// Die erste Woche dauert eine Woche. Sie ist sichtbar – Furchung, Morula, Blastozyste –,

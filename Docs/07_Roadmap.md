@@ -41,6 +41,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-027 | Coronazellen | Zellen drücken sich gegenseitig platt (Potenz-Voronoi mit weichem Schnitt), dunkle Fugen, Mikrovilli-Rauheit | DONE (Matrix zwischen den Zellen offen) |
 | GENESIS-028 | Matrix des Cumulus | Expandierter Komplex (innen dicht, außen locker), 2 687 Hyaluronsäure-Fäden zwischen den Zellen | DONE (Verformung der Fäden offen) |
 | GENESIS-029 | Die erste Entscheidung | Rufen, suchen, hinsehen – die drei Werkzeuge eines Neugeborenen, mit Kosten und Wirkung; Steuerung, Anzeige, Game Mode | DONE (Tastendruck von Hand zu bestätigen) |
+| GENESIS-030 | Schwimmbewegung gegen die Literatur | Aliasing durch Echtzeit behoben, zwei falsche Modellwerte korrigiert, CASA-Messung auf 60 Hz und Ebenenprojektion umgestellt; alle Kenngrößen in der Streubreite der Referenz | DONE (Sichtbestätigung der Bewegung offen) |
 
 ## Protokoll
 
@@ -315,3 +316,15 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Die erste Entscheidung](Media/GENESIS-029_Prompt.png)
+
+### GENESIS-030 – Die Spermien springen nicht mehr
+- 2026-09-21: Meldung des Game Directors: „die spermien springen unrealistisch rum und haben keine natürliche bewegung". Ursache war **mein eigener Eingriff**: Für die spielbare Fassung hatte ich die Mikrowelt auf Echtzeit gestellt (`ConceptionTimeScale` 0,3 → 1,0). Eine Geißel schlägt mit 16–24 Hz; bei 60 Bildern je Sekunde bleiben davon knapp drei Bilder je Zyklus – das ist Aliasing, kein Schwimmen. Die Mikrowelt läuft wieder in Zeitlupe (0,3), die Kohorte startet dafür bei 320 µm statt 700 µm, damit die Befruchtung trotzdem zügig kommt.
+- 2026-09-21: **Zwei Modellwerte waren falsch herum gedacht.** Die Wellenlänge hyperaktivierter Zellen stand auf 45 µm, gemessen ist sie mit 17 µm **kürzer** als bei progressiven (Hyperaktivierung = größere Amplitude bei kürzerer Welle). Das Rollen um die Längsachse stand auf ≈0,3 Hz, gemessen sind 4–8 Hz (Mittel 6,0 ± 2,1) – ohne dieses Rollen gibt es keine Rheotaxis.
+- 2026-09-21: **Wir haben etwas anderes gemessen als die Literatur.** Der Test maß die Kopfbahn mit 240 Hz im Raum; ein CASA-Gerät misst mit 60 Hz in der Ebene. Beides zusammen blähte unsere VCL um rund die Hälfte auf. Der Test tastet jetzt mit 60 Hz ab und projiziert die Bahn in die Ebene, die das Mikroskop sieht.
+- 2026-09-21: **Gemessen:** progressiv VSL 43,2 µm/s (Referenz 46,1 ± 9,7), VCL 92,4 µm/s (82,5 ± 15,7), LIN 0,47, 20,4 Hz (23,6 ± 5,0). Hyperaktiviert VCL 156,6 µm/s, LIN 0,15, ALH 7,5–11,5 µm, 11,7 Hz. Alle drei Mortimer-Kriterien sind damit zugleich erfüllt – vorher keines vollständig. Die Testschranken sind jetzt die Streubreite der Veröffentlichung, nicht ein bequemer weiter Bereich. 106 von 106 Tests bestanden.
+- 2026-09-21: **Nebenbefund behoben:** Im Bild stand eine rote Engine-Warnung („RAY TRACING GEOMETRY – ALWAYS RESIDENT MEMORY EXCEEDS 20% OF THE BUDGET"). Der Speichervorrat für Strahlengeometrie steht jetzt auf 768 MiB statt 400 MiB. Die Warnung selbst bleibt aktiv.
+- 2026-09-21: **Spielbare Fassung** (aus dem vorhergehenden Auftrag, hier mit eingecheckt): `Tools\Build\Package-Game.ps1` baut eine Windows-Fassung nach `Build\Windows\Genesis.exe` (Development, damit Konsole und Developer-HUD zum Melden von Fehlern erhalten bleiben; erster Lauf 4,4 min, danach 0,8 min dank iterativem Cook). `GENESIS spielen.bat` startet sie. `/Build/` bleibt aus der Versionsverwaltung heraus.
+- Offen: Ein Standbild kann Bewegung nicht belegen – dass es *aussieht* wie Schwimmen, muss einmal von Hand bestätigt werden. Sehr nahe Zellen (< 60 µm) brennen in der Belichtungsautomatik aus; das gehört in den Fotorealismus-Block.
+- **Status: DONE.**
+
+![Der Schwarm vor dem Cumulus](Media/GENESIS-030_Schwarm.png)

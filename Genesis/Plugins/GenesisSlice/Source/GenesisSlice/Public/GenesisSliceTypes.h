@@ -125,6 +125,18 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	/** Echtzeit zwischen zwei Sprüngen (s) – so bleibt die Schwangerschaft ein Verlauf und kein Schnitt. */
 	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0", ClampMax = "5")) float GestationStepSeconds = 0.35f;
 
+	/**
+	 * Simulationssekunden je Sekunde im Eileiter.
+	 *
+	 * **Zeitlupe ist hier keine Stilfrage, sondern Physik.** Eine Spermienzelle schlägt mit 16–24 Hz
+	 * und rollt mit 4–8 Hz. Bei 60 Bildern je Sekunde bleiben davon in Echtzeit drei Bilder je
+	 * Schlagzyklus – die Zelle zuckt, statt zu schwimmen (genau das war zu sehen, als diese Szene
+	 * versuchsweise in Echtzeit lief). Jede echte Aufnahme von Spermien ist deshalb eine
+	 * Hochgeschwindigkeitsaufnahme, verlangsamt abgespielt. Bei 0,3 liegt der sichtbare Schlag bei
+	 * 5–7 Hz, also bei zehn Bildern je Zyklus.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Slice") float ConceptionTimeScale = 0.3f;
+
 	/** Simulationsminuten je Sekunde in der Geburt. */
 	UPROPERTY(EditAnywhere, Category = "Slice") float BirthTimeScale = 90.0f;
 

@@ -18,22 +18,65 @@ namespace GenesisSpermSwimTests
 		double BeatHz = 0.0;
 	};
 
-	/** Misst CASA-Kenngrößen über eine Messdauer (Kopfbahn mit 240 Hz abgetastet, wie Hochgeschwindigkeits-CASA). */
+	/**
+	 * Misst CASA-Kenngrößen über eine Messdauer.
+	 *
+	 * Die Kopfbahn wird mit **60 Hz** abgetastet, so wie ein CASA-Gerät misst. Das ist keine
+	 * Kleinigkeit: Die Bahngeschwindigkeit VCL ist die Summe der Abstände zwischen den Abtastpunkten
+	 * und wächst mit der Abtastrate. Mit 240 Hz gemessen kam bei derselben Zelle eine um die Hälfte
+	 * höhere VCL heraus – ein Wert, der mit keiner Veröffentlichung vergleichbar wäre.
+	 */
 	FKinematics Measure(FGenesisSpermCell Cell, const FGenesisOviductChannel& Channel, const FGenesisSpermSwimTuning& Tuning, float Seconds)
 	{
-		const FVector StartHead = GenesisSpermSwimLogic::ComputeHeadPosition(Cell);
-		FVector PreviousHead = StartHead;
-		double PathLength = 0.0;
+		constexpr float SampleHz = 60.0f;
+		TArray<FVector> Samples;
+		Samples.Add(GenesisSpermSwimLogic::ComputeHeadPosition(Cell));
 		const int32 Steps = FMath::RoundToInt(Seconds / Tuning.FixedStepSeconds);
+		const int32 StepsPerSample = FMath::Max(1, FMath::RoundToInt(1.0f / (SampleHz * Tuning.FixedStepSeconds)));
 		for (int32 Step = 0; Step < Steps; ++Step)
 		{
 			GenesisSpermSwimLogic::Step(Cell, Channel, Tuning, Tuning.FixedStepSeconds);
-			const FVector Head = GenesisSpermSwimLogic::ComputeHeadPosition(Cell);
-			PathLength += FVector::Dist(Head, PreviousHead);
-			PreviousHead = Head;
+			if ((Step + 1) % StepsPerSample == 0)
+			{
+				Samples.Add(GenesisSpermSwimLogic::ComputeHeadPosition(Cell));
+			}
 		}
+
+		// Ein CASA-Gerät schaut durch ein Mikroskop auf eine flache Kammer: Es sieht eine **Ebene**,
+		// nicht die Schraubenbahn im Raum. Die Zelle rollt beim Schwimmen um ihre Längsachse, ihr Kopf
+		// beschreibt also eine Schraube – und deren Länge im Raum ist größer als der Schatten, den das
+		// Mikroskop misst. Wer die eine Zahl mit der anderen vergleicht, vergleicht zwei Dinge.
+		// Deshalb wird hier dieselbe Ebene gebildet, die das Mikroskop sieht: die Schwimmrichtung und
+		// die Richtung der stärksten seitlichen Auslenkung (Hauptachse, per Potenzmethode).
+		const FVector Net = Samples.Last() - Samples[0];
+		const FVector Forward = Net.IsNearlyZero() ? FVector::ForwardVector : Net.GetSafeNormal();
+		FVector Sideways = FMath::Abs(Forward.Z) < 0.9 ? FVector::UpVector : FVector::RightVector;
+		Sideways = (Sideways - Forward * (Sideways | Forward)).GetSafeNormal();
+		for (int32 Iteration = 0; Iteration < 8; ++Iteration)
+		{
+			FVector Accumulated = FVector::ZeroVector;
+			for (const FVector& Sample : Samples)
+			{
+				FVector Offset = Sample - Samples[0];
+				Offset -= Forward * (Offset | Forward);
+				Accumulated += Offset * (Offset | Sideways);
+			}
+			if (!Accumulated.IsNearlyZero())
+			{
+				Sideways = Accumulated.GetSafeNormal();
+			}
+		}
+		Sideways = (Sideways - Forward * (Sideways | Forward)).GetSafeNormal();
+
+		double PathLength = 0.0;
+		for (int32 Index = 1; Index < Samples.Num(); ++Index)
+		{
+			const FVector Delta = Samples[Index] - Samples[Index - 1];
+			PathLength += FMath::Sqrt(FMath::Square(Delta | Forward) + FMath::Square(Delta | Sideways));
+		}
+
 		FKinematics Result;
-		Result.StraightLineVelocity = FVector::Dist(PreviousHead, StartHead) / Seconds;
+		Result.StraightLineVelocity = Net.Size() / Seconds;
 		Result.CurvilinearVelocity = PathLength / Seconds;
 		Result.Linearity = Result.CurvilinearVelocity > 0.0 ? Result.StraightLineVelocity / Result.CurvilinearVelocity : 0.0;
 		Result.BeatHz = Cell.BeatFrequencyHz;
@@ -97,12 +140,17 @@ bool FGenesisSpermKinematicsTest::RunTest(const FString& Parameters)
 	AddInfo(FString::Printf(TEXT("Hyperaktiviert: VSL %.1f µm/s, VCL %.1f µm/s, LIN %.2f, %.1f Hz"), Hyper.StraightLineVelocity, Hyper.CurvilinearVelocity, Hyper.Linearity, Hyper.BeatHz));
 
 	// WHO: schnell progressiv VSL ≥ 25 µm/s; CASA-Hyperaktivierung: VCL ≥ 150 µm/s, LIN < 0,5
+	// Referenz (CASA, 66 Patienten): VSL 46,1 ± 9,7 µm/s, VCL 82,5 ± 15,7 µm/s, ALH 4,0 µm, BCF 23,6 ± 5,0 Hz
 	TestTrue(TEXT("Progressiv schnell (VSL 25–60 µm/s)"), Progressive.StraightLineVelocity >= 25.0 && Progressive.StraightLineVelocity <= 60.0);
 	TestTrue(TEXT("Kurvengeschwindigkeit über der Geradeaus-Geschwindigkeit"), Progressive.CurvilinearVelocity > Progressive.StraightLineVelocity);
-	TestTrue(TEXT("Progressive VCL plausibel (60–250 µm/s)"), Progressive.CurvilinearVelocity >= 60.0 && Progressive.CurvilinearVelocity <= 250.0);
-	TestTrue(TEXT("Schlagfrequenz progressiv 12–18 Hz"), Progressive.BeatHz >= 12.0 && Progressive.BeatHz <= 18.0);
+	// Die Streubreite der Veröffentlichung ist die Schranke, nicht ein bequemer weiter Bereich:
+	// Wenn unsere Zelle aus 82,5 ± 15,7 µm/s herausfällt, schwimmt sie nicht mehr wie eine echte.
+	TestTrue(TEXT("Progressive VCL in der Streubreite der Referenz (66,8–98,2 µm/s)"), Progressive.CurvilinearVelocity >= 66.8 && Progressive.CurvilinearVelocity <= 98.2);
+	TestTrue(TEXT("Schlagfrequenz progressiv 18,6–28,6 Hz"), Progressive.BeatHz >= 18.6 && Progressive.BeatHz <= 28.6);
+	// Mortimer-Kriterien der Hyperaktivierung: alle drei müssen zugleich erfüllt sein
 	TestTrue(TEXT("Hyperaktiviert: VCL ≥ 150 µm/s"), Hyper.CurvilinearVelocity >= 150.0);
 	TestTrue(TEXT("Hyperaktiviert: LIN < 0,5"), Hyper.Linearity < 0.5);
+	TestTrue(TEXT("Hyperaktiviert: Schlagfrequenz 9–15 Hz"), Hyper.BeatHz >= 9.0 && Hyper.BeatHz <= 15.0);
 	TestTrue(TEXT("Hyperaktiviert: weniger Vortrieb"), Hyper.StraightLineVelocity < Progressive.StraightLineVelocity);
 	TestTrue(TEXT("Hyperaktiviert: langsamerer Schlag"), Hyper.BeatHz < Progressive.BeatHz);
 

@@ -71,6 +71,8 @@ private:
 	float GestationStepTimer = 0.0f;
 	bool bDebugPageRegistered = false;
 	bool bTravelPending = false;
+	/** Ob schon geprüft wurde, ob dieser Start ein Spielstart ist. */
+	bool bAutoStartChecked = false;
 	/** Ob die Versorgung nach der Geburt schon geschehen ist. */
 	bool bCareGiven = false;
 };

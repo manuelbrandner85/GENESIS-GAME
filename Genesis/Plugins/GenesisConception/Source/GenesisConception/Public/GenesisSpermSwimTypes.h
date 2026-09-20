@@ -132,9 +132,11 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, Category = "Progressive") FFloatInterval ProgressiveSpeedUm = FFloatInterval(30.0f, 55.0f);
-	UPROPERTY(EditAnywhere, Category = "Progressive") FFloatInterval ProgressiveBeatHz = FFloatInterval(12.0f, 18.0f);
+	/** Schlagfrequenz (Hz). Gemessen liegt die Grundfrequenz bei 19–20 Hz, die Kopf-Kreuzfrequenz bei 23,6 ± 5,0. */
+	UPROPERTY(EditAnywhere, Category = "Progressive") FFloatInterval ProgressiveBeatHz = FFloatInterval(16.0f, 24.0f);
 	UPROPERTY(EditAnywhere, Category = "Progressive") FFloatInterval ProgressiveHeadAmplitudeUm = FFloatInterval(2.5f, 5.0f);
-	UPROPERTY(EditAnywhere, Category = "Progressive") float ProgressiveWavelengthUm = 30.0f;
+	/** Bogenwellenlänge der Geißelwelle (µm). Gemessener Median: 31 µm. */
+	UPROPERTY(EditAnywhere, Category = "Progressive") float ProgressiveWavelengthUm = 31.0f;
 	/**
 	 * Rotationsdiffusion (rad²/s). Eine progressive Zelle hält ihren Kurs über Sekunden –
 	 * gemessen liegt die Richtungsstreuung bei wenigen Hundertstel rad² je Sekunde. Mit einem zu
@@ -148,9 +150,21 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	 * Gewimmel, und genau das war er auch.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Hyperactivated") FFloatInterval HyperSpeedUm = FFloatInterval(20.0f, 35.0f);
-	UPROPERTY(EditAnywhere, Category = "Hyperactivated") FFloatInterval HyperBeatHz = FFloatInterval(7.0f, 10.0f);
-	UPROPERTY(EditAnywhere, Category = "Hyperactivated") FFloatInterval HyperHeadAmplitudeUm = FFloatInterval(9.0f, 14.0f);
-	UPROPERTY(EditAnywhere, Category = "Hyperactivated") float HyperWavelengthUm = 45.0f;
+	/**
+	 * Schlagfrequenz hyperaktivierter Zellen. Sie schlagen **langsamer** als progressive, dafür weiter
+	 * ausholend: gemessener Median 10 Hz gegen 19 Hz bei aktivierter Beweglichkeit, in frei
+	 * schwimmenden Zellen im Mittel 14,6 Hz und nach Reizung im Median 11,7 Hz. Der Bereich 9–15 Hz
+	 * deckt diese Messungen ab; sein Mittel von 12 Hz reicht zusammen mit der Auslenkung aus, um das
+	 * CASA-Kriterium VCL ≥ 150 µm/s zu erreichen, ohne eine Zahl zu erfinden.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Hyperactivated") FFloatInterval HyperBeatHz = FFloatInterval(9.0f, 15.0f);
+	/** Seitliche Kopfauslenkung hyperaktivierter Zellen (µm). Kriterium: ALH > 7; gemessen 5,7–11,4. */
+	UPROPERTY(EditAnywhere, Category = "Hyperactivated") FFloatInterval HyperHeadAmplitudeUm = FFloatInterval(7.5f, 11.5f);
+	/**
+	 * Bogenwellenlänge bei Hyperaktivierung (µm). Gemessener Median: **17 µm** – die Welle wird
+	 * kürzer, nicht länger. Der bisherige Wert von 45 µm war genau verkehrt herum gedacht.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Hyperactivated") float HyperWavelengthUm = 17.0f;
 	UPROPERTY(EditAnywhere, Category = "Hyperactivated") float HyperRotationalDiffusion = 0.6f;
 
 	UPROPERTY(EditAnywhere, Category = "Sluggish") FFloatInterval SluggishSpeedUm = FFloatInterval(3.0f, 12.0f);
@@ -177,7 +191,13 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	/** Mindestabstand Kopfspitze–Wand (µm). */
 	UPROPERTY(EditAnywhere, Category = "Behaviour") float WallMarginUm = 3.0f;
 	/** Rollen um die Längsachse relativ zur Schlagfrequenz. */
-	UPROPERTY(EditAnywhere, Category = "Behaviour") float RollPerBeat = 0.02f;
+	/**
+	 * Rollen um die Längsachse, als Anteil der Schlagfrequenz.
+	 * Gemessen rollen menschliche Spermien mit 4–8 Hz (Mittel 6,0 ± 2,1), in zähem Medium bis 10 Hz –
+	 * bei einem Schlag um 20 Hz sind das etwa 0,3. Das Rollen ist keine Zierde: Ohne Rotation gibt es
+	 * keine Rheotaxis, die Zelle könnte die Strömung gar nicht abtasten.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Behaviour") float RollPerBeat = 0.3f;
 
 	/** Feste Simulationsschrittweite (s Simulationszeit). */
 	UPROPERTY(EditAnywhere, Category = "Simulation", meta = (ClampMin = "0.001")) float FixedStepSeconds = 1.0f / 240.0f;

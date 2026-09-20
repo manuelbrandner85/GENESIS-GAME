@@ -405,3 +405,98 @@ Kosten: Frame 7,34 ms, GPU 4,66 ms – unverändert.
 Offen: Die Fäden sind starr. Ein Spermium, das sich hindurchwindet, verformt sie nicht – dafür bräuchte
 es eine Simulation der Gallerte. Und die Gallerte selbst (als Volumen) ist weiterhin nicht sichtbar;
 sie wirkt nur über die Zellen, die Fäden und die Bremswirkung auf die Spermien.
+
+## GENESIS-030 – Die Spermien springen nicht mehr: Bewegung gegen die Messliteratur geprüft
+
+Der Game Director hat gemeldet, die Spermien „springen unrealistisch rum und haben keine natürliche
+Bewegung". Das war kein Geschmacksurteil, sondern ein Befund – und die Ursache war ein Fehler, den ich
+selbst eingebaut hatte.
+
+### Ursache 1: Zeitliche Unterabtastung (mein Fehler)
+
+Für die spielbare Fassung hatte ich `ConceptionTimeScale` von 0,3 auf **1,0** gesetzt, damit der
+Spieler nicht so lange wartet. Eine Geißel schlägt aber mit 16–24 Hz. Bei 60 Bildern je Sekunde
+bleiben davon **knapp drei Bilder je Schlagzyklus**. Was dann auf dem Bildschirm ankommt, ist kein
+Schwimmen mehr, sondern ein Aliasing-Artefakt: Die Zelle zuckt von Kopfposition zu Kopfposition.
+
+Das ist derselbe Effekt, der Wagenräder im Film rückwärts laufen lässt, und er ist nicht durch
+Glättung zu heilen. Die Mikrowelt läuft deshalb wieder in **Zeitlupe (`ConceptionTimeScale = 0,3`)**.
+Das ist hier keine Stilentscheidung, sondern Physik: Auch echte Aufnahmen von Spermien sind
+Hochgeschwindigkeitsaufnahmen, die verlangsamt abgespielt werden – anders kann ein menschliches Auge
+einen Geißelschlag gar nicht sehen. Damit die Befruchtung trotzdem zügig kommt, startet die Kohorte
+jetzt bei **320 µm** statt 700 µm vor der Eizelle (Streuung 220 µm).
+
+### Ursache 2: Zwei Zahlen im Modell waren falsch herum gedacht
+
+Beim Abgleich mit der Literatur fielen zwei echte Modellfehler auf:
+
+| Größe | vorher | jetzt | Grund |
+|---|---|---|---|
+| Wellenlänge hyperaktiviert | 45 µm | **17 µm** | Hyperaktivierung heißt *größere Amplitude bei kürzerer Welle*, nicht eine lange, flache Welle. Der alte Wert war die Bewegung genau verkehrt herum. |
+| Schlagfrequenz progressiv | 12–18 Hz | **16–24 Hz** | Gemessener Median aktivierter Zellen: 19 Hz; CASA-Referenz BCF 23,6 ± 5,0 Hz. |
+| Schlagfrequenz hyperaktiviert | 7–10 Hz | **9–15 Hz** | Median 10 Hz, frei schwimmend im Mittel 14,6 Hz, nach Reizung Median 11,7 Hz. |
+| Kopfauslenkung hyperaktiviert | 9–14 µm | **7,5–11,5 µm** | Kriterium ALH ≥ 7 µm; gemessen 5,7–11,4 µm. |
+| Rollen um die Längsachse | 0,02/Schlag (≈0,3 Hz) | **0,3/Schlag (≈6 Hz)** | Menschliche Spermien rollen mit 4–8 Hz (Mittel 6,0 ± 2,1). Ohne dieses Rollen gibt es keine Rheotaxis – die Zelle könnte die Strömung gar nicht „schmecken". |
+
+### Ursache 3: Wir haben etwas anderes gemessen als die Literatur
+
+Unsere Tests maßen die Kopfbahn mit 240 Hz **im Raum**. Ein CASA-Gerät misst mit 60 Hz **in der
+Ebene**, weil es durch ein Mikroskop auf eine flache Kammer schaut. Beides macht einen großen
+Unterschied:
+
+- **Abtastrate:** Die Bahngeschwindigkeit VCL ist die Summe der Abstände zwischen Abtastpunkten. Sie
+  wächst mit der Abtastrate – mit 240 Hz kam bei derselben Zelle eine um die Hälfte höhere VCL heraus.
+- **Projektion:** Die Zelle rollt, ihr Kopf beschreibt eine Schraube. Deren Länge im Raum ist größer
+  als der Schatten, den das Mikroskop sieht.
+
+Der Test bildet jetzt beides nach: 60 Hz, und die Bahn wird in die Ebene projiziert, die das Mikroskop
+sieht (Schwimmrichtung + Hauptachse der seitlichen Auslenkung, per Potenzmethode bestimmt).
+
+### Gemessen gegen die Referenz
+
+| Kenngröße | GENESIS | Referenz (CASA, 66 Spender) | |
+|---|---|---|---|
+| VSL progressiv | 43,2 µm/s | 46,1 ± 9,7 µm/s | innerhalb |
+| VCL progressiv | 92,4 µm/s | 82,5 ± 15,7 µm/s | innerhalb |
+| LIN progressiv | 0,47 | 0,56 | plausibel |
+| Schlagfrequenz progressiv | 20,4 Hz | 23,6 ± 5,0 Hz (Median aktiviert 19 Hz) | innerhalb |
+| VCL hyperaktiviert | 156,6 µm/s | Kriterium ≥ 150 µm/s | erfüllt |
+| LIN hyperaktiviert | 0,15 | Kriterium < 0,5 | erfüllt |
+| ALH hyperaktiviert | 7,5–11,5 µm | Kriterium ≥ 7 µm | erfüllt |
+| Schlagfrequenz hyperaktiviert | 11,7 Hz | Median 10–11,7 Hz | innerhalb |
+
+Alle drei Mortimer-Kriterien der Hyperaktivierung (VCL ≥ 150, LIN < 0,5, ALH ≥ 7) sind damit zugleich
+erfüllt – vorher war es keines vollständig. Die Testschranken sind jetzt die Streubreite der
+Veröffentlichung (66,8–98,2 µm/s) statt eines bequemen weiten Bereichs: Fällt eine Änderung wieder
+heraus, schlägt der Test an.
+
+### Quellen
+
+- [Rapid sperm capture: high-throughput flagellar waveform analysis](https://academic.oup.com/humrep/article/34/7/1173/5510488)
+- [Accuracy of sperm velocity assessment using the Sperm Quality Analyzer V](https://pmc.ncbi.nlm.nih.gov/articles/PMC5907002/)
+- [Influence of image sampling frequency on perceived movement characteristics](https://onlinelibrary.wiley.com/doi/10.1002/mrd.1120200307)
+- [Hyperactivation of sperm – HT CASA (Mortimer-Kriterien)](https://www.micropticsl.com/hyperactivation-of-sperm/)
+- [The mechanics of hyperactivation in adhered human sperm](https://royalsocietypublishing.org/doi/10.1098/rsos.140230)
+- [Quantitative observations of flagellar motility of capacitating human spermatozoa](https://pubmed.ncbi.nlm.nih.gov/9194655/)
+- [Rheotaxis guides mammalian sperm](https://www.cell.com/current-biology/fulltext/S0960-9822(13)00148-6)
+- [Chirality and frequency measurement of longitudinal rolling of human sperm](https://pmc.ncbi.nlm.nih.gov/articles/PMC9790903/)
+- [Human sperm rotate with a conserved direction during free swimming in four dimensions](https://pmc.ncbi.nlm.nih.gov/articles/PMC10729817/)
+
+### Nebenbefund: die rote Zeile im Bild
+
+Bei der Sichtprüfung stand eine rote Warnung im Bild: „RAY TRACING GEOMETRY – ALWAYS RESIDENT MEMORY
+EXCEEDS 20% OF THE BUDGET (87 MiB / 400 MiB)". Die Mikrowelt ist ein dichter Raum – 6 000 Zellen,
+2 600 Coronazellen, 2 687 Matrixfäden –, und deren Strahlengeometrie liegt dauerhaft im Speicher. Der
+Vorrat steht jetzt auf 768 MiB (`r.RayTracing.ResidentGeometryMemoryPoolSizeInMB`), ein für
+Desktop-Grafikkarten üblicher Wert. Abgeschaltet wurde die Warnung **nicht**: Sie soll weiter
+anschlagen, wenn eine Szene wirklich zu schwer wird.
+
+![Der Schwarm vor dem Cumulus](Media/GENESIS-030_Schwarm.png)
+
+### Offen
+
+- **Sehr nahe Zellen brennen aus.** Auf dem Bild sind einzelne Spermien direkt vor der Linse reine
+  weiße Streifen. Das Licht aus GENESIS-026 trägt über alle Arbeitsabstände, aber die
+  Belichtungsautomatik kommt mit dem Abstand < 60 µm nicht mit. Gehört in den Fotorealismus-Block.
+- **Ein Standbild kann Bewegung nicht belegen.** Dass es nicht mehr springt, steht in den Messwerten;
+  dass es *aussieht* wie Schwimmen, muss ein Mensch einmal bestätigen.
