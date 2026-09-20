@@ -9,6 +9,7 @@
 class AGenesisSpermSwarm;
 class UCineCameraComponent;
 class USpotLightComponent;
+class UPointLightComponent;
 
 /**
  * Kamera der Mikrowelt: eine Kamera mit Masse (weich gedämpfte Nachführung), echter Brennweite/Blende und Schärfenachführung
@@ -87,13 +88,13 @@ public:
 	/**
 	 * Automatische Lichtregelung wie am Endoskop: kurzer Arbeitsabstand → weniger Licht.
 	 *
-	 * Standardmäßig aus: Gemessen sind sowohl die Zellansicht (110 µm) als auch die Eizelle (430 µm)
-	 * bei derselben Lichtstärke richtig belichtet. Mit Regelung säuft die Zellansicht ab (73 % der Fläche
-	 * nahezu schwarz), weil die Umgebung dann kein Licht mehr abbekommt. Für Nahaufnahmen unter 100 µm
-	 * ist sie dennoch da.
+	 * Seit GENESIS-026 an: Zusammen mit dem Streulicht der Umgebung hält sie alle Arbeitsabstände
+	 * belichtet – vorher war nur der Bereich um 430 µm brauchbar, die Nahaufnahme brannte aus und
+	 * die weite Einstellung fiel ins Schwarze. (Ohne Streulicht war die Regelung unbrauchbar:
+	 * Dann bekam die Umgebung in Nahaufnahmen gar kein Licht mehr ab.)
 	 */
 	UPROPERTY(EditAnywhere, Category = "Light")
-	bool bAutoLightControl = false;
+	bool bAutoLightControl = true;
 
 	/** Lichtstärke beim Bezugsabstand (cd). */
 	UPROPERTY(EditAnywhere, Category = "Light")
@@ -102,6 +103,21 @@ public:
 	/** Bezugsabstand der Lichtregelung (µm). */
 	UPROPERTY(EditAnywhere, Category = "Light")
 	float LightReferenceDistanceUm = 430.0f;
+
+	/**
+	 * Streulicht der Umgebung (cd). Es hängt nicht am Arbeitsabstand, denn die Wand des Eileiters
+	 * bleibt gleich weit weg – es hält nur den Raum neben dem Lichtkegel lesbar.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Light")
+	float FillCandelas = 18.0f;
+
+	/** Unterhalb des Bezugsabstands: Abstandsquadrat, wie es die Physik vorgibt. */
+	UPROPERTY(EditAnywhere, Category = "Light", meta = (ClampMin = "0.5", ClampMax = "2.5"))
+	float LightFalloffExponentNear = 2.0f;
+
+	/** Oberhalb des Bezugsabstands: flacher, sonst überstrahlen die nahen Falten die weite Einstellung. */
+	UPROPERTY(EditAnywhere, Category = "Light", meta = (ClampMin = "0.5", ClampMax = "2.5"))
+	float LightFalloffExponentFar = 1.0f;
 
 	/**
 	 * Makro-Vergrößerung der Optik: Sensor und Brennweite werden gemeinsam um diesen Faktor vergrößert.
@@ -139,6 +155,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<USpotLightComponent> EndoscopeLight;
+
+	/** Streulicht der Umgebung – ohne es ist neben dem Lichtkegel alles schwarz. */
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UPointLightComponent> FillLight;
 
 private:
 	bool ComputeDesired(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const;

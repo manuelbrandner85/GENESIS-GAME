@@ -37,6 +37,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-023 | Vertical Slice Polish | Ein Durchlauf von der Befruchtung bis zum ersten Schlaf: Phasenregie, Zeitsprünge, Ortswechsel, Performance gemessen | DONE (Eingabe offen) |
 | GENESIS-024 | Befruchtung: Feinschliff | Makro-Schärfentiefe, dichter Cumulus, Zellton je Zelle, Kameraführung der Befruchtung | DONE |
 | GENESIS-025 | Schwarm: Richtung und Dichte | Strömung im ganzen Lumen, weniger Taumeln, Vortrieb hyperaktivierter Zellen, Lockwirkung für alle, 6 000 Zellen als Pulk | DONE (LODs offen) |
+| GENESIS-026 | Mikrowelt: Licht und Belichtung | Geregeltes Endoskoplicht in zwei Bereichen, Streulicht der Umgebung, keine ausgebrannten Flächen mehr | DONE (Form der Coronazellen offen) |
 
 ## Protokoll
 
@@ -268,3 +269,13 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Schwarm nach der Korrektur](Media/GENESIS-025_SwarmHUD.png)
+
+### GENESIS-026 – Licht, das alle Abstände trägt
+- 2026-09-20: Gemeldet aus dem Schwarm-Block: Eine weite Einstellung wurde schwarz, die Corona brannte in Nahaufnahmen weiß aus. Dieselbe Ursache: ein Licht mit fester Stärke, das nur für genau einen Arbeitsabstand stimmt (bei 110 µm trifft die Zelle 15-mal so viel Licht wie bei 430 µm, bei 1.100 µm bleibt ein Sechstel).
+- 2026-09-20: **Regelung in zwei Bereichen:** unterhalb des Bezugsabstands nach dem Abstandsquadrat (dort füllt das Motiv den Ausschnitt), oberhalb nur noch linear (dort sieht die Kamera vor allem die nahen Falten der Schleimhaut, die sonst überstrahlen).
+- 2026-09-20: **Streulicht der Umgebung** (18 cd, 3.200 K, ohne Schatten): Im Gewebe wird Licht gestreut, neben dem Lichtkegel ist es nie völlig schwarz. Ohne diese Schicht war die Regelung unbrauchbar – deshalb war sie bis hierher ausgeschaltet.
+- 2026-09-20: **Gemessen** (Median / P99 / reinweiß): Zelle 110 µm 0,411 / 0,79 / 0 %; Eizelle 430 µm 0,302 / 0,74 / 0 %; weite Einstellung 1.100 µm 0,462 / 0,80 / 0 %; Corona 260 µm 0,356 / 0,72 / 0 %. Vorher: weite Einstellung praktisch schwarz, Corona reinweiß. 130 FPS statt 138 – das Streulicht wirft keine Schatten.
+- Offen: Die Coronazellen sehen aus der Nähe weiterhin wie weiche Klumpen aus; Form und Oberfläche sind ein eigener Block. Die Belichtung macht das jetzt nur besser sichtbar.
+- **Status: DONE.**
+
+![Corona ohne Überstrahlung](Media/GENESIS-026_Corona.png)

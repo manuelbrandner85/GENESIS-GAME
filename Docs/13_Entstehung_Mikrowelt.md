@@ -288,3 +288,45 @@ gemeinsam auf sie zu.
 
 Offen: Reduktionsstufen (LODs) für die Zelle – die Geißel ist am Ende 0,12 µm dünn, eine automatische
 Reduktion würde genau diese Fläche zerlegen. Ohne sie ist bei etwa 8 000 Zellen Schluss.
+
+## GENESIS-026 – Licht, das alle Abstände trägt
+
+Zwei Beobachtungen aus dem Schwarm-Block: Eine weite Einstellung wurde schwarz, und die Corona
+brannte in Nahaufnahmen weiß aus. Beides hatte dieselbe Ursache – **ein Licht für alle Fälle**.
+
+Das Endoskoplicht sitzt an der Optik, seine Beleuchtungsstärke fällt mit dem Quadrat des Abstands.
+Bei fester Stärke stimmt damit genau **ein** Arbeitsabstand. Bei 110 µm trifft die Zelle 15-mal so
+viel Licht wie bei 430 µm; bei 1.100 µm bleibt ein Sechstel übrig.
+
+Die Lösung besteht aus zwei Teilen:
+
+**1. Geregeltes Licht, in zwei Bereichen.** Unterhalb des Bezugsabstands (430 µm) folgt die Regelung
+dem Abstandsquadrat – dort füllt das Motiv den Ausschnitt, und die Physik stimmt genau. Oberhalb
+wächst das Licht nur noch linear, denn dann sieht die Kamera vor allem die **nahen Falten** der
+Schleimhaut; würde es weiter quadratisch steigen, überstrahlten sie das ganze Bild.
+
+**2. Streulicht der Umgebung** (18 cd, 3.200 K, ohne Schatten). Im Gewebe und in der Flüssigkeit wird
+Licht gestreut – neben dem Lichtkegel ist es deshalb nie völlig schwarz. Ohne diese Schicht war die
+Regelung unbrauchbar: In Nahaufnahmen bekam die Umgebung gar kein Licht mehr ab (73 % der Fläche
+nahezu schwarz), weshalb sie bis hierher ausgeschaltet blieb.
+
+**Gemessen** (Luminanz des fertigen Bildes, 1137×600):
+
+| Einstellung | Median | P99 | reinweiß | fast schwarz |
+|---|---|---|---|---|
+| Zelle, 110 µm | 0,411 | 0,79 | 0 % | 11,5 % |
+| Eizelle, 430 µm | 0,302 | 0,74 | 0 % | 0,1 % |
+| Weite Einstellung, 1.100 µm | 0,462 | 0,80 | 0 % | 1,1 % |
+| Corona in Nahaufnahme, 260 µm | 0,356 | 0,72 | 0 % | 5,6 % |
+
+Vorher war die weite Einstellung praktisch schwarz und die Corona reinweiß. Jetzt gibt es in keiner
+Einstellung ausgebrannte Flächen, und in jeder ist Zeichnung vorhanden.
+
+Kosten: 130 FPS statt 138 (Frame 7,66 ms, GPU 5,38 ms) – das Streulicht wirft keine Schatten.
+
+![Corona ohne Überstrahlung](Media/GENESIS-026_Corona.png)
+
+![Weite Einstellung im Eileiter](Media/GENESIS-026_Wide.png)
+
+Offen: Die Coronazellen sehen aus der Nähe weiterhin wie weiche Klumpen aus – Form und Oberfläche der
+Zellen sind ein eigener Block; die Belichtung macht das jetzt nur besser sichtbar.

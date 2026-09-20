@@ -2,6 +2,7 @@
 
 #include "GenesisMicroscopeCameraRig.h"
 #include "CineCameraComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -146,6 +147,20 @@ AGenesisMicroscopeCameraRig::AGenesisMicroscopeCameraRig()
 	EndoscopeLight->SetSourceRadius(1.0f);
 	EndoscopeLight->SetAttenuationRadius(4000.0f);
 	EndoscopeLight->SetCastShadows(true);
+
+	// Streulicht der Umgebung: Im Gewebe und in der Flüssigkeit wird Licht gestreut, deshalb ist es
+	// neben dem Lichtkegel nie völlig schwarz. Ohne diese Schicht funktioniert nur der Arbeitsabstand,
+	// für den das Endoskoplicht gerade eingestellt ist – weite Einstellungen fallen ins Dunkle.
+	FillLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FillLight"));
+	FillLight->SetupAttachment(Camera);
+	FillLight->SetMobility(EComponentMobility::Movable);
+	FillLight->bUseTemperature = true;
+	// Wärmer als das Endoskoplicht: Was hier ankommt, ist durch Gewebe gegangen
+	FillLight->SetTemperature(3200.0f);
+	FillLight->SetSourceRadius(60.0f);
+	FillLight->SetAttenuationRadius(6000.0f);
+	FillLight->SetCastShadows(false);
+	FillLight->SetIntensity(FillCandelas);
 }
 
 void AGenesisMicroscopeCameraRig::BeginPlay()
@@ -213,6 +228,12 @@ void AGenesisMicroscopeCameraRig::ApplyOptics()
 
 void AGenesisMicroscopeCameraRig::UpdateLight()
 {
+	if (FillLight)
+	{
+		// Das Streulicht hängt nicht am Arbeitsabstand: Die Wand des Eileiters bleibt gleich weit weg.
+		FillLight->SetIntensity(FillCandelas);
+	}
+
 	if (!EndoscopeLight || !bAutoLightControl)
 	{
 		return;
@@ -220,10 +241,19 @@ void AGenesisMicroscopeCameraRig::UpdateLight()
 
 	// Automatische Lichtregelung wie an einem Endoskop: Das Licht sitzt an der Optik, die Beleuchtungsstärke
 	// fällt mit dem Quadrat des Arbeitsabstands. Ohne Regelung ist jede Nahaufnahme ausgebrannt
-	// (gemessen: 40 % der Fläche reinweiß bei 95 µm Abstand mit der Einstellung für 430 µm).
+	// (gemessen: 40 % der Fläche reinweiß bei 95 µm Abstand mit der Einstellung für 430 µm) – und
+	// jede weite Einstellung fällt ins Dunkle (gemessen bei 1.100 µm: praktisch schwarz).
+	// Die Spanne ist deshalb weit: vom Zwanzigstel bis zum Zwanzigfachen der Bezugsstärke.
 	const float Reference = FMath::Max(1.0f, LightReferenceDistanceUm) * GenesisMicroScale::UnitsPerMicrometer;
 	const float Working = FMath::Max(1.0f, CurrentFocusDistance);
-	const float Factor = FMath::Clamp(FMath::Square(Working / Reference), 0.02f, 6.0f);
+	// Zwei Bereiche, weil zwei Dinge im Bild sind:
+	// Unterhalb des Bezugsabstands füllt das Motiv den Ausschnitt – dort gilt das Abstandsquadrat exakt,
+	// und ohne es brennt jede Nahaufnahme aus (gemessen bei 110 µm mit linearer Regelung: Median 0,63).
+	// Oberhalb sieht die Kamera vor allem die nahen Falten der Schleimhaut; würde das Licht weiter
+	// quadratisch steigen, überstrahlten sie das Bild (gemessen bei 1.100 µm: Median 0,68).
+	const float Ratio = Working / Reference;
+	const float Exponent = Ratio < 1.0f ? LightFalloffExponentNear : LightFalloffExponentFar;
+	const float Factor = FMath::Clamp(FMath::Pow(Ratio, Exponent), 0.05f, 20.0f);
 	EndoscopeLight->SetIntensity(LightCandelasAtReference * Factor);
 }
 
