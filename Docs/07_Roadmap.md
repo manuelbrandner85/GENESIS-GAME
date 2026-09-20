@@ -36,6 +36,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-022 | Early Childhood | Die erste Stunde: Wärme, Ruhe, Bindung, erstes Anlegen – und die erste Erinnerung eines Lebens | DONE (Kreißsaal und Ton offen) |
 | GENESIS-023 | Vertical Slice Polish | Ein Durchlauf von der Befruchtung bis zum ersten Schlaf: Phasenregie, Zeitsprünge, Ortswechsel, Performance gemessen | DONE (Eingabe offen) |
 | GENESIS-024 | Befruchtung: Feinschliff | Makro-Schärfentiefe, dichter Cumulus, Zellton je Zelle, Kameraführung der Befruchtung | DONE |
+| GENESIS-025 | Schwarm: Richtung und Dichte | Strömung im ganzen Lumen, weniger Taumeln, Vortrieb hyperaktivierter Zellen, Lockwirkung für alle, 4 500 Zellen | DONE (LODs offen) |
 
 ## Protokoll
 
@@ -255,3 +256,14 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE** (Umfang: der Slice als ein Durchlauf mit gemessener Performance; Eingabe und Gestalt als eigene Blöcke).
 
 ![Der Durchlauf](Media/GENESIS-023_Run.png)
+
+### GENESIS-025 – Richtung und Dichte des Schwarms
+- 2026-09-20: Gemeldet vom Game Director: „Die Spermien schwimmen unkontrolliert und teilweise rückwärts, es sollten auch viel mehr sein." Beides bestätigt – und beides lag am Modell, nicht an der Anzeige.
+- 2026-09-20: **Ursache:** Die Strömung floss nur an der Wand, in der Mitte des Lumens stand sie still. Rheotaxis wirkt aber nur dort, wo etwas fließt: Mitten im Kanal hatten die Zellen keinen Bezugspunkt und behielten ihre zufällige Startrichtung – die Hälfte schwamm zur Gebärmutter statt zum Eierstock. Jetzt fließt es im ganzen Lumen (45 % des Wandstroms in der Mitte).
+- 2026-09-20: Drei weitere Korrekturen am Schwimmmodell: Rotationsdiffusion progressiver Zellen 0,08 → 0,035 rad²/s (vorher über 20° Kursabweichung je Sekunde); hyperaktivierte Zellen 8–20 → 20–35 µm/s bei Rotationsdiffusion 1,5 → 0,6 (sie peitschten auf der Stelle, LIN 0,04 → 0,11); die Lockwirkung des Progesterons gilt jetzt auch für progressive Zellen (45 % Ansprechen), eindringen kann weiterhin nur eine kapazitierte.
+- 2026-09-20: **Dichte:** 300 → 4 500 Zellen. Gemessen 138 FPS (Frame 7,2 ms, Spiel-Thread 5,6 ms, GPU 5,4 ms); bei 8 000 Zellen wird der Spiel-Thread mit 10,4 ms zum Engpass.
+- 2026-09-20: **Gemessen im Test:** Mitte des Lumens nach 30 s – Ausrichtung 0,99 stromaufwärts, +773 µm, 0 von 200 rückwärts (vorher rund die Hälfte). **Im Spiel gemessen** (4 500 Zellen, 68,8 s): Ausrichtung +0,79, rückwärts 5 %, an der Wand 14 %, Eizelle befruchtet nach 21,3 s. 105 von 105 Tests bestanden (eine Warnung stammt aus einer Netzwerkprüfung der Engine, nicht aus Genesis-Code).
+- Offen: Reduktionsstufen (LODs) für die Zelle – die Geißel ist am Ende 0,12 µm dünn, eine automatische Reduktion würde genau diese Fläche zerlegen (derselbe Fehler wie in GENESIS-024). Ohne LODs ist bei etwa 8 000 Zellen Schluss.
+- **Status: DONE.**
+
+![Schwarm nach der Korrektur](Media/GENESIS-025_SwarmHUD.png)

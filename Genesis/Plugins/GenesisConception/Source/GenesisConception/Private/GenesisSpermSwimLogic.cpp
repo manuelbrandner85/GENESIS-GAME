@@ -116,9 +116,14 @@ namespace GenesisSpermSwimLogic
 
 	FVector FlowAt(const FVector& Position, const FGenesisOviductChannel& Channel)
 	{
-		// Zilien schlagen an der Schleimhaut: stärkster Strom an der Wand, zur Mitte hin abklingend
+		// Im Eileiter strömt es überall Richtung Gebärmutter: Die Zilien der Schleimhaut treiben den
+		// Film an der Wand am stärksten, aber auch in der Mitte des Lumens steht die Flüssigkeit nicht.
+		// Das ist der Unterschied zwischen einem Kanal und einem Becken – und für die Zellen der
+		// einzige Hinweis, wo oben ist: Sie schwimmen gegen den Strom.
 		const float Radius = static_cast<float>(RadialDistance(Position));
-		const float Factor = FMath::SmoothStep(0.4f * Channel.LumenRadiusUm, Channel.LumenRadiusUm, Radius);
+		const float WallShare = FMath::SmoothStep(0.35f * Channel.LumenRadiusUm, Channel.LumenRadiusUm, Radius);
+		const float Factor = FMath::Clamp(Channel.CoreFlowFraction, 0.0f, 1.0f)
+			+ (1.0f - FMath::Clamp(Channel.CoreFlowFraction, 0.0f, 1.0f)) * WallShare;
 		return FVector(-Channel.WallFlowSpeedUm * Factor, 0.0, 0.0);
 	}
 

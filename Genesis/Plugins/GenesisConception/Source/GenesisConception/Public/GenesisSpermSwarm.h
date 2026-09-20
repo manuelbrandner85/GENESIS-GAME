@@ -69,7 +69,7 @@ public:
 	double GetSimulationSeconds() const { return SimulationSeconds; }
 
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "1", ClampMax = "20000"))
-	int32 CellCount = 300;
+	int32 CellCount = 4500;
 
 	UPROPERTY(EditAnywhere, Category = "Swarm")
 	int32 Seed = 1;

@@ -37,20 +37,22 @@ Deterministisch, zustandslos, in µm und Sekunden. Bewegungsarten nach CASA-Kate
 
 Verhalten:
 - **Rotationsdiffusion:** keine geraden Bahnen.
-- **Rheotaxis:** Ausrichtung gegen den Zilienstrom (der Richtung Gebärmutter fließt) – der Strom weist den Weg zum Eierstock. Wirkt dort am stärksten, wo die Strömung am stärksten ist, also an der Wand.
+- **Rheotaxis:** Ausrichtung gegen den Zilienstrom (der Richtung Gebärmutter fließt) – der Strom weist den Weg zum Eierstock. Er ist an der Wand am stärksten, steht aber auch in der Mitte des Lumens nicht still (45 % des Wandstroms). Das ist entscheidend: Ohne Strömung in der Mitte hätten die Zellen dort **keinen Hinweis, wohin**, und die Hälfte schwämme rückwärts (korrigiert in GENESIS-025).
 - **Wandbindung:** Zellen richten sich an Oberflächen parallel aus und schwimmen leicht zur Wand geneigt (3,5°); dadurch sammeln sie sich dort. Hyperaktivierte lösen sich leichter (Faktor 0,35) – so kommen sie von der Schleimhaut wieder frei.
-- **Hyperaktivierung** wechselt zufällig (Raten je Sekunde, Standard 0,02 hin / 0,05 zurück).
+- **Hyperaktivierung** wechselt zufällig (Raten je Sekunde, 0,05 hin / 0,045 zurück – in der Ampulle zum Eisprung ist gut die Hälfte der Zellen kapazitiert, sie haben sich aus dem Reservoir im Isthmus gelöst).
 
 **Gemessen (Automationstests):**
 
 | Messwert | Ergebnis | Referenz |
 |---|---|---|
-| Progressiv VSL | 42,5 µm/s | WHO: schnell progressiv ≥ 25 µm/s |
-| Progressiv VCL | 129 µm/s | CASA typisch 60–150 µm/s |
-| Hyperaktiviert VCL | 255 µm/s | CASA-Kriterium ≥ 150 µm/s |
-| Hyperaktiviert LIN | 0,04 | CASA-Kriterium < 0,5 |
-| Wandnähe nach 40 s | 98 % progressiv, 26 % hyperaktiviert | Gleichverteilung wäre 23 % |
-| Rheotaxis | Ausrichtung 0,99 stromaufwärts, +471 µm in 30 s | ohne Rheotaxis −750 µm (Abtrift) |
+| Progressiv VSL | 43,2 µm/s | WHO: schnell progressiv ≥ 25 µm/s |
+| Progressiv VCL | 121 µm/s | CASA typisch 60–150 µm/s |
+| Hyperaktiviert VSL | 23,6 µm/s | peitschend, aber mit Vortrieb |
+| Hyperaktiviert VCL | 225 µm/s | CASA-Kriterium ≥ 150 µm/s |
+| Hyperaktiviert LIN | 0,11 | CASA-Kriterium < 0,5 |
+| Wandnähe nach 40 s | 98 % progressiv, 32 % hyperaktiviert | Gleichverteilung wäre 23 % |
+| Rheotaxis an der Wand | Ausrichtung 1,00 stromaufwärts, +487 µm in 30 s | ohne Rheotaxis −796 µm (Abtrift) |
+| **Mitte des Lumens** | Ausrichtung 0,99, +773 µm in 30 s, **0 von 200 rückwärts** | vorher: rund die Hälfte rückwärts |
 | Performance | 187 ns je Zellschritt → 1.000 Zellen ≈ 0,19 ms/Frame | |
 
 ## Darstellung
@@ -129,7 +131,7 @@ Maße aus der Anatomie einer reifen Eizelle (Metaphase II), Aufbau in `Tools/Ble
 
 ### Der Weg einer Zelle (Logik, ohne Zufall im Ablauf)
 
-1. **Lockwirkung** – nur hyperaktivierte (kapazitierte) Zellen richten sich im Umkreis von 220 µm auf die Eizelle aus (Progesteron aus dem Cumulus).
+1. **Lockwirkung** – der Progesteron-Gradient aus dem Cumulus zieht im Umkreis von 220 µm: hyperaktivierte Zellen voll, progressive zu 45 %, träge zu 20 %. Eindringen kann trotzdem nur eine kapazitierte Zelle.
 2. **Cumulus** – in der Gallerte fällt die Geschwindigkeit auf 55 %; die Zellen müssen sich hindurcharbeiten.
 3. **Bindung** – an der Zona binden ausschließlich kapazitierte Zellen (0,85/s). Ohne Kapazitation gibt es keine Akrosomreaktion, also auch keine Befruchtung.
 4. **Akrosomreaktion** – 2–6 s, bis die Kappe aufplatzt und die Enzyme frei sind.
@@ -243,3 +245,38 @@ Deshalb die ehrliche Dramaturgie:
 - Das **Ooplasma** ist nur durch die Lücken im Zellkranz zu sehen; seine Körnung ist dort noch zu gleichmäßig.
 - Die automatische **Lichtregelung** ist eingebaut, aber aus: Zellansicht und Eizelle sind bei derselben
   Lichtstärke richtig belichtet; mit Regelung säuft die Umgebung ab.
+
+## GENESIS-025 – Richtung und Dichte des Schwarms
+
+Gemeldet vom Game Director: *„Die Spermien schwimmen unkontrolliert und teilweise rückwärts, es sollten
+auch viel mehr sein."* Beides war berechtigt, und beides hatte eine Ursache im Modell, nicht in der Anzeige.
+
+**1. Kein Hinweis, wohin.** Die Strömung floss nur an der Wand; in der Mitte des Lumens stand sie still.
+Rheotaxis wirkt aber nur dort, wo etwas fließt – also hatten die Zellen mitten im Kanal überhaupt keinen
+Bezugspunkt und behielten ihre zufällige Startrichtung. Die Hälfte schwamm damit zur Gebärmutter statt
+zum Eierstock. Jetzt fließt die Flüssigkeit im ganzen Lumen (45 % des Wandstroms in der Mitte),
+und die Zellen richten sich überall gegen den Strom aus.
+
+**2. Zu viel Taumeln.** Die Rotationsdiffusion progressiver Zellen lag bei 0,08 rad²/s – das sind über
+20° Richtungsänderung je Sekunde, ein Schwarm ohne Kurs. Gemessen liegt sie bei wenigen Hundertsteln;
+jetzt 0,035 rad²/s.
+
+**3. Hyperaktivierte standen fast still.** Mit 8–20 µm/s Vortrieb und einer Rotationsdiffusion von
+1,5 rad²/s zappelten sie auf der Stelle (LIN 0,04). Gemessen erreichen hyperaktivierte Zellen 20–35 µm/s
+bei LIN um 0,1–0,3 – sie peitschen, aber sie kommen voran.
+
+**4. Die Lockwirkung galt nur für Hyperaktivierte.** Jetzt reagieren auch progressive Zellen auf den
+Progesteron-Gradienten, nur träger (45 %). Eindringen kann weiterhin nur eine kapazitierte Zelle.
+
+**5. Zu wenige.** 300 Zellen sahen nach Einzelgängern aus, nicht nach Schwarm. Jetzt 4 500 –
+gemessen 138 FPS (Frame 7,2 ms, Spiel-Thread 5,6 ms, GPU 5,4 ms). Bei 8 000 Zellen wird der
+Spiel-Thread mit 10,4 ms zum Engpass; dort liegt die Grenze ohne weitere Arbeit.
+
+**Im Spiel gemessen** (4 500 Zellen, nach 68,8 s Simulationszeit):
+Ø Ausrichtung gegen den Strom **+0,79**, **rückwärts 5 %**, an der Wand 14 %, Ø Vortrieb 31,0 µm/s;
+2 116 progressiv, 2 355 hyperaktiviert, 29 träge; Eizelle befruchtet nach 21,3 s.
+
+![Schwarm nach der Korrektur](Media/GENESIS-025_SwarmHUD.png)
+
+Offen: Reduktionsstufen (LODs) für die Zelle – die Geißel ist am Ende 0,12 µm dünn, eine automatische
+Reduktion würde genau diese Fläche zerlegen. Ohne sie ist bei etwa 8 000 Zellen Schluss.

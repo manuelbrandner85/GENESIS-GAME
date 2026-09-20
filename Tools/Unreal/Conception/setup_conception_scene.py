@@ -585,7 +585,8 @@ def build_level(mesh, material, wall_mesh=None, wall_material=None):
     swarm.set_actor_label("SpermSwarm")
     swarm.set_editor_property("cell_mesh", mesh)
     swarm.set_editor_property("cell_material", material)
-    swarm.set_editor_property("cell_count", 300)
+    # 4 500 Zellen: gemessen 138 FPS. Weniger sieht nicht nach Schwarm aus, mehr kostet den Spiel-Thread.
+    swarm.set_editor_property("cell_count", 4500)
     swarm.set_editor_property("seed", 7)
 
     rig = actors.spawn_actor_from_class(unreal.GenesisMicroscopeCameraRig, unreal.Vector(-200, 0, 0))

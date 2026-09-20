@@ -115,6 +115,14 @@ struct GENESISCONCEPTION_API FGenesisOviductChannel
 	/** Zilienstrom an der Wand Richtung Gebärmutter (−X), µm/s. Zur Mitte hin schwächer. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Channel", meta = (ClampMin = "0"))
 	float WallFlowSpeedUm = 25.0f;
+
+	/**
+	 * Anteil des Wandstroms, der auch in der Mitte des Lumens noch fließt (0..1).
+	 * Ohne ihn stünde die Flüssigkeit dort still – und die Zellen hätten mitten im Kanal keinen
+	 * Hinweis mehr, wohin: Sie schwämmen in alle Richtungen, die halbe Ladung rückwärts.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Channel", meta = (ClampMin = "0", ClampMax = "1"))
+	float CoreFlowFraction = 0.45f;
 };
 
 /** Stellschrauben des Schwimmmodells. Bandbreiten aus CASA-Referenzwerten menschlicher Spermien. */
@@ -127,30 +135,43 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	UPROPERTY(EditAnywhere, Category = "Progressive") FFloatInterval ProgressiveBeatHz = FFloatInterval(12.0f, 18.0f);
 	UPROPERTY(EditAnywhere, Category = "Progressive") FFloatInterval ProgressiveHeadAmplitudeUm = FFloatInterval(2.5f, 5.0f);
 	UPROPERTY(EditAnywhere, Category = "Progressive") float ProgressiveWavelengthUm = 30.0f;
-	/** Rotationsdiffusion (rad²/s). */
-	UPROPERTY(EditAnywhere, Category = "Progressive") float ProgressiveRotationalDiffusion = 0.08f;
+	/**
+	 * Rotationsdiffusion (rad²/s). Eine progressive Zelle hält ihren Kurs über Sekunden –
+	 * gemessen liegt die Richtungsstreuung bei wenigen Hundertstel rad² je Sekunde. Mit einem zu
+	 * hohen Wert taumelt der ganze Schwarm, und aus gerichtetem Schwimmen wird ein Gewimmel.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Progressive") float ProgressiveRotationalDiffusion = 0.035f;
 
-	UPROPERTY(EditAnywhere, Category = "Hyperactivated") FFloatInterval HyperSpeedUm = FFloatInterval(8.0f, 20.0f);
+	/**
+	 * Hyperaktivierte Zellen peitschen, aber sie stehen nicht: Gemessen liegt ihre Bahngeschwindigkeit
+	 * über 150 µm/s und ihr Vortrieb bei 20–35 µm/s. Mit zu wenig Vortrieb wirkt der Schwarm wie ein
+	 * Gewimmel, und genau das war er auch.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Hyperactivated") FFloatInterval HyperSpeedUm = FFloatInterval(20.0f, 35.0f);
 	UPROPERTY(EditAnywhere, Category = "Hyperactivated") FFloatInterval HyperBeatHz = FFloatInterval(7.0f, 10.0f);
 	UPROPERTY(EditAnywhere, Category = "Hyperactivated") FFloatInterval HyperHeadAmplitudeUm = FFloatInterval(9.0f, 14.0f);
 	UPROPERTY(EditAnywhere, Category = "Hyperactivated") float HyperWavelengthUm = 45.0f;
-	UPROPERTY(EditAnywhere, Category = "Hyperactivated") float HyperRotationalDiffusion = 1.5f;
+	UPROPERTY(EditAnywhere, Category = "Hyperactivated") float HyperRotationalDiffusion = 0.6f;
 
 	UPROPERTY(EditAnywhere, Category = "Sluggish") FFloatInterval SluggishSpeedUm = FFloatInterval(3.0f, 12.0f);
 	UPROPERTY(EditAnywhere, Category = "Sluggish") FFloatInterval SluggishBeatHz = FFloatInterval(3.0f, 7.0f);
 	/** Unter dieser Vitalität schwimmt eine Zelle träge. */
 	UPROPERTY(EditAnywhere, Category = "Sluggish") float SluggishVitalityThreshold = 0.3f;
 
-	/** Wechselraten zwischen progressiv und hyperaktiviert (je Sekunde). */
-	UPROPERTY(EditAnywhere, Category = "Transitions") float HyperactivationRate = 0.02f;
-	UPROPERTY(EditAnywhere, Category = "Transitions") float DeactivationRate = 0.05f;
+	/**
+	 * Wechselraten zwischen progressiv und hyperaktiviert (je Sekunde).
+	 * In der Ampulle zum Zeitpunkt des Eisprungs sind die Zellen längst kapazitiert – sie haben sich
+	 * aus dem Reservoir im Isthmus gelöst. Deshalb liegt das Gleichgewicht hier bei gut der Hälfte.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Transitions") float HyperactivationRate = 0.05f;
+	UPROPERTY(EditAnywhere, Category = "Transitions") float DeactivationRate = 0.045f;
 
 	/** Gegen die Strömung ausrichten (rad/s bei voller Wandscherung). */
 	UPROPERTY(EditAnywhere, Category = "Behaviour") float RheotaxisTurnRate = 0.8f;
 	/** Ab diesem Wandabstand wirkt die hydrodynamische Wandbindung (µm). */
 	UPROPERTY(EditAnywhere, Category = "Behaviour") float WallAttractionDistanceUm = 25.0f;
 	/** 0..1 – wie stark eine Zelle an der Wand gehalten wird (hyperaktivierte Zellen lösen sich leichter). */
-	UPROPERTY(EditAnywhere, Category = "Behaviour") float WallTrapStrength = 0.85f;
+	UPROPERTY(EditAnywhere, Category = "Behaviour") float WallTrapStrength = 0.6f;
 	/** An Oberflächen schwimmen Spermien leicht zur Wand geneigt – dadurch bleiben sie lange dort (Grad). */
 	UPROPERTY(EditAnywhere, Category = "Behaviour") float WallTiltDegrees = 3.5f;
 	/** Mindestabstand Kopfspitze–Wand (µm). */

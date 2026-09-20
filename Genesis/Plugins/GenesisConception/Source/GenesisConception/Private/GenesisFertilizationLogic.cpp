@@ -89,10 +89,14 @@ namespace GenesisFertilizationLogic
 
 			if (Phase == EGenesisSpermPhase::Swimming)
 			{
-				// 1. Lockwirkung: Nur hyperaktivierte Zellen reagieren auf den Progesteron-Gradienten aus dem Cumulus
-				if (Cell.Motility == EGenesisSpermMotility::Hyperactivated && Distance < Tuning.ChemotaxisRangeUm)
+				// 1. Lockwirkung: Der Progesteron-Gradient aus dem Cumulus zieht kapazitierte Zellen an.
+				// Am stärksten reagieren hyperaktivierte – aber nicht nur sie: Eine progressive Zelle,
+				// die in die Nähe kommt, dreht ebenfalls bei, nur träger.
+				if (Distance < Tuning.ChemotaxisRangeUm)
 				{
-					const double Strength = 1.0 - Distance / Tuning.ChemotaxisRangeUm;
+					const double Response = Cell.Motility == EGenesisSpermMotility::Hyperactivated ? 1.0
+						: (Cell.Motility == EGenesisSpermMotility::Sluggish ? 0.2 : 0.45);
+					const double Strength = (1.0 - Distance / Tuning.ChemotaxisRangeUm) * Response;
 					const double MaxTurn = Tuning.ChemotaxisTurnRate * Strength * Dt;
 					const double Between = FMath::Acos(FMath::Clamp(FVector::DotProduct(Cell.Heading, Inward), -1.0, 1.0));
 					if (Between > UE_KINDA_SMALL_NUMBER)

@@ -283,6 +283,8 @@ void AGenesisSpermSwarm::RegisterDebugPage()
 			int32 Hyper = 0;
 			int32 Sluggish = 0;
 			int32 NearWall = 0;
+			// Wer rückwärts schwimmt, treibt mit dem Strom zur Gebärmutter – für diesen Schwarm die falsche Richtung
+			int32 Backwards = 0;
 			double SpeedSum = 0.0;
 			double UpstreamSum = 0.0;
 			for (const FGenesisSpermCell& Cell : Self->Cells)
@@ -293,6 +295,7 @@ void AGenesisSpermSwarm::RegisterDebugPage()
 				NearWall += Self->Channel.LumenRadiusUm - FVector2D(Cell.Position.Y, Cell.Position.Z).Size() < Self->Tuning.WallAttractionDistanceUm ? 1 : 0;
 				SpeedSum += Cell.Speed;
 				UpstreamSum += Cell.Heading.X;
+				Backwards += Cell.Heading.X < 0.0 ? 1 : 0;
 			}
 			const double Count = Self->Cells.Num();
 			OutLines.Add(FString::Printf(TEXT("Zellen %d | progressiv %d | hyperaktiviert %d | träge %d | Simulationszeit %.1f s (×%.2f)"),
@@ -304,8 +307,9 @@ void AGenesisSpermSwarm::RegisterDebugPage()
 					Egg.IsFertilized() ? *FString::Printf(TEXT("befruchtet von Zelle %d nach %.1f s"), Egg.FertilizedByCell, Self->FertilizationResult.SecondsToFusion) : TEXT("unbefruchtet"),
 					Egg.BoundCells, 100.0f * Egg.CorticalReaction));
 			}
-			OutLines.Add(FString::Printf(TEXT("Ø Vortrieb %.1f µm/s | an der Wand (<%.0f µm) %.0f %% | Ø Ausrichtung gegen den Strom %+.2f | CPU %.3f ms"),
-				SpeedSum / Count, Self->Tuning.WallAttractionDistanceUm, 100.0 * NearWall / Count, UpstreamSum / Count, Self->LastTickMs));
+			OutLines.Add(FString::Printf(TEXT("Ø Vortrieb %.1f µm/s | an der Wand (<%.0f µm) %.0f %% | Ø Ausrichtung gegen den Strom %+.2f | rückwärts %.0f %% | CPU %.3f ms"),
+				SpeedSum / Count, Self->Tuning.WallAttractionDistanceUm, 100.0 * NearWall / Count, UpstreamSum / Count,
+				100.0 * Backwards / Count, Self->LastTickMs));
 		}
 	});
 #endif

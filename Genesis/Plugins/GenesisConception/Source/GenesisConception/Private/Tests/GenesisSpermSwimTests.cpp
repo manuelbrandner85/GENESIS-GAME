@@ -265,4 +265,53 @@ bool FGenesisSpermVisualTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/**
+ * Der ganze Schwarm muss in eine Richtung ziehen – auch mitten im Lumen, wo keine Wand hilft.
+ * Genau das fehlte: Ohne Strömung in der Kanalmitte hatten die Zellen dort keinen Hinweis,
+ * wohin, und die Hälfte schwamm rückwärts.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSpermSwarmDirectionTest, "Genesis.Conception.Swim.SwarmHeadsUpstream", GenesisSpermSwimTests::Flags)
+bool FGenesisSpermSwarmDirectionTest::RunTest(const FString& Parameters)
+{
+	using namespace GenesisSpermSwimTests;
+
+	FGenesisOviductChannel Channel;
+	Channel.LumenRadiusUm = 450.0f;
+	Channel.LengthUm = 200000.0f;
+	Channel.WallFlowSpeedUm = 25.0f;
+
+	FGenesisSpermSwimTuning Tuning = WithoutSwitching();
+
+	const int32 Count = 200;
+	double MeanHeading = 0.0;
+	double MeanDisplacement = 0.0;
+	int32 Backwards = 0;
+
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		FGenesisSpermCell Cell = GenesisSpermSwimLogic::CreateCell(12000 + Index, 0.85f, Channel, Tuning);
+		GenesisSpermSwimLogic::ApplyMotility(Cell, EGenesisSpermMotility::Progressive, Tuning);
+		// Mitten im Lumen, weit weg von jeder Wand
+		Cell.Position = FVector(100000.0, 0.0, 0.0);
+		const double StartX = Cell.Position.X;
+		GenesisSpermSwimLogic::Advance(Cell, Channel, Tuning, 30.0f);
+
+		MeanHeading += Cell.Heading.X / Count;
+		MeanDisplacement += (Cell.Position.X - StartX) / Count;
+		if (Cell.Heading.X < 0.0)
+		{
+			++Backwards;
+		}
+	}
+
+	AddInfo(FString::Printf(TEXT("Mitte des Lumens nach 30 s: Ausrichtung %.2f, Netto %+.0f µm, %d von %d rückwärts"),
+		MeanHeading, MeanDisplacement, Backwards, Count));
+
+	TestTrue(TEXT("Der Schwarm zieht flussaufwärts"), MeanHeading > 0.75);
+	TestTrue(TEXT("Und kommt dabei voran"), MeanDisplacement > 300.0);
+	TestTrue(TEXT("Kaum noch jemand schwimmt rückwärts"), Backwards < Count / 20);
+
+	return true;
+}
+
 #endif
