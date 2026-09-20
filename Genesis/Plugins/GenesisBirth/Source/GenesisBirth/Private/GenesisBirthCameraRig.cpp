@@ -117,7 +117,8 @@ void AGenesisBirthCameraRig::ApplyPerception(const FGenesisBirthState& State, co
 
 	// 3. Drehung: Das Kind dreht sich im Becken, um mit dem schmalsten Durchmesser durchzupassen
 	const float Roll = FMath::Lerp(0.0f, 88.0f, State.Rotation) + SmoothedPressure * 3.0f;
-	Camera->SetRelativeRotation(FRotator(-4.0f * SmoothedPressure, 0.0f, Roll));
+	// Dazu der eigene Blick: Das Kind wendet sich der Stimme zu, soweit es das kann
+	Camera->SetRelativeRotation(FRotator(-4.0f * SmoothedPressure + LookOffsetDegrees.Y, LookOffsetDegrees.X, Roll));
 
 	// 4. Belichtung: dunkel im Kanal, grell beim Durchtritt. Der Wechsel ist ein Sprung, kein Verlauf.
 	SmoothedLight = FMath::FInterpTo(SmoothedLight, Perception.Light, DeltaSeconds, 2.5f);

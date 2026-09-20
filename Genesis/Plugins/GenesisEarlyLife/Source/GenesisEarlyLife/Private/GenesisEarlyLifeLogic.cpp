@@ -69,6 +69,15 @@ namespace GenesisEarlyLifeLogic
 				State.CryingMinutes += Delta;
 			}
 
+			// Schreien aus eigenem Antrieb: Es ruft die Welt, aber es kostet auch. Ein schreiendes Kind
+			// atmet schneller, strampelt und verliert dabei Wärme – und ruhiger wird es davon nicht.
+			if (State.CryEffort > 0.05f)
+			{
+				State.CalledMinutes += Delta * State.CryEffort;
+				State.BodyTemperature -= 0.012f * State.CryEffort * Delta;
+				State.Calm = FMath::Clamp(State.Calm - 0.02f * State.CryEffort * Delta, 0.0f, 1.0f);
+			}
+
 			// 3. Hunger – bis zum ersten Trinken
 			if (!State.bHasFed)
 			{
@@ -109,7 +118,11 @@ namespace GenesisEarlyLifeLogic
 				State.Sleepiness = FMath::Clamp(State.Sleepiness + 0.02f * Delta, 0.0f, 1.0f);
 			}
 
-			// 7. Stufen
+			// 7. Stufen. Das eigene Suchen verkürzt den Weg zur Brust – aber nur auf der Haut,
+			// denn dort ist überhaupt etwas zu suchen.
+			const float RequiredMinutesToFeed = Tuning.MinutesToFirstFeed
+				* (1.0f - Tuning.RootingSpeedUp * FMath::Clamp(State.RootingEffort, 0.0f, 1.0f));
+
 			if (State.BodyTemperature <= Tuning.HypothermiaTemperature)
 			{
 				State.Stage = EGenesisNewbornStage::Hypothermic;
@@ -128,9 +141,10 @@ namespace GenesisEarlyLifeLogic
 				State.Stage = EGenesisNewbornStage::SkinContact;
 			}
 			else if (State.Stage == EGenesisNewbornStage::SkinContact && !State.bHasFed
-				&& State.MinutesSinceBirth >= Tuning.MinutesToFirstFeed && State.Calm > 0.45f)
+				&& State.MinutesSinceBirth >= RequiredMinutesToFeed && State.Calm > 0.45f)
 			{
-				// Der Brustkrabbelgang: Das Kind findet die Brust von selbst, wenn man es lässt
+				// Der Brustkrabbelgang: Das Kind findet die Brust von selbst, wenn man es lässt –
+				// und schneller, wenn es sucht. Das ist seine eigene Leistung, nicht die der Mutter.
 				State.bHasFed = true;
 				State.Stage = EGenesisNewbornStage::FirstFeed;
 			}

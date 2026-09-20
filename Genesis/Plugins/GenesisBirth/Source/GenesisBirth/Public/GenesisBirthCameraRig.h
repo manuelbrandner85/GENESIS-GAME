@@ -59,6 +59,13 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Birth")
 	bool bBecomeViewTarget = true;
 
+	/**
+	 * Blickrichtung relativ zur Ruhelage (Grad, X = seitlich, Y = hoch).
+	 * Ein Neugeborenes kann den Kopf kaum halten – viel mehr als ein Wenden zur Stimme ist nicht drin.
+	 * Gesetzt wird der Wert von der Steuerung; der Rig rechnet ihn auf die Kamera.
+	 */
+	FVector2D LookOffsetDegrees = FVector2D::ZeroVector;
+
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UCineCameraComponent> Camera;
 

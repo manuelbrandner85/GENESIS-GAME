@@ -103,10 +103,28 @@ struct GENESISEARLYLIFE_API FGenesisNewbornState
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") bool bHasFed = false;
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") bool bFirstMemoryEncoded = false;
 
+	/**
+	 * 0..1 – wie sehr das Kind gerade schreit, weil es schreien **will**.
+	 *
+	 * Das ist das einzige Werkzeug, das ein Neugeborenes hat. Es kann nicht greifen, nicht sprechen,
+	 * nicht weggehen – aber es kann rufen, und die Welt antwortet darauf. Wer nicht schreit,
+	 * wird später versorgt.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") float CryEffort = 0.0f;
+
+	/** 0..1 – Suchen nach der Brust (Suchreflex). Wirkt nur auf der Haut der Mutter. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") float RootingEffort = 0.0f;
+
+	/** Minuten, die das Kind aus eigenem Antrieb geschrien hat – die Welt hört mit. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") float CalledMinutes = 0.0f;
+
 	UPROPERTY() FGenesisTimestamp BirthTime;
 
 	bool IsAlive() const { return Stage != EGenesisNewbornStage::NotBorn; }
-	bool IsCrying() const { return Calm < 0.35f && Stage != EGenesisNewbornStage::FirstSleep; }
+	bool IsCrying() const { return (Calm < 0.35f || CryEffort > 0.25f) && Stage != EGenesisNewbornStage::FirstSleep; }
+
+	/** 0..1 – wie laut es gerade ist: aus Not und aus eigenem Antrieb. */
+	float GetCryLoudness() const { return IsCrying() ? FMath::Max(1.0f - Calm, CryEffort) : 0.0f; }
 };
 
 /** Stellschrauben der ersten Stunde. */
@@ -142,6 +160,12 @@ struct GENESISEARLYLIFE_API FGenesisEarlyLifeTuning
 
 	/** Minuten bis zum ersten Anlegen, wenn das Kind auf der Haut liegt (der "Brustkrabbelgang"). */
 	UPROPERTY(EditAnywhere, Category = "Timing") float MinutesToFirstFeed = 32.0f;
+
+	/**
+	 * Um wie viel das eigene Suchen den Weg zur Brust verkürzt (Anteil).
+	 * Der Brustkrabbelgang ist die Leistung des Kindes – nicht die der Mutter.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Timing", meta = (ClampMin = "0", ClampMax = "0.8")) float RootingSpeedUp = 0.45f;
 
 	/** Hunger je Minute (0..1). */
 	UPROPERTY(EditAnywhere, Category = "Needs") float HungerPerMinute = 0.02f;

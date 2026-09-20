@@ -59,6 +59,28 @@ namespace
 			}
 		}));
 
+	FAutoConsoleCommandWithWorldAndArgs GenesisNewbornCryCommand(
+		TEXT("genesis.Newborn.Cry"),
+		TEXT("Das Kind ruft (0..1). Im Spiel liegt das auf der Leertaste."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (UGenesisEarlyLifeSubsystem* Early = GetEarlyLife(World))
+			{
+				Early->SetCryEffort(Args.Num() > 0 ? FCString::Atof(*Args[0]) : 1.0f);
+			}
+		}));
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisNewbornRootCommand(
+		TEXT("genesis.Newborn.Root"),
+		TEXT("Das Kind sucht die Brust (0..1). Im Spiel liegt das auf E."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (UGenesisEarlyLifeSubsystem* Early = GetEarlyLife(World))
+			{
+				Early->SetRootingEffort(Args.Num() > 0 ? FCString::Atof(*Args[0]) : 1.0f);
+			}
+		}));
+
 	FAutoConsoleCommandWithWorldAndArgs GenesisNewbornSpeedCommand(
 		TEXT("genesis.Newborn.Speed"),
 		TEXT("Simulationsminuten je Sekunde Echtzeit (0 = nur Weltuhr)."),
@@ -186,6 +208,23 @@ void UGenesisEarlyLifeSubsystem::SetMotherSpeaking(bool bEnabled)
 	if (HasNewborn())
 	{
 		State.bMotherSpeaking = bEnabled;
+	}
+}
+
+void UGenesisEarlyLifeSubsystem::SetCryEffort(float Effort)
+{
+	if (HasNewborn())
+	{
+		State.CryEffort = FMath::Clamp(Effort, 0.0f, 1.0f);
+	}
+}
+
+void UGenesisEarlyLifeSubsystem::SetRootingEffort(float Effort)
+{
+	if (HasNewborn())
+	{
+		// Suchen kann das Kind nur, wo etwas zu suchen ist
+		State.RootingEffort = State.bSkinToSkin ? FMath::Clamp(Effort, 0.0f, 1.0f) : 0.0f;
 	}
 }
 

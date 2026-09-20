@@ -13,6 +13,7 @@ public class GenesisSlice : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
+			"InputCore",
 			"GameplayTags",
 			"GenesisCore",
 			"GenesisConception",

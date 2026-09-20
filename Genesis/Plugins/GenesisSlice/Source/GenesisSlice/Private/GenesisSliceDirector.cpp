@@ -268,11 +268,14 @@ void UGenesisSliceDirector::DrivePhase(float DeltaSeconds)
 		{
 			EarlyLife->TimeScale = Tuning.FirstHourTimeScale;
 
-			// Die Hebamme legt das Kind auf die Haut der Mutter. Das ist keine Entscheidung des Spielers,
-			// sondern die übliche Versorgung – solange es keine Eingabe gibt, handelt die Welt.
-			// Ohne sie kühlt das Kind aus, und der Durchlauf endet ohne den guten Schluss.
+			// Die Hebamme legt das Kind auf die Haut der Mutter. Das ist die übliche Versorgung –
+			// aber **wer ruft, wird früher geholt**. Ein Kind, das schreit, bekommt schneller Hilfe
+			// als eines, das still daliegt; das ist der einzige Hebel, den ein Neugeborenes hat.
+			const float Called = EarlyLife->HasNewborn() ? EarlyLife->GetState().CalledMinutes : 0.0f;
+			const float CareAfter = FMath::Max(0.4f, Tuning.SkinContactAfterMinutes - Called * Tuning.CallShortensCare);
+
 			if (!bCareGiven && EarlyLife->HasNewborn()
-				&& EarlyLife->GetState().MinutesSinceBirth >= Tuning.SkinContactAfterMinutes)
+				&& EarlyLife->GetState().MinutesSinceBirth >= CareAfter)
 			{
 				bCareGiven = true;
 				EarlyLife->SetSkinToSkin(true);

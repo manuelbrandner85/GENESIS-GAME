@@ -40,6 +40,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-026 | Mikrowelt: Licht und Belichtung | Geregeltes Endoskoplicht in zwei Bereichen, Streulicht der Umgebung, keine ausgebrannten Flächen mehr | DONE (Form der Coronazellen offen) |
 | GENESIS-027 | Coronazellen | Zellen drücken sich gegenseitig platt (Potenz-Voronoi mit weichem Schnitt), dunkle Fugen, Mikrovilli-Rauheit | DONE (Matrix zwischen den Zellen offen) |
 | GENESIS-028 | Matrix des Cumulus | Expandierter Komplex (innen dicht, außen locker), 2 687 Hyaluronsäure-Fäden zwischen den Zellen | DONE (Verformung der Fäden offen) |
+| GENESIS-029 | Die erste Entscheidung | Rufen, suchen, hinsehen – die drei Werkzeuge eines Neugeborenen, mit Kosten und Wirkung; Steuerung, Anzeige, Game Mode | DONE (Tastendruck von Hand zu bestätigen) |
 
 ## Protokoll
 
@@ -303,3 +304,14 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Fäden zwischen den Zellen](Media/GENESIS-028_Strands.png)
+
+### GENESIS-029 – Die erste Entscheidung
+- 2026-09-21: Der Durchlauf lief bisher von selbst – ein Ablauf, kein Spiel. Jetzt hat der Spieler genau das, was ein Mensch an seinem ersten Tag hat: **rufen** (Leertaste), **suchen** (E) und **hinsehen** (Maus). Mehr Tasten gibt es nicht, weil ein Neugeborenes nicht mehr kann.
+- 2026-09-21: **Beides kostet und beides wirkt.** Gemessen: erstes Anlegen nach 18,0 min statt 32,0 min, wenn das Kind sucht; nach 10 min Rufen 34,81 °C statt 34,92 °C und weniger Ruhe. Jede gerufene Minute holt die Versorgung vier Minuten früher. Wäre eines davon folgenlos, wäre die Eingabe Dekoration – der Test `Genesis.EarlyLife.WhatTheChildCanDo` prüft genau das, einschließlich: Suchen ohne Hautkontakt bringt nichts.
+- 2026-09-21: **Anzeige:** zwei Zeilen unten im Bild, die sich ausblenden, sobald der Spieler sie befolgt hat. „E: suchen" erscheint erst auf der Haut der Mutter – vorher wäre der Hinweis eine Lüge. Kein Balken, keine Zahl: Wärme, Ruhe und Hunger sollen am Bild und am Ton ablesbar sein.
+- 2026-09-21: Eigener Game Mode (`AGenesisSliceGameMode`) mit Steuerung und HUD; Tasten als klassische Action-Mappings in `DefaultInput.ini`, damit der Aufbau vollständig kopflos bleibt. Die Steuerung meldet beim Start, welche Tasten sie in den Einstellungen gefunden hat.
+- 2026-09-21: **Im Spiel geprüft:** Hinweise erscheinen in der Geburtsszene; Log bestätigt die Belegung (SpaceBar/Gamepad, E/Gamepad); vollständiger Durchlauf weiterhin grün (geboren nach 38,2 s, erster Schlaf nach 70,3 s). 106 von 106 Tests bestanden.
+- Offen: Geprüft ist die Kette, nicht der Tastendruck – ein automatischer Tastendruck ist in dieser Umgebung nicht möglich und muss einmal von Hand bestätigt werden. Vor der Geburt kann der Spieler nichts tun; es gibt kein Menü und kein Pausieren.
+- **Status: DONE.**
+
+![Die erste Entscheidung](Media/GENESIS-029_Prompt.png)

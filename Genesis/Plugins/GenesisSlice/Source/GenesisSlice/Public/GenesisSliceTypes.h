@@ -139,6 +139,12 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	 */
 	UPROPERTY(EditAnywhere, Category = "Slice") float SkinContactAfterMinutes = 2.0f;
 
+	/**
+	 * Um wie viele Minuten jede gerufene Minute die Versorgung vorzieht.
+	 * Ein Kind, das schreit, wird schneller geholt – das ist der einzige Hebel, den es hat.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Slice") float CallShortensCare = 4.0f;
+
 	/** Spätestens nach dieser Zeit endet die erste Stunde, auch wenn das Kind nicht schläft (min). */
 	UPROPERTY(EditAnywhere, Category = "Slice") float FirstHourLimitMinutes = 75.0f;
 

@@ -37,7 +37,8 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 18. [Die Stimme](Docs/18_Stimme.md)
 19. [Der Klang der Orte](Docs/19_Klang_der_Orte.md)
 20. [Der Durchlauf](Docs/20_Der_Durchlauf.md)
-21. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
+21. [Die erste Entscheidung](Docs/21_Die_erste_Entscheidung.md)
+22. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
 
 ## Voraussetzungen
 

@@ -56,6 +56,15 @@ public:
 	/** Jemand spricht mit dem Kind. */
 	void SetMotherSpeaking(bool bEnabled);
 
+	/**
+	 * Das Kind schreit aus eigenem Antrieb (0..1). Sein einziges Werkzeug: Die Welt hört es.
+	 * Es kostet Wärme und Ruhe – aber es holt Hilfe.
+	 */
+	void SetCryEffort(float Effort);
+
+	/** Das Kind sucht die Brust (0..1). Wirkt nur auf der Haut der Mutter. */
+	void SetRootingEffort(float Effort);
+
 	UPROPERTY(EditAnywhere, Category = "Genesis|EarlyLife")
 	FGenesisEarlyLifeTuning Tuning;
 

@@ -166,4 +166,70 @@ bool FGenesisEarlyLifeDeterminismTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/**
+ * Was ein Neugeborenes selbst tun kann: rufen und suchen.
+ *
+ * Beides ist wenig, und beides kostet – aber es wirkt. Ein Kind, das sucht, findet die Brust früher;
+ * ein Kind, das ruft, verliert dabei Wärme und Ruhe. Wäre eines davon folgenlos, wäre die Eingabe
+ * Dekoration.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisEarlyLifeAgencyTest, "Genesis.EarlyLife.WhatTheChildCanDo", EarlyLifeFlags)
+
+bool FGenesisEarlyLifeAgencyTest::RunTest(const FString& Parameters)
+{
+	const FGenesisEarlyLifeTuning Tuning;
+
+	// 1. Suchen verkürzt den Weg zur Brust
+	auto MinutesToFeed = [&Tuning](float Rooting)
+	{
+		FGenesisNewbornState State = MakeNewborn(21);
+		State.bSkinToSkin = true;
+		State.bMotherSpeaking = true;
+		double Minutes = 0.0;
+		while (!State.bHasFed && Minutes < 90.0)
+		{
+			State.RootingEffort = Rooting;
+			GenesisEarlyLifeLogic::Advance(State, Tuning, 0.5);
+			Minutes += 0.5;
+		}
+		return State.bHasFed ? Minutes : -1.0;
+	};
+
+	const double Passive = MinutesToFeed(0.0f);
+	const double Searching = MinutesToFeed(1.0f);
+	AddInfo(FString::Printf(TEXT("Erstes Anlegen: ohne Suchen nach %.1f min, mit Suchen nach %.1f min"), Passive, Searching));
+	TestTrue(TEXT("Beide finden die Brust"), Passive > 0.0 && Searching > 0.0);
+	TestTrue(TEXT("Wer sucht, findet früher"), Searching < Passive - 5.0);
+
+	// 2. Rufen kostet Wärme und Ruhe
+	FGenesisNewbornState Quiet = MakeNewborn(22);
+	FGenesisNewbornState Calling = MakeNewborn(22);
+	for (int32 Step = 0; Step < 20; ++Step)
+	{
+		Calling.CryEffort = 1.0f;
+		GenesisEarlyLifeLogic::Advance(Quiet, Tuning, 0.5);
+		GenesisEarlyLifeLogic::Advance(Calling, Tuning, 0.5);
+	}
+
+	AddInfo(FString::Printf(TEXT("Nach 10 min: still %.2f °C / Ruhe %.2f | rufend %.2f °C / Ruhe %.2f, gerufen %.1f min"),
+		Quiet.BodyTemperature, Quiet.Calm, Calling.BodyTemperature, Calling.Calm, Calling.CalledMinutes));
+
+	TestTrue(TEXT("Rufen kostet Wärme"), Calling.BodyTemperature < Quiet.BodyTemperature - 0.05f);
+	TestTrue(TEXT("Rufen kostet Ruhe"), Calling.Calm <= Quiet.Calm);
+	TestTrue(TEXT("Die gerufene Zeit wird mitgezählt"), Calling.CalledMinutes > 9.0f);
+
+	// 3. Suchen ohne Hautkontakt gibt es nicht – da ist nichts zu suchen
+	FGenesisNewbornState Alone = MakeNewborn(23);
+	Alone.RootingEffort = 1.0f;
+	double AloneMinutes = 0.0;
+	while (!Alone.bHasFed && AloneMinutes < 60.0)
+	{
+		GenesisEarlyLifeLogic::Advance(Alone, Tuning, 0.5);
+		AloneMinutes += 0.5;
+	}
+	TestFalse(TEXT("Ohne Haut kein Anlegen"), Alone.bHasFed);
+
+	return true;
+}
+
 #endif
