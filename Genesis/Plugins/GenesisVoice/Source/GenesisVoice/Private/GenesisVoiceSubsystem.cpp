@@ -3,6 +3,8 @@
 #include "GenesisVoiceSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "GenesisAudioSubsystem.h"
+#include "GenesisAudioTypes.h"
 #include "GenesisBodySubsystem.h"
 #include "GenesisBodyTypes.h"
 #include "GenesisDebug.h"
@@ -205,6 +207,19 @@ void UGenesisVoiceSubsystem::Say(const FGuid& Speaker, const FGenesisUtterance& 
 		UE_LOG(LogGenesis, Verbose, TEXT("Stimme: %s kann mit %.1f Jahren noch nicht %s."),
 			*Speaker.ToString(EGuidFormats::Short), Profile.AgeYears, *GenesisVoiceLogic::GetUtteranceName(Utterance.Type));
 		return;
+	}
+
+	// Dem Mix sagen, dass hier jemand spricht: Musik und Umgebung treten dafür zurück.
+	// Ein Schrei ist dabei kein beiläufiger Satz – er schneidet durch.
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UGenesisAudioSubsystem* Audio = GameInstance->GetSubsystem<UGenesisAudioSubsystem>())
+		{
+			const bool bUrgent = Utterance.Type == EGenesisUtterance::Cry;
+			const float Hold = FMath::Max(0.6f, GenesisVoiceLogic::GetNaturalDurationSeconds(Utterance.Type));
+			Audio->PushMixRequest(bUrgent ? EGenesisAudioBus::VitalSignal : EGenesisAudioBus::Dialogue,
+				FMath::Clamp(0.4f + 0.6f * Utterance.Intensity, 0.0f, 1.0f), Hold);
+		}
 	}
 
 	LastUtterance = FString::Printf(TEXT("%s (%s, Stärke %.2f)"),

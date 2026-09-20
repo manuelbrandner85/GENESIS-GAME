@@ -47,6 +47,8 @@ public:
 
 private:
 	FGenesisMusicSynth Synth;
+	/** Platz, den der Mix der Musik gerade lässt (linear). */
+	float MixGain = 1.0f;
 	FGenesisMusicPhrase PendingPhrase;
 	mutable FCriticalSection PhraseLock;
 	bool bPhraseDirty = false;

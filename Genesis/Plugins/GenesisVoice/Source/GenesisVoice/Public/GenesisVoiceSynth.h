@@ -4,7 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GenesisRandom.h"
+#include "GenesisHearingFilter.h"
 #include "GenesisVoiceTypes.h"
+
+/** Die Hörwahrnehmung ist dieselbe wie für alle Klänge der Welt – siehe GenesisAudioCore. */
+using FGenesisVoiceHearing = FGenesisHearingFilter;
 
 /**
  * Die Stimme als Synthese – nach dem Quelle-Filter-Modell, mit dem die Phonetik den Menschen beschreibt.
@@ -21,32 +25,6 @@
  * Nichts davon ist eine Aufnahme. Das hat denselben Grund wie beim Körperklang: Der Ton folgt den Werten
  * der Simulation, er ist reproduzierbar, und er lässt sich messen.
  */
-/**
- * Wie eine Stimme beim Hörer ankommt.
- *
- * Im Mutterleib hört ein Kind die Stimme seiner Mutter durch Bauchdecke und Fruchtwasser:
- * Die Höhen fehlen fast ganz, die Sprachmelodie bleibt. Genau deshalb erkennt ein Neugeborenes
- * die Stimme wieder, die es neun Monate lang gehört hat – es kennt ihre Melodie, nicht ihre Worte.
- */
-struct GENESISVOICE_API FGenesisVoiceHearing
-{
-	/** Grenzfrequenz der Hörwahrnehmung (Hz). Im Fruchtwasser einige hundert, an Luft fast alles. */
-	float CutoffHz = 16000.0f;
-
-	/** Lautstärke beim Hörer (Entfernung, Dämpfung durch Gewebe). */
-	float Gain = 1.0f;
-
-	/** Filtert einen Block an Ort und Stelle. Der Zustand läuft über Aufrufe hinweg weiter. */
-	void Process(float* Audio, int32 Frames, float SampleRate);
-
-	void Reset() { Stage1 = 0.0f; Stage2 = 0.0f; Stage3 = 0.0f; Stage4 = 0.0f; }
-
-private:
-	float Stage1 = 0.0f;
-	float Stage2 = 0.0f;
-	float Stage3 = 0.0f;
-	float Stage4 = 0.0f;
-};
 
 struct GENESISVOICE_API FGenesisVoiceSynth
 {

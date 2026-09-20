@@ -32,7 +32,8 @@ int32 UGenesisMusicSynthComponent::OnGenerateAudio(float* OutAudio, int32 NumSam
 			Synth.SetPhrase(PendingPhrase, bPendingLoop);
 			bPhraseDirty = false;
 		}
-		Synth.MasterGain = MusicGain;
+		// Der Mix entscheidet, wie laut die Musik gerade sein darf – beim Sprechen tritt sie zurück
+		Synth.MasterGain = MusicGain * MixGain;
 	}
 
 	Synth.Render(OutAudio, NumSamples);
@@ -82,6 +83,15 @@ void UGenesisMusicSynthComponent::PlayLeitmotifOfListener()
 void UGenesisMusicSynthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (const UGameInstance* MixInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (const UGenesisAudioSubsystem* MixAudio = MixInstance->GetSubsystem<UGenesisAudioSubsystem>())
+		{
+			FScopeLock Lock(&PhraseLock);
+			MixGain = MixAudio->GetBusGainLinear(EGenesisAudioBus::Music);
+		}
+	}
 
 	if (!bFollowLifePhase)
 	{

@@ -26,7 +26,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-012 | Körperklang | Synthese von Herzschlag, Blutstrom, Mutterleib, Atem; Hörwahrnehmung wird hörbar; Hörproben als WAV | DONE (Musik und Weltklang offen) |
 | GENESIS-013 | Voice System | Stimmprofil aus dem Körper, Stimmwechsel, Alters- und Krankheitsstimme, Säuglingslaute, Stimme der Mutter durch den Mutterleib | DONE (Sprache offen) |
 | GENESIS-014 | Dialogue System | Dialog-Datenbank, Lokalisierung DE/EN/IT, Weltwahrheit, Gerüchte, Untertitel | OFFEN |
-| GENESIS-015 | Vertical-Slice-Audio | Entstehung, Embryo, Geburt, erste Minuten | OFFEN |
+| GENESIS-015 | Vertical-Slice-Audio | Klang der Orte (Eileiter, Mutterleib, Kreißsaal), Darmgeräusche, Mutterkuchen, Monitor im Pulstakt – und die Mischung wirkt | DONE (Raumhall und Ortung offen) |
 | GENESIS-016 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
 | GENESIS-017 | Relationships & NPC Memory | Beziehungsdimensionen, NPC-Erinnerungssätze | OFFEN |
 | GENESIS-018 | Entstehung: Feinschliff | Flimmerhärchen mit metachronem Schlag, Akrosomkappe, Epithel-Zellmosaik, durchscheinendes Gewebe | DONE |
@@ -194,7 +194,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-20: **Gemessen:** 120 Schläge in 60 s bei 120/min; Energie über 2 kHz an Luft 10,8-mal stärker als im Mutterleib; bei der Geburt springen die Höhen um den Faktor 7,6; Spitzenwert 0,689 (kein Übersteuern); gleicher Seed → Unterschied 0,00000000. 78 von 78 Tests bestanden.
 - 2026-09-20: `genesis.Sound.RenderWav <mutterleib|wehen|geburt|neugeboren> [s]` schreibt Hörproben; zwei liegen als Beleg unter `Docs/Media/Audio/`.
 - 2026-09-20: Abweichung vom Plan, bewusst: statt MetaSounds-Graphen eigene Synthese in C++ – sie ist kopflos baubar, reproduzierbar und im Test messbar. MetaSounds bleiben für die Musik vorgesehen, wo ein bearbeitbarer Graph den Unterschied macht.
-- Offen: Musik wird noch nicht gespielt (GENESIS-011/012 MetaSounds); Welt draußen klingt nicht; Synthese ist mono; Darmgeräusche der Mutter fehlen.
+- Offen: Musik wird noch nicht gespielt (GENESIS-011/012 MetaSounds); Welt draußen klingt nicht; Synthese ist mono; Darmgeräusche der Mutter fehlen. **Nachgetragen mit GENESIS-015: Welt und Darmgeräusche sind da.**
 - **Status: DONE** (Umfang: Körperklang; Musik und Weltklang als eigene Blöcke).
 
 ### GENESIS-011 – Die Seelenmusik klingt
@@ -230,3 +230,16 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE** (Umfang: Stimme als Körper und nicht-sprachliche Laute; Sprache als eigener Block).
 
 ![Stimmen in der Geburtsszene](Media/GENESIS-013_Voices.png)
+
+### GENESIS-015 – Der Klang der Orte
+- 2026-09-20: Plugin `GenesisWorldSound`: Grundton aus drei Rauschbändern plus Ereignisse aus einem Poisson-Prozess. Drei Orte des Vertical Slice – Eileiter-Ampulle, Mutterleib von innen, Kreißsaal – jeweils mit eigener Bandgrenze, die auch für jedes einzelne Ereignis gilt.
+- 2026-09-20: **Darmgeräusche der Mutter** (in GENESIS-012 als fehlend notiert) sind da: 5 bis 30 je Minute wie beim Menschen. Dazu das Rauschen des Mutterkuchens und der Monitor im Kreißsaal – beide im Takt des mütterlichen Herzens.
+- 2026-09-20: **Die Mischung wirkt.** Die Mix-Engine gab es seit GENESIS-008, angewendet hat sie niemand: Körperklang, Musik, Stimmen und Orte holen sich jetzt ihren Bus-Pegel. Wer spricht, meldet sich beim Mix an; ein Schrei läuft über den Bus für lebenswichtige Signale und schneidet schneller durch.
+- 2026-09-20: Der Filter der Hörwahrnehmung liegt jetzt in `GenesisAudioCore` (`FGenesisHearingFilter`) und gilt für Stimmen wie für Orte – es ist dasselbe Ohr. In der Geburtsszene stehen zwei Orte gleichzeitig: der Mutterleib von innen und der Kreißsaal von außen, der mit dem ersten Atemzug klar wird.
+- 2026-09-20: **Gemessen:** Höhenanteil über 2 kHz – Mutterleib 0,0925, Eileiter 0,3510, Kreißsaal 0,5455; Darmgeräusche 21,0/min bei arbeitender gegen 4/min bei ruhender Verdauung; Mutterkuchen 79,5/min bei Puls 78; Kreißsaal ruhig 2 Instrumente und 10 Schritte gegen 17 und 47 unter der Austreibung; beim Sprechen tritt die Umgebung auf −5,0 dB und die Musik auf −8,0 dB zurück, eine halbe Sekunde später steht die Umgebung bei −3,6 dB. 100 von 100 Tests bestanden.
+- 2026-09-20: **Im Spiel geprüft** (HUD-Seite „Klang der Orte", Geburt im Zeitraffer): Mutterleib von innen und Kreißsaal von außen, Puls der Mutter 110/min und Betrieb 0,70 mitten in der Eröffnung.
+- 2026-09-20: Durch die Messung gefunden: Die Ereignisse liefen an der Bandgrenze des Ortes vorbei – der Mutterleib klang dumpf, aber jedes Gluckern darin hell. Jetzt filtert der Ort alles, was in ihm geschieht.
+- Offen: mono, kein Raumhall, keine Ortung einzelner Ereignisse; die Stimmen im Gang sind Rauschen mit Sprechrhythmus; Türen, Alarme, Wasser und die Atem- und Pressgeräusche der Mutter fehlen.
+- **Status: DONE** (Umfang: Klang der Orte des Vertical Slice und wirksame Mischung; Raumakustik als eigener Block).
+
+![Klang der Orte](Media/GENESIS-015_Places.png)

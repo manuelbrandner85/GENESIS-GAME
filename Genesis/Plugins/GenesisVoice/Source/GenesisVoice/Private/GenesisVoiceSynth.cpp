@@ -17,29 +17,6 @@ namespace
 	}
 }
 
-void FGenesisVoiceHearing::Process(float* Audio, int32 Frames, float SampleRate)
-{
-	if (!Audio || Frames <= 0)
-	{
-		return;
-	}
-
-	// Vier einpolige Tiefpässe hintereinander: 24 dB je Oktave. Gewebe und Fruchtwasser dämpfen
-	// mit der Frequenz steil – im Mutterleib gemessen fehlt oberhalb von 1 kHz fast alles,
-	// während die Sprachmelodie unterhalb von 500 Hz erhalten bleibt.
-	const float Cutoff = FMath::Clamp(CutoffHz, 40.0f, SampleRate * 0.45f);
-	const float Alpha = 1.0f - FMath::Exp(-2.0f * PI * Cutoff / FMath::Max(8000.0f, SampleRate));
-
-	for (int32 Frame = 0; Frame < Frames; ++Frame)
-	{
-		Stage1 += (Audio[Frame] - Stage1) * Alpha;
-		Stage2 += (Stage1 - Stage2) * Alpha;
-		Stage3 += (Stage2 - Stage3) * Alpha;
-		Stage4 += (Stage3 - Stage4) * Alpha;
-		Audio[Frame] = Stage4 * Gain;
-	}
-}
-
 void FGenesisVoiceSynth::FResonator::Set(float FrequencyHz, float BandwidthHz, float InSampleRate)
 {
 	const float Radius = FMath::Exp(-PI * BandwidthHz / InSampleRate);

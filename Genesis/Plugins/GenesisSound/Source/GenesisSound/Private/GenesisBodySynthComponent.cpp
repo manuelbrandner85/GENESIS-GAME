@@ -95,5 +95,9 @@ void UGenesisBodySynthComponent::UpdateFromSimulation()
 		}
 	}
 
+	// Der Mix entscheidet, wie viel Platz der eigene Körper gerade bekommt: Wenn jemand spricht
+	// oder ein lebenswichtiges Signal durchschneidet, tritt er zurück.
+	Params.MasterGain *= Audio->GetBusGainLinear(EGenesisAudioBus::Body);
+
 	SetSoundParams(Params);
 }

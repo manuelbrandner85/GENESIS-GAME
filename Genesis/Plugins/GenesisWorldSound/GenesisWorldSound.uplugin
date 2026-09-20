@@ -1,0 +1,26 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Genesis World Sound",
+	"Description": "Der Klang der Orte: Eileiter, Mutterleib von innen und Kreißsaal. Grundton und Ereignisse werden erzeugt, nicht abgespielt – und der Mix entscheidet, was davon gerade zu hören ist.",
+	"Category": "Genesis",
+	"CreatedBy": "GENESIS Team",
+	"CanContainContent": true,
+	"EnabledByDefault": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "GenesisWorldSound",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{ "Name": "GenesisCore", "Enabled": true },
+		{ "Name": "GenesisBody", "Enabled": true },
+		{ "Name": "GenesisBirth", "Enabled": true },
+		{ "Name": "GenesisAudioCore", "Enabled": true },
+		{ "Name": "GenesisSound", "Enabled": true }
+	]
+}

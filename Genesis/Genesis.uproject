@@ -76,6 +76,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GenesisWorldSound",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [
