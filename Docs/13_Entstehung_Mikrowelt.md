@@ -268,15 +268,23 @@ bei LIN um 0,1–0,3 – sie peitschen, aber sie kommen voran.
 **4. Die Lockwirkung galt nur für Hyperaktivierte.** Jetzt reagieren auch progressive Zellen auf den
 Progesteron-Gradienten, nur träger (45 %). Eindringen kann weiterhin nur eine kapazitierte Zelle.
 
-**5. Zu wenige.** 300 Zellen sahen nach Einzelgängern aus, nicht nach Schwarm. Jetzt 4 500 –
-gemessen 138 FPS (Frame 7,2 ms, Spiel-Thread 5,6 ms, GPU 5,4 ms). Bei 8 000 Zellen wird der
-Spiel-Thread mit 10,4 ms zum Engpass; dort liegt die Grenze ohne weitere Arbeit.
+**5. Zu wenige.** 300 Zellen sahen nach Einzelgängern aus, nicht nach Schwarm. Jetzt 6 000 –
+gemessen 97 FPS (Frame 10,3 ms, Spiel-Thread 7,5 ms, GPU 9,8 ms); 4 500 Zellen liefen mit 138 FPS,
+8 000 mit 72 FPS, dort ist der Spiel-Thread der Engpass.
+
+**6. Alle auf einmal verteilt.** Die Zellen starteten gleichmäßig über den ganzen simulierten
+Abschnitt von 3 mm – dadurch war überall wenig los. Sie kommen aber nicht verteilt an, sondern als
+**Pulk von der Gebärmutter her**: Der Zug, der es bis in die Ampulle geschafft hat, zieht gemeinsam
+flussaufwärts. Jetzt starten sie 700 µm unterhalb der Eizelle mit 450 µm Streuung und schwimmen
+gemeinsam auf sie zu.
 
 **Im Spiel gemessen** (4 500 Zellen, nach 68,8 s Simulationszeit):
 Ø Ausrichtung gegen den Strom **+0,79**, **rückwärts 5 %**, an der Wand 14 %, Ø Vortrieb 31,0 µm/s;
 2 116 progressiv, 2 355 hyperaktiviert, 29 träge; Eizelle befruchtet nach 21,3 s.
 
 ![Schwarm nach der Korrektur](Media/GENESIS-025_SwarmHUD.png)
+
+![Der Pulk an der Eizelle](Media/GENESIS-025_Cohort.png)
 
 Offen: Reduktionsstufen (LODs) für die Zelle – die Geißel ist am Ende 0,12 µm dünn, eine automatische
 Reduktion würde genau diese Fläche zerlegen. Ohne sie ist bei etwa 8 000 Zellen Schluss.

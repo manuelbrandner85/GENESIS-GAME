@@ -2,10 +2,10 @@
 #
 # Setzt die Zahl der Zellen im Schwarm der Eileiter-Ampulle.
 #
-# Eine Spermienzelle hat 43 120 Dreiecke. Bei 4 500 Zellen sind das rechnerisch 194 Millionen –
+# Eine Spermienzelle hat 43 120 Dreiecke. Bei 6 000 Zellen sind das rechnerisch 259 Millionen –
 # sichtbar ist davon nur ein Bruchteil, weil die Kamera in einem Kanal von 3 mm Länge steht und
-# die Engine alles andere verwirft. Gemessen: 138 FPS bei 4 500 Zellen (Frame 7,2 ms, Spiel-Thread
-# 5,6 ms, GPU 5,4 ms). Erst ab etwa 8 000 Zellen wird der Spiel-Thread zum Engpass (10,4 ms).
+# die Engine alles andere verwirft. Gemessen: 138 FPS bei 4 500 Zellen, 97 FPS bei 6 000 (Frame
+# 10,3 ms, Spiel-Thread 7,5 ms, GPU 9,8 ms), 72 FPS bei 8 000 – dort ist der Spiel-Thread der Engpass.
 #
 # Reduktionsstufen (LODs) wären der nächste Hebel, sind hier aber bewusst nicht gesetzt: Die Geißel
 # ist an ihrem Ende 0,12 µm dünn, und eine automatische Reduktion zerlegt genau diese Fläche –
@@ -19,7 +19,7 @@ import os
 import unreal
 
 MAP_PATH = "/Game/Genesis/Conception/Maps/L_GEN_OviductAmpulla"
-CELL_COUNT = int(os.environ.get("GENESIS_CELL_COUNT", "4500"))
+CELL_COUNT = int(os.environ.get("GENESIS_CELL_COUNT", "6000"))
 
 
 def log(message):

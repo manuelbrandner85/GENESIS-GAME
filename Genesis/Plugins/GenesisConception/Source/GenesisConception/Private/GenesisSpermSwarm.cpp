@@ -105,7 +105,27 @@ void AGenesisSpermSwarm::RebuildSwarm()
 	{
 		const float Vitality = FMath::Clamp(VitalityRandom.Gaussian(MeanVitality, 0.18f), 0.0f, 1.0f);
 		const uint64 CellSeed = GenesisHash::Combine(GenesisHash::Combine(static_cast<uint64>(Seed), CellSeedSalt), static_cast<uint64>(Index));
-		Cells.Add(GenesisSpermSwimLogic::CreateCell(CellSeed, Vitality, Channel, Tuning));
+		FGenesisSpermCell Cell = GenesisSpermSwimLogic::CreateCell(CellSeed, Vitality, Channel, Tuning);
+
+		// Die Zellen kommen nicht gleichmäßig über den ganzen Eileiter verteilt an, sondern als Pulk
+		// von der Gebärmutter her: Der Zug, der es bis in die Ampulle geschafft hat, zieht gemeinsam
+		// flussaufwärts. Gleichverteilung über drei Millimeter sieht dagegen nach Einzelgängern aus.
+		if (StartBandSpreadUm > 0.0f)
+		{
+			const float BandCenter = Oocyte
+				? static_cast<float>(GetActorTransform().InverseTransformPosition(Oocyte->GetActorLocation()).X
+					/ GenesisMicroScale::UnitsPerMicrometer) - StartBandDistanceUm
+				: 0.5f * Channel.LengthUm - StartBandDistanceUm;
+
+			const float Offset = VitalityRandom.Gaussian(0.0f, StartBandSpreadUm);
+			Cell.Position.X = FMath::Fmod(BandCenter + Offset + Channel.LengthUm, Channel.LengthUm);
+			if (Cell.Position.X < 0.0)
+			{
+				Cell.Position.X += Channel.LengthUm;
+			}
+		}
+
+		Cells.Add(MoveTemp(Cell));
 	}
 
 	SimulationSeconds = 0.0;

@@ -69,10 +69,21 @@ public:
 	double GetSimulationSeconds() const { return SimulationSeconds; }
 
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "1", ClampMax = "20000"))
-	int32 CellCount = 4500;
+	int32 CellCount = 6000;
 
 	UPROPERTY(EditAnywhere, Category = "Swarm")
 	int32 Seed = 1;
+
+	/**
+	 * Wie weit der Pulk beim Start unterhalb der Eizelle steht (µm, Richtung Gebärmutter).
+	 * Die Zellen ziehen von dort flussaufwärts – so, wie sie tatsächlich ankommen.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Swarm")
+	float StartBandDistanceUm = 700.0f;
+
+	/** Streuung des Pulks entlang des Kanals (µm). 0 = gleichmäßig über den ganzen Abschnitt verteilt. */
+	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0"))
+	float StartBandSpreadUm = 450.0f;
 
 	/** Vitalität des Ejakulats (0..1); einzelne Zellen streuen darum. */
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0", ClampMax = "1"))
