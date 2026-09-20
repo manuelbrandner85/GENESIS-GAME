@@ -22,7 +22,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-008 | Audio Core | Hörwahrnehmung aus dem Körper (Mutterleib, Geburtssprung, Alter, Tunnel, Tinnitus), Körperklang-Parameter, Mix-Engine mit Prioritäten und weichem Ducking | DONE |
 | GENESIS-009 | Soul Music | Seelenmotiv, Phasen-Instrumentierung, Charaktermotive, Vererbung, Erinnerungsfragmente, Lebens-Soundtrack, Todeskomposition | DONE |
 | GENESIS-010 | Entstehung: Mikrowelt | Eileiter-Ampulle (Blender, Nanite), Spermienzelle, Schwimmmodell (CASA, Rheotaxis, Wandbindung), Schwarm, Schwebeteilchen, Mikroskop-Kamera mit Endoskoplicht | DONE |
-| GENESIS-011 | Music Director | Musikschichten, Emotion → musikalische Parameter, Stille, subjektive Zeit, Quartz | OFFEN |
+| GENESIS-011 | Seelenmusik hörbar | Acht Instrumente als Synthese, Nachhall, Leitmotiv folgt der Lebensphase, Hörproben als WAV | DONE (Music Director offen) |
 | GENESIS-012 | Körperklang | Synthese von Herzschlag, Blutstrom, Mutterleib, Atem; Hörwahrnehmung wird hörbar; Hörproben als WAV | DONE (Musik und Weltklang offen) |
 | GENESIS-013 | Voice System | VoiceProfile, Stimmalterung, Gesundheit, Babylaute → Sprache | OFFEN |
 | GENESIS-014 | Dialogue System | Dialog-Datenbank, Lokalisierung DE/EN/IT, Weltwahrheit, Gerüchte, Untertitel | OFFEN |
@@ -196,3 +196,12 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-20: Abweichung vom Plan, bewusst: statt MetaSounds-Graphen eigene Synthese in C++ – sie ist kopflos baubar, reproduzierbar und im Test messbar. MetaSounds bleiben für die Musik vorgesehen, wo ein bearbeitbarer Graph den Unterschied macht.
 - Offen: Musik wird noch nicht gespielt (GENESIS-011/012 MetaSounds); Welt draußen klingt nicht; Synthese ist mono; Darmgeräusche der Mutter fehlen.
 - **Status: DONE** (Umfang: Körperklang; Musik und Weltklang als eigene Blöcke).
+
+### GENESIS-011 – Die Seelenmusik klingt
+- 2026-09-20: `FGenesisMusicSynth`: acht Instrumente aus Obertonstrukturen, Hüllkurven und (Gitarre) einer schwingenden Saite; Nachhall aus vier Kammfiltern und zwei Allpässen, gesteuert von `Space` und `Presence` der Phrase.
+- 2026-09-20: `AGenesisMusicActor` spielt das Leitmotiv der hörenden Person und holt es beim Wechsel der Lebensphase sofort neu – dieselbe Melodie, andere Instrumentierung. Zwischen den Wiederholungen sechs Sekunden Stille.
+- 2026-09-20: **Gemessen:** Tonhöhe auf 0,26 % genau (MIDI 69 → 440,4 Hz); Kindheit 8 Noten bei 84 BPM mit Höhenanteil 0,495 gegen Alter 4 Noten bei 58 BPM mit 0,175; Ausklang von 0,029 auf 0,007; Spitzenwert 0,237; zweimal gerendert identisch. 83 von 83 Tests bestanden.
+- 2026-09-20: `genesis.Music.RenderWav <lebensphase> [s]` schreibt Hörproben; zwei liegen unter `Docs/Media/Audio/`.
+- 2026-09-20: Durch die Messung gefunden: Die Hörprobe wiederholte die Phrase stillschweigend und ließ den Nachhall anschwellen statt verklingen. Wiederholen ist jetzt ein ausdrücklicher Schalter.
+- Offen: kein Music Director (Schichten, Emotion → Parameter, subjektive Zeit); keine Überblendung zwischen Phrasen; mono; Erinnerungsfragmente und Todeskomposition werden noch nicht gespielt.
+- **Status: DONE** (Umfang: Seelenmusik hörbar; Regie der Musik als eigener Block).

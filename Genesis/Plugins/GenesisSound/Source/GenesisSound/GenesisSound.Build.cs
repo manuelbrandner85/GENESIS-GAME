@@ -17,7 +17,10 @@ public class GenesisSound : ModuleRules
 			"GenesisCore",
 			"GenesisAudioCore",
 			"GenesisBody",
-			"GenesisBirth"
+			"GenesisBirth",
+			"GenesisSoul",
+			"GenesisSoulMusic",
+			"GameplayTags"
 		});
 	}
 }

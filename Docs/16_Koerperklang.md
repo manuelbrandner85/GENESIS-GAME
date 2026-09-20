@@ -56,9 +56,62 @@ Geburtsszene; er zieht sich seine Werte jeden Tick selbst aus der Simulation.
 
 ## Offen (bewusst, nicht versteckt)
 
-- **Musik fehlt**: Soul Music (GENESIS-009) berechnet Motive, aber niemand spielt sie. Dafür sind
-  MetaSounds der richtige Ort – sie lassen sich später im Editor bearbeiten (GENESIS-011/012).
+- **Musik**: inzwischen hörbar, siehe unten (GENESIS-011).
 - **Die Welt draußen klingt noch nicht**: Stimmen, Geräte, Raumhall im Kreißsaal fehlen.
 - Die Synthese ist **mono**. Für Kopfhörer wäre eine leichte Verbreiterung sinnvoll, für den Mutterleib
   aber nicht – dort gibt es keine Richtung.
 - **Gurgeln und Darmgeräusche** der Mutter fehlen; sie gehören zum Mutterleib dazu.
+
+## Die Seelenmusik klingt (GENESIS-011)
+
+Soul Music (GENESIS-009) rechnet seit Block 9 aus, **welche** Töne ein Mensch hat: seine Intervalle,
+seine Tonart, seine Instrumentierung je Lebensphase. Gespielt hat sie bisher niemand.
+
+`FGenesisMusicSynth` ist der Klangkörper dazu. Acht Instrumente, jedes aus dem gebaut, was es ausmacht:
+
+| Instrument | Woraus es besteht |
+|---|---|
+| Spieldose | Unharmonische Teiltöne (1 : 2,76 : 5,4 : 8,93) – deshalb der glockige Klang; sofortiger Anschlag, langes Ausklingen |
+| Klavier | Sechs harmonische Obertöne, Hammergeräusch im Anschlag, Abfall über 1,3 s |
+| Gitarre | Gezupfte Saite (Karplus-Strong): ein Rauschimpuls läuft im Kreis und verliert dabei Höhen |
+| Streicher | Sieben Obertöne, 280 ms Anschwellen, Vibrato mit 5,2 Hz |
+| Holzbläser | Ungerade Obertöne wie bei einer gedackten Pfeife, dazu Atemrauschen |
+| Orchester | Acht Obertöne, breit, mit langem Ausklang |
+| Chor | Grundton plus zwei Formantbereiche, langsames Vibrato, 1,4 s Ausklang |
+| Klangfläche | Leicht verstimmte Teiltöne, 1,2 s Anschwellen, 2,5 s Ausklang |
+
+Dazu ein Nachhall (vier Kammfilter, zwei Allpässe), dessen Größe aus der Phrase kommt: `Space` ist der Raum,
+`Presence` die Nähe. Beides berechnet Soul Music aus der Lebensphase.
+
+### Gemessen
+
+| Prüfung | Ergebnis |
+|---|---|
+| Tonhöhe | MIDI 69 → 440,4 Hz gemessen (0,08 % Abweichung), MIDI 76 → 657,5 Hz (0,26 %) |
+| Instrumente unterscheidbar | Höhenanteil Spieldose 0,371 gegen Klangfläche 0,263; erste 120 ms: 0,1433 gegen 0,0067 |
+| Lebensphasen klingen anders | Kindheit 8 Noten bei 84 BPM, Höhenanteil 0,495 – Alter 4 Noten bei 58 BPM, 0,175 |
+| Ausklang | nach 0,3 s 0,029, nach 1,6 s 0,007 – der Raum verklingt |
+| Kein Übersteuern | Spitzenwert 0,237 |
+| Reproduzierbar | zweimal gerendert: Unterschied 0,00000000 |
+
+### Im Spiel
+
+`AGenesisMusicActor` spielt das Leitmotiv der hörenden Person. Wechselt die Lebensphase, holt er das
+Motiv sofort neu – dieselbe Melodie, andere Instrumente. Zwischen zwei Wiederholungen liegen sechs
+Sekunden Stille: Musik, die ohne Atem durchläuft, wird zur Tapete.
+
+```
+genesis.Music.RenderWav kindheit 24
+genesis.Music.RenderWav alter 24
+genesis.Music.RenderWav tod 24
+```
+
+Zwei Proben liegen im Projekt: `Docs/Media/Audio/GENESIS_Motiv_kindheit.wav` (Spieldose, hell, 84 BPM)
+und `GENESIS_Motiv_alter.wav` (dunkel, 58 BPM) – dasselbe Motiv derselben Seele.
+
+### Ein Fehler, den erst die Messung zeigte
+
+Der erste Test des Ausklangs schlug fehl: Nach 1,6 Sekunden war es **lauter** als nach 0,3. Grund war
+nicht der Klang, sondern die Schnittstelle – die Hörprobe wiederholte die Phrase automatisch, wenn die
+Probe länger war als das Motiv. In der Messung sah das aus wie ein Nachhall, der anschwillt.
+Das Wiederholen ist jetzt ein ausdrücklicher Schalter, keine stille Annahme.

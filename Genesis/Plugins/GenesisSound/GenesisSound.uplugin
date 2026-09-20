@@ -32,6 +32,14 @@
 		{
 			"Name": "GenesisBirth",
 			"Enabled": true
+		},
+		{
+			"Name": "GenesisSoul",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisSoulMusic",
+			"Enabled": true
 		}
 	]
 }
