@@ -30,7 +30,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-016 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
 | GENESIS-017 | Relationships & NPC Memory | Beziehungsdimensionen, NPC-Erinnerungssätze | OFFEN |
 | GENESIS-018 | Entstehung: Feinschliff | Flimmerhärchen mit metachronem Schlag, Akrosomkappe, Epithel-Zellmosaik, durchscheinendes Gewebe | DONE |
-| GENESIS-019 | Fertilization | Befruchtung, Eizelle, Corona radiata, Genom-Erzeugung, Übergang | OFFEN |
+| GENESIS-019 | Fertilization | Befruchtung, Eizelle, Corona radiata, Genom-Erzeugung, Übergang | DONE (Bildqualität der Corona offen) |
 | GENESIS-020 | Embryo | Zellteilung, Organe, Minispiele | OFFEN |
 | GENESIS-021 | Birth | Geburts-Cinematic, First-Person-Sequenz | OFFEN |
 | GENESIS-022 | Early Childhood | Unscharfe Wahrnehmung, erste Minuten | OFFEN |

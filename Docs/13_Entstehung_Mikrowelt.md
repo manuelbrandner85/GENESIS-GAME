@@ -113,3 +113,69 @@ auf der **Silhouette** (Faltenkanten) als Saum und auf zugewandten Flächen als 
 - **Schwebeteilchen** sind sehr dezent (real sind sie es auch, aber sie tragen wenig zur Lesbarkeit der Flüssigkeit bei).
 - Das Kapillarnetz im Blender-Referenzmaterial ist noch zu regelmäßig (wabenartig).
 - Eizelle und Corona radiata stammen aus der Trailer-Session und sind für Nahaufnahmen noch nicht realistisch genug (glatte, gleichförmige Zellen ohne Cumulus-Matrix).
+
+## Befruchtung (GENESIS-019)
+
+### Die Eizelle
+
+Maße aus der Anatomie einer reifen Eizelle (Metaphase II), Aufbau in `Tools/Blender/Conception/build_oocyte.py`:
+
+| Teil | Maß | Bedeutung im Spiel |
+|---|---|---|
+| Ooplasma (Zellleib) | Radius 55 µm | Träger des mütterlichen Erbguts; körnig von Organellen |
+| Perivitelliner Spalt | 3 µm | Darin der erste Polkörper (10 µm) – Zeuge der Reifeteilung |
+| Zona pellucida | 58–72 µm (14 µm dick) | Hier binden die Spermien, hier wird gebohrt, hier schließt sich die Tür |
+| Corona radiata | 950 Zellen bis 118 µm | Nährzellen; bremsen die Spermien und schirmen die Zona ab |
+
+### Der Weg einer Zelle (Logik, ohne Zufall im Ablauf)
+
+1. **Lockwirkung** – nur hyperaktivierte (kapazitierte) Zellen richten sich im Umkreis von 220 µm auf die Eizelle aus (Progesteron aus dem Cumulus).
+2. **Cumulus** – in der Gallerte fällt die Geschwindigkeit auf 55 %; die Zellen müssen sich hindurcharbeiten.
+3. **Bindung** – an der Zona binden ausschließlich kapazitierte Zellen (0,85/s). Ohne Kapazitation gibt es keine Akrosomreaktion, also auch keine Befruchtung.
+4. **Akrosomreaktion** – 2–6 s, bis die Kappe aufplatzt und die Enzyme frei sind.
+5. **Durchdringung** – 0,35–1,2 µm/s durch 14 µm Zona, abhängig von Vitalität und Schlagkraft; 2 % je Sekunde bleiben stecken.
+6. **Verschmelzung** – die erste Zelle, die durchkommt, verschmilzt. Genau eine.
+7. **Cortikalreaktion** – die Zona härtet in 12 s aus; ab 15 % Fortschritt bindet keine Zelle mehr (Polyspermie-Block). Sichtbar als Farb- und Dichteänderung der Zona (Materialparameter `CorticalReaction`).
+
+### Aus der Verschmelzung wird ein Mensch
+
+`UGenesisConceptionSubsystem::Conceive` verbindet den Mikrokosmos mit der Lebenssimulation – genau einmal je Welt:
+
+- zwei Elterngenome (Gründer) → Kindgenom über `UGenesisGeneticsSubsystem::ConceiveChild`
+- Personen-ID deterministisch aus dem Genom (gleiche Welt → gleicher Mensch)
+- erster Körper über `CreateBodyAtConception`: **Lebenskraft** aus der erfolgreichen Zelle, **Widerstandskraft** aus dem geerbten Genom (0,6 × geringes Herz-Kreislauf-Risiko + 0,4 × Stoffwechsel)
+- Inkarnation der Spielerseele beginnt; fehlt die Seele, entsteht sie deterministisch aus dem Genom
+- Leitmotiv erbt von beiden Eltern, Lebensphase `LifePhase.Conception` wird zum Soundtrack-Moment
+
+**Im Spiel gemessen:** Zelle 179 verschmolzen nach 104,4 s Simulationszeit, Vitalität 0,73, 2 Mitbewerber an der Zona, 0 abgewiesen → Person `duTFBuywA9qu…`, Genom `gpwNSBjsoUX0…`, Lebenskraft 0,73, Widerstandskraft 0,64.
+
+![Befruchtung mit Entwickleranzeige](Media/GENESIS-019_Fertilization.png)
+
+### Entwicklerbefehle
+
+- `genesis.Conception.WatchOocyte 1|0` – Kamera auf die Eizelle oder zurück auf eine Zelle.
+- `genesis.Conception.Cam <Abstand µm> [Brennweite mm] [Blende]` – Bildausschnitt für Messreihen.
+- `genesis.Conception.Light <cd>` – Endoskoplicht, `genesis.Conception.Exposure <EV>` – Belichtung.
+- `genesis.Conception.TimeScale <x>` – Zeitraffer (Standard 0,25; die Befruchtung braucht sonst Minuten).
+- `genesis.Debug.Page Oocyte` – Zustand der Eizelle, `genesis.Debug.Page Conceived` – das gezeugte Leben.
+- `Tools\Build\Measure-Image.ps1 -Path <png>` – misst Leuchtdichte-Perzentile und ausgefressene Flächen eines Bildes.
+
+### Was die Bildmessung gelehrt hat
+
+| Beobachtung | Ursache | Behebung |
+|---|---|---|
+| Alles weiß, Materialänderungen ohne Wirkung | Die Belichtung der Kamera hing an der physikalischen Blende; ohne sie fehlten ~12 Blendenstufen | Kamera belichtet selbst (`ExposureBias`), physikalische Belichtung bleibt aktiv |
+| Grün eingefärbte Probe kam weißlich an | Streulicht im Lichtkegel direkt vor der Optik (Nebeldichte 0,02, Streuung 2,5) | Nebel 0,006, Streuung 0,35, indirektes Licht 1,0, Licht 150 cd |
+| Materialänderungen blieben unsichtbar | Das Skript löschte das Material und legte es neu an – das Level behielt die alte Fassung | Knoten im bestehenden Asset leeren (`delete_all_material_expressions`) |
+| Corona wie Popcorn | Gleichmäßige Kugelschale, 80 Flächen je Zelle, ein Farbton für alle | Vier Lagen mit Ausdünnung nach außen, 320 Flächen je Zelle, Zufallston je Zelle im Farbattribut |
+| Harte Silhouetten der Zellen | Undurchsichtiges Streumodell | Zweiseitiges Laubmodell: Licht tritt durch die 12 µm dünnen Zellen |
+| Cumulus-Gallerte wie Plastikschale | Kugel mit harter Silhouette | Vorerst nicht gesetzt; der Cumulus entsteht aus den Zellen selbst |
+
+![Eizelle im Eileiter](Media/GENESIS-019_Oocyte.png)
+
+### Offen (bewusst, nicht versteckt)
+
+- Die **Coronazellen wirken noch wie feste Körper**, nicht wie lebende, durchscheinende Zellen. Nächster Schritt: weichere Silhouetten (dichtere, überlappende Lagen), Unschärfe der äußeren Lage, Gallerte als volumetrisches Medium statt als Hülle.
+- Das **Ooplasma** ist aus mittlerer Entfernung noch eine helle Fläche; die Granulation braucht größere Strukturen (Schlieren) und weniger Eigenhelligkeit.
+- Die **entscheidende Nahaufnahme fehlt**: Gebundene Spermien stecken anatomisch richtig unter dem Zellkranz – dafür muss die Kamera *in* den Cumulus, zwischen die Zellen an die Zona.
+- Die Hyaluronsäure-**Gallerte** ist gebaut (`SM_GEN_OocyteMatrix`), aber nicht in der Szene.

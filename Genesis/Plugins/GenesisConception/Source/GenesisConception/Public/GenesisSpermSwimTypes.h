@@ -78,6 +78,22 @@ struct GENESISCONCEPTION_API FGenesisSpermCell
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
 	float Individuality = 0.5f;
 
+	/** Gelebte Simulationszeit dieser Zelle (s) – für die Dauer bis zur Verschmelzung. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
+	float LifeSeconds = 0.0f;
+
+	/** Was die Zelle gerade tut (schwimmen, gebunden, durchdringen, verschmolzen, abgewiesen). Siehe EGenesisSpermPhase. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
+	uint8 Phase = 0;
+
+	/** Restzeit der Akrosomreaktion (s), solange die Zelle gebunden ist. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
+	float AcrosomeTimer = 0.0f;
+
+	/** Eingedrungene Tiefe in der Zona pellucida (µm). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
+	float PenetrationDepthUm = 0.0f;
+
 	/** Eigener Zufallsstrom – Zellen bleiben unabhängig von Reihenfolge und Anzahl. */
 	FGenesisRandomStream Random;
 };

@@ -2,8 +2,13 @@
 
 #include "GenesisSpermSwarm.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
+#include "GenesisConceptionSubsystem.h"
 #include "GenesisDebug.h"
+#include "GenesisFertilizationLogic.h"
+#include "GenesisLog.h"
+#include "GenesisOocyte.h"
 #include "GenesisRandom.h"
 #include "GenesisSpermSwimLogic.h"
 #include "HAL/PlatformTime.h"
@@ -14,6 +19,31 @@ namespace
 	constexpr int32 MaterialDataCount = 4;
 	constexpr uint64 CellSeedSalt = 0x5BE2Aull;
 }
+
+#if !UE_BUILD_SHIPPING
+#include "EngineUtils.h"
+#include "HAL/IConsoleManager.h"
+
+namespace
+{
+	FAutoConsoleCommandWithWorldAndArgs GenesisTimeScaleCommand(
+		TEXT("genesis.Conception.TimeScale"),
+		TEXT("Zeitraffer des Schwarms: Simulationssekunden je Echtzeitsekunde (Standard 0,25)."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (Args.Num() == 0)
+			{
+				return;
+			}
+			const float Scale = FCString::Atof(*Args[0]);
+			for (TActorIterator<AGenesisSpermSwarm> It(World); It; ++It)
+			{
+				It->TimeScale = Scale;
+				UE_LOG(LogGenesis, Display, TEXT("Conception: Zeitraffer %.2f× (Simulationszeit je Sekunde)"), Scale);
+			}
+		}));
+}
+#endif
 
 AGenesisSpermSwarm::AGenesisSpermSwarm()
 {
@@ -125,11 +155,39 @@ void AGenesisSpermSwarm::SimulateFor(float SimulationDelta)
 		StepAccumulator -= static_cast<float>(Steps) * StepSeconds;
 	}
 
+	// Mit Eizelle: Der Schritt enthält Lockwirkung, Cumulus, Bindung, Akrosomreaktion, Durchdringung und den Polyspermie-Block
+	if (Oocyte)
+	{
+		Oocyte->GetMutableState().Position = GetActorTransform().InverseTransformPosition(Oocyte->GetActorLocation()) / GenesisMicroScale::UnitsPerMicrometer;
+	}
+
 	for (int32 StepIndex = 0; StepIndex < Steps; ++StepIndex)
 	{
-		for (FGenesisSpermCell& Cell : Cells)
+		if (Oocyte)
 		{
-			GenesisSpermSwimLogic::Step(Cell, Channel, Tuning, StepSeconds);
+			if (GenesisFertilizationLogic::Step(Cells, Oocyte->GetMutableState(), Channel, Tuning, Oocyte->Tuning, StepSeconds, FertilizationResult))
+			{
+				UE_LOG(LogGenesis, Log, TEXT("Conception: Zelle %d verschmilzt mit der Eizelle nach %.1f s (Vitalität %.2f, %d Mitbewerber an der Zona)."),
+					FertilizationResult.CellIndex, FertilizationResult.SecondsToFusion, FertilizationResult.Vitality, FertilizationResult.CompetingCells);
+				OnFertilized.Broadcast(FertilizationResult);
+
+				// Aus dem Mikrokosmos wird ein Mensch: Genom, erster Körper, Inkarnation, Leitmotiv
+				if (bCreateLifeOnFertilization)
+				{
+					UGameInstance* GameInstance = GetGameInstance();
+					if (UGenesisConceptionSubsystem* Conception = GameInstance ? GameInstance->GetSubsystem<UGenesisConceptionSubsystem>() : nullptr)
+					{
+						Conception->Conceive(FertilizationResult);
+					}
+				}
+			}
+		}
+		else
+		{
+			for (FGenesisSpermCell& Cell : Cells)
+			{
+				GenesisSpermSwimLogic::Step(Cell, Channel, Tuning, StepSeconds);
+			}
 		}
 		SimulationSeconds += StepSeconds;
 	}
@@ -150,7 +208,11 @@ void AGenesisSpermSwarm::PushInstances(bool bTeleport)
 	for (int32 Index = 0; Index < Cells.Num(); ++Index)
 	{
 		const FGenesisSpermCell& Cell = Cells[Index];
-		const FTransform Current = GenesisSpermSwimLogic::ComputeVisualTransform(Cell);
+		// Gebundene und bohrende Zellen stecken mit dem Kopf in der Zona – sie werden anders ausgerichtet als schwimmende
+		const bool bAttached = Oocyte && GenesisFertilizationLogic::GetPhase(Cell) != EGenesisSpermPhase::Swimming;
+		const FTransform Current = bAttached
+			? GenesisFertilizationLogic::ComputeAttachedTransform(Cell, Oocyte->GetState())
+			: GenesisSpermSwimLogic::ComputeVisualTransform(Cell);
 		// Bewegungsunschärfe aus der echten Bewegung; beim Umlaufen am Abschnittsende kein Wisch durch den ganzen Kanal
 		const bool bJumped = !bHasPrevious || FVector::Dist(TransformBuffer[Index].GetLocation(), Current.GetLocation()) > JumpThreshold;
 		PreviousTransformBuffer[Index] = bJumped ? Current : TransformBuffer[Index];
@@ -212,6 +274,13 @@ void AGenesisSpermSwarm::RegisterDebugPage()
 			const double Count = Self->Cells.Num();
 			OutLines.Add(FString::Printf(TEXT("Zellen %d | progressiv %d | hyperaktiviert %d | träge %d | Simulationszeit %.1f s (×%.2f)"),
 				Self->Cells.Num(), Progressive, Hyper, Sluggish, Self->SimulationSeconds, Self->TimeScale));
+			if (Self->Oocyte)
+			{
+				const FGenesisOocyteState& Egg = Self->Oocyte->GetState();
+				OutLines.Add(FString::Printf(TEXT("Eizelle: %s | an der Zona %d | Cortikalreaktion %.0f %%"),
+					Egg.IsFertilized() ? *FString::Printf(TEXT("befruchtet von Zelle %d nach %.1f s"), Egg.FertilizedByCell, Self->FertilizationResult.SecondsToFusion) : TEXT("unbefruchtet"),
+					Egg.BoundCells, 100.0f * Egg.CorticalReaction));
+			}
 			OutLines.Add(FString::Printf(TEXT("Ø Vortrieb %.1f µm/s | an der Wand (<%.0f µm) %.0f %% | Ø Ausrichtung gegen den Strom %+.2f | CPU %.3f ms"),
 				SpeedSum / Count, Self->Tuning.WallAttractionDistanceUm, 100.0 * NearWall / Count, UpstreamSum / Count, Self->LastTickMs));
 		}

@@ -602,17 +602,17 @@ def build_level(mesh, material, wall_mesh=None, wall_material=None):
     light = rig.get_editor_property("endoscope_light")
     # Physikalisch: 3.000 cd ergeben im Arbeitsabstand ~110 µm (= 1,1 m skaliert) ca. 2.500 lx → Belichtung EV100 ≈ 10
     light.set_editor_property("intensity_units", unreal.LightUnits.CANDELAS)
-    light.set_editor_property("intensity", float(os.environ.get("GENESIS_LIGHT_CD", "1500.0")))
+    light.set_editor_property("intensity", float(os.environ.get("GENESIS_LIGHT_CD", "150.0")))
     # Mehrfachstreuung im Gewebe: ohne indirektes Licht sind die Faltenrücken hart schwarz
-    light.set_editor_property("indirect_lighting_intensity", 3.0)
-    light.set_editor_property("volumetric_scattering_intensity", 2.5)
+    light.set_editor_property("indirect_lighting_intensity", 1.0)
+    light.set_editor_property("volumetric_scattering_intensity", 0.35)
     log("Endoskoplicht Intensität gelesen: %s (Einheit %s)" % (light.get_editor_property("intensity"), light.get_editor_property("intensity_units")))
 
     # Flüssigkeit: sehr dünn streuendes Medium – sichtbar nur im Lichtkegel des Endoskops, kein Umgebungslicht
     fog = actors.spawn_actor_from_class(unreal.ExponentialHeightFog, unreal.Vector(0, 0, -100000))
     fog.set_actor_label("TubalFluid")
     fog_component = fog.get_component_by_class(unreal.ExponentialHeightFogComponent)
-    fog_component.set_editor_property("fog_density", float(os.environ.get("GENESIS_FOG", "0.02")))
+    fog_component.set_editor_property("fog_density", float(os.environ.get("GENESIS_FOG", "0.006")))
     fog_component.set_editor_property("fog_height_falloff", 0.00001)
     fog_component.set_editor_property("fog_inscattering_luminance", unreal.LinearColor(0.0, 0.0, 0.0, 1.0))
     fog_component.set_editor_property("directional_inscattering_luminance", unreal.LinearColor(0.0, 0.0, 0.0, 1.0))

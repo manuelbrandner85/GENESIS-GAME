@@ -20,6 +20,22 @@
 		{
 			"Name": "GenesisCore",
 			"Enabled": true
+		},
+		{
+			"Name": "GenesisGenetics",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisBody",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisSoul",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisSoulMusic",
+			"Enabled": true
 		}
 	]
 }

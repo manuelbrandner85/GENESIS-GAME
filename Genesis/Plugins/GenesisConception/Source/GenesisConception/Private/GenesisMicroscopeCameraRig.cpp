@@ -7,9 +7,101 @@
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "GenesisDebug.h"
+#include "GenesisOocyte.h"
 #include "GenesisSpermSwarm.h"
 #include "GenesisSpermSwimLogic.h"
 #include "GenesisSpermSwimTypes.h"
+
+#if !UE_BUILD_SHIPPING
+#include "Engine/PostProcessVolume.h"
+#include "EngineUtils.h"
+#include "HAL/IConsoleManager.h"
+
+namespace
+{
+	FAutoConsoleCommandWithWorldAndArgs GenesisWatchOocyteCommand(
+		TEXT("genesis.Conception.WatchOocyte"),
+		TEXT("Kamera auf die Eizelle richten (1) oder wieder einer Zelle folgen (0)."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			const bool bWatch = Args.Num() == 0 || Args[0] != TEXT("0");
+			for (TActorIterator<AGenesisMicroscopeCameraRig> It(World); It; ++It)
+			{
+				It->bWatchOocyte = bWatch;
+				// Ein manueller Schwenk zurück soll nicht sofort wieder umschalten
+				It->bWatchFertilization = bWatch;
+			}
+		}));
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisCameraCommand(
+		TEXT("genesis.Conception.Cam"),
+		TEXT("Kamera einstellen: <Abstand µm> [Brennweite mm] [Blende]. Für Bildmessreihen."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			for (TActorIterator<AGenesisMicroscopeCameraRig> It(World); It; ++It)
+			{
+				if (Args.Num() > 0)
+				{
+					It->OocyteDistanceUm = FCString::Atof(*Args[0]);
+					It->OrbitDistanceUm = FCString::Atof(*Args[0]);
+				}
+				if (Args.Num() > 1 && It->Camera)
+				{
+					It->Camera->SetCurrentFocalLength(FCString::Atof(*Args[1]));
+				}
+				if (Args.Num() > 2 && It->Camera)
+				{
+					It->Camera->SetCurrentAperture(FCString::Atof(*Args[2]));
+				}
+				UE_LOG(LogTemp, Display, TEXT("GENESIS Kamera: Abstand %.0f µm, Brennweite %.1f mm, Blende f/%.1f"),
+					It->OocyteDistanceUm, It->Camera ? It->Camera->CurrentFocalLength : 0.0f, It->Camera ? It->Camera->CurrentAperture : 0.0f);
+			}
+		}));
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisExposureCommand(
+		TEXT("genesis.Conception.Exposure"),
+		TEXT("Belichtungskorrektur aller Postprocess-Volumes setzen (EV). Für Belichtungsmessreihen."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (Args.Num() == 0)
+			{
+				return;
+			}
+			const float Bias = FCString::Atof(*Args[0]);
+			for (TActorIterator<AGenesisMicroscopeCameraRig> It(World); It; ++It)
+			{
+				It->ExposureBias = Bias;
+				UE_LOG(LogTemp, Display, TEXT("GENESIS Belichtung: %.1f EV"), Bias);
+			}
+			// Volumes mitziehen, damit kein zweiter Wert dagegenhält
+			for (TActorIterator<APostProcessVolume> It(World); It; ++It)
+			{
+				It->Settings.bOverride_AutoExposureBias = true;
+				It->Settings.AutoExposureBias = Bias;
+			}
+		}));
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisLightCommand(
+		TEXT("genesis.Conception.Light"),
+		TEXT("Endoskoplicht in Candela setzen. Für Belichtungsmessreihen."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (Args.Num() == 0)
+			{
+				return;
+			}
+			const float Candelas = FCString::Atof(*Args[0]);
+			for (TActorIterator<AGenesisMicroscopeCameraRig> It(World); It; ++It)
+			{
+				if (It->EndoscopeLight)
+				{
+					It->EndoscopeLight->SetIntensity(Candelas);
+					UE_LOG(LogTemp, Display, TEXT("GENESIS Endoskoplicht: %.0f cd"), Candelas);
+				}
+			}
+		}));
+}
+#endif
 
 AGenesisMicroscopeCameraRig::AGenesisMicroscopeCameraRig()
 {
@@ -92,8 +184,52 @@ void AGenesisMicroscopeCameraRig::BeginPlay()
 	}
 }
 
+bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const
+{
+	const AGenesisOocyte* Egg = Swarm ? Swarm->GetOocyte() : nullptr;
+	if (!Egg)
+	{
+		return false;
+	}
+
+	const FTransform& SwarmTransform = Swarm->GetActorTransform();
+	const FVector Center = Egg->GetActorLocation();
+	const FVector Axis = SwarmTransform.GetUnitAxis(EAxis::X);
+	const FVector Side = SwarmTransform.GetUnitAxis(EAxis::Y);
+	const FVector Up = SwarmTransform.GetUnitAxis(EAxis::Z);
+
+	// Leicht gegen die Schwimmrichtung: Die ankommenden Zellen kommen der Kamera entgegen, statt ihr davonzulaufen
+	// Überwiegend entlang der Kanalachse, denn quer ist im Lumen (Radius 450 µm) kein Platz für Abstand
+	const FVector Direction = (-Axis * 1.15 + Side * FMath::Cos(OocyteOrbitPhase) * 0.45 + Up * FMath::Sin(OocyteOrbitPhase) * 0.30).GetSafeNormal();
+
+	float Distance = OocyteDistanceUm * GenesisMicroScale::UnitsPerMicrometer;
+	FVector Candidate = Center + Direction * Distance;
+	// Die Kamera darf nicht in der Schleimhaut stehen: notfalls näher an die Eizelle heran
+	const float Limit = (Swarm->GetChannel().LumenRadiusUm - 25.0f) * GenesisMicroScale::UnitsPerMicrometer;
+	for (int32 Attempt = 0; Attempt < 6; ++Attempt)
+	{
+		const FVector Local = SwarmTransform.InverseTransformPosition(Candidate);
+		if (FVector2D(Local.Y, Local.Z).Size() <= Limit)
+		{
+			break;
+		}
+		Distance *= 0.8f;
+		Candidate = Center + Direction * Distance;
+	}
+
+	OutLocation = Candidate;
+	OutRotation = FRotationMatrix::MakeFromXZ(Center - OutLocation, Up).ToQuat();
+	OutFocusDistance = static_cast<float>(FVector::Dist(OutLocation, Center));
+	return true;
+}
+
 bool AGenesisMicroscopeCameraRig::ComputeDesired(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const
 {
+	if (bWatchOocyte && ComputeOocyteView(OutLocation, OutRotation, OutFocusDistance))
+	{
+		return true;
+	}
+
 	const FGenesisSpermCell* Cell = Swarm ? Swarm->GetCell(FollowCellIndex) : nullptr;
 	if (!Cell)
 	{
@@ -164,6 +300,16 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	UpdateBeatNormal(DeltaSeconds);
+	OocyteOrbitPhase += DeltaSeconds * OocyteOrbitSpeed;
+
+	// Sobald die erste Zelle an der Zona hängt, gehört das Bild der Eizelle
+	if (bWatchFertilization && !bWatchOocyte)
+	{
+		if (const AGenesisOocyte* Egg = Swarm ? Swarm->GetOocyte() : nullptr)
+		{
+			bWatchOocyte = Egg->GetState().BoundCells > 0 || Egg->GetState().IsFertilized();
+		}
+	}
 
 	FVector DesiredLocation;
 	FQuat DesiredRotation;
@@ -187,8 +333,10 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 		const float RotationAlpha = 1.0f - FMath::Exp(-DeltaSeconds / RotationSmoothingSeconds);
 		const float FocusAlpha = 1.0f - FMath::Exp(-DeltaSeconds / FocusSmoothingSeconds);
 		SetActorLocationAndRotation(FMath::Lerp(GetActorLocation(), DesiredLocation, PositionAlpha), FQuat::Slerp(GetActorQuat(), DesiredRotation, RotationAlpha));
-		// Fokus auf den tatsächlichen Abstand der geglätteten Kamera zum Kopf
-		const float ActualDistance = static_cast<float>(FVector::Dist(GetActorLocation(), Swarm->GetCellHeadWorldPosition(FollowCellIndex)));
+		// Fokus auf den tatsächlichen Abstand der geglätteten Kamera zum Motiv (Zellkopf oder Eizelle)
+		const AGenesisOocyte* Egg = bWatchOocyte && Swarm ? Swarm->GetOocyte() : nullptr;
+		const FVector FocusTarget = Egg ? Egg->GetActorLocation() : Swarm->GetCellHeadWorldPosition(FollowCellIndex);
+		const float ActualDistance = static_cast<float>(FVector::Dist(GetActorLocation(), FocusTarget));
 		CurrentFocusDistance = FMath::Lerp(CurrentFocusDistance, ActualDistance, FocusAlpha);
 	}
 
@@ -196,6 +344,15 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 	Focus.FocusMethod = ECameraFocusMethod::Manual;
 	Focus.ManualFocusDistance = CurrentFocusDistance;
 	Camera->SetFocusSettings(Focus);
+
+	// Die Kamera belichtet wie eine echte Kamera: feste Belichtung, Blende und Verschlusszeit wirken auf die Helligkeit.
+	// Die Korrektur gleicht den Maßstabssprung aus – im Mikrometerraum trifft die Optik nur wenige Lux.
+	Camera->PostProcessSettings.bOverride_AutoExposureMethod = true;
+	Camera->PostProcessSettings.AutoExposureMethod = EAutoExposureMethod::AEM_Manual;
+	Camera->PostProcessSettings.bOverride_AutoExposureApplyPhysicalCameraExposure = true;
+	Camera->PostProcessSettings.AutoExposureApplyPhysicalCameraExposure = true;
+	Camera->PostProcessSettings.bOverride_AutoExposureBias = true;
+	Camera->PostProcessSettings.AutoExposureBias = ExposureBias;
 
 #if !UE_BUILD_SHIPPING
 	if (!bDebugPageRegistered)

@@ -61,6 +61,29 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Follow", meta = (ClampMin = "0.01"))
 	float FocusSmoothingSeconds = 0.35f;
 
+	/** Sobald die erste Zelle an der Zona hängt, schneidet die Kamera auf die Eizelle – der entscheidende Moment. */
+	UPROPERTY(EditAnywhere, Category = "Oocyte")
+	bool bWatchFertilization = true;
+
+	/** Blick auf die Eizelle statt auf eine Zelle (Konsole: genesis.Conception.WatchOocyte 1). */
+	UPROPERTY(EditAnywhere, Category = "Oocyte")
+	bool bWatchOocyte = false;
+
+	/** Abstand zur Eizelle (µm). 420 µm zeigen mit 50 mm Brennweite den ganzen Eizell-Cumulus-Komplex. */
+	UPROPERTY(EditAnywhere, Category = "Oocyte", meta = (ClampMin = "80"))
+	float OocyteDistanceUm = 420.0f;
+
+	/** Langsame Umkreisung der Eizelle (rad/s Echtzeit). */
+	UPROPERTY(EditAnywhere, Category = "Oocyte")
+	float OocyteOrbitSpeed = 0.06f;
+
+	/**
+	 * Belichtung der Kamera (EV, größer = dunkler). Die Kamera bestimmt sie selbst, nicht ein Postprocess-Volume:
+	 * Blende und Brennweite dürfen das Bild sonst über die physikalische Kamerabelichtung mit aufhellen.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Exposure")
+	float ExposureBias = 14.0f;
+
 	/** Beim Start zur Spielerkamera machen. */
 	UPROPERTY(EditAnywhere, Category = "Follow")
 	bool bBecomeViewTarget = true;
@@ -73,9 +96,11 @@ public:
 
 private:
 	bool ComputeDesired(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const;
+	bool ComputeOocyteView(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const;
 	void UpdateBeatNormal(float DeltaSeconds);
 
 	FVector SmoothedBeatNormal = FVector::UpVector;
+	float OocyteOrbitPhase = 0.0f;
 	bool bInitialized = false;
 	bool bDebugPageRegistered = false;
 	float CurrentFocusDistance = 0.0f;

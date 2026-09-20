@@ -4,12 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GenesisFertilizationTypes.h"
 #include "GenesisSpermSwimTypes.h"
 #include "GenesisSpermSwarm.generated.h"
 
 class UInstancedStaticMeshComponent;
 class UStaticMesh;
 class UMaterialInterface;
+class AGenesisOocyte;
+
+/** Wird ausgelöst, sobald eine Zelle mit der Eizelle verschmilzt. */
+DECLARE_MULTICAST_DELEGATE_OneParam(FGenesisOnFertilized, const FGenesisFertilizationResult& /*Result*/);
 
 /**
  * Spermienschwarm im Eileiterabschnitt. Die Kanalachse ist die lokale X-Achse des Actors.
@@ -44,6 +49,20 @@ public:
 	FTransform GetCellWorldTransform(int32 Index) const;
 
 	const FGenesisOviductChannel& GetChannel() const { return Channel; }
+	const FGenesisFertilizationResult& GetFertilizationResult() const { return FertilizationResult; }
+
+	/** Die Eizelle, um die der Schwarm konkurriert (optional – ohne sie schwimmen die Zellen nur). */
+	UPROPERTY(EditAnywhere, Category = "Swarm")
+	TObjectPtr<AGenesisOocyte> Oocyte;
+
+	AGenesisOocyte* GetOocyte() const { return Oocyte; }
+
+	FGenesisOnFertilized OnFertilized;
+
+	/** Aus der Verschmelzung entsteht sofort ein Mensch (Genom, Körper, Inkarnation). */
+	UPROPERTY(EditAnywhere, Category = "Swarm")
+	bool bCreateLifeOnFertilization = true;
+
 	double GetSimulationSeconds() const { return SimulationSeconds; }
 
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "1", ClampMax = "20000"))
@@ -88,6 +107,7 @@ private:
 	TArray<FTransform> TransformBuffer;
 	TArray<FTransform> PreviousTransformBuffer;
 	TArray<float> CustomDataBuffer;
+	FGenesisFertilizationResult FertilizationResult;
 	double SimulationSeconds = 0.0;
 	float StepAccumulator = 0.0f;
 	float LastTickMs = 0.0f;

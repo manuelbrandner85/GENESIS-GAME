@@ -14,7 +14,11 @@ public class GenesisConception : ModuleRules
 			"CoreUObject",
 			"Engine",
 			"CinematicCamera",
-			"GenesisCore"
+			"GenesisCore",
+			"GenesisGenetics",
+			"GenesisBody",
+			"GenesisSoul",
+			"GenesisSoulMusic"
 		});
 	}
 }
