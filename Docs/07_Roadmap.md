@@ -32,7 +32,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-018 | Entstehung: Feinschliff | Flimmerhärchen mit metachronem Schlag, Akrosomkappe, Epithel-Zellmosaik, durchscheinendes Gewebe | DONE |
 | GENESIS-019 | Fertilization | Befruchtung, Eizelle, Corona radiata, Genom-Erzeugung, Übergang | DONE (Bildqualität der Corona offen) |
 | GENESIS-020 | Embryo | Furchung, Kompaktierung, Blastozyste, Schlüpfen, Einnistung, Übergabe an den Körper | DONE (Minispiele offen) |
-| GENESIS-021 | Birth | Geburts-Cinematic, First-Person-Sequenz | OFFEN |
+| GENESIS-021 | Birth | Wehen aus Sicht des Kindes, Geburtskanal, erster Atemzug, Übergabe an Körper und Audio | DONE (Kreißsaal offen) |
 | GENESIS-022 | Early Childhood | Unscharfe Wahrnehmung, erste Minuten | OFFEN |
 | GENESIS-023 | Vertical Slice Polish | Performance, Übergänge | OFFEN |
 | GENESIS-024 | Befruchtung: Feinschliff | Makro-Schärfentiefe, dichter Cumulus, Zellton je Zelle, Kameraführung der Befruchtung | DONE |
@@ -175,3 +175,15 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE** (Umfang: Simulation der ersten Woche und ihre Darstellung; Minispiele als eigener Block).
 
 ![Blastozyste](Media/GENESIS-020_Blastocyst.png)
+
+### GENESIS-021 – Die Geburt
+- 2026-09-20: Plugin `GenesisBirth`: Wehenzyklen mit asymmetrischem Verlauf, Eröffnung in vier Abschnitten, Tiefertreten und Drehung, Sauerstoffeinbrüche unter jeder Wehe mit Erholung dazwischen, Herzschlag, der dem Sauerstoff folgt, erster Atemzug und erstes Zustandsbild.
+- 2026-09-20: **Alles aus der Sicht des Kindes**: Druck, Enge, Licht, Kälte, Dumpfheit und Sehschärfe sind Ausgaben der Simulation, keine Effekte der Kamera.
+- 2026-09-20: **Übergabe**: Mit der Geburt wird der Körper geboren – dadurch hört das Kind ab sofort in Luft statt in Fruchtwasser; die Musik wechselt in die Lebensphase „Geburt".
+- 2026-09-20: **Geburtskanal** in Blender (140 mm lang, engste Stelle 104 mm, Quer- und Längsfalten); Material als zweiseitig durchscheinendes Gewebe, von draußen rot durchleuchtet. Kamera mit Makro-Schärfentiefe: Ein Neugeborenes sieht nur auf Armlänge scharf.
+- 2026-09-20: **Gemessen im Spiel:** Geburt nach 9,2 h, 94 Wehen, 42 min Sauerstoffmangel; Sauerstoff schwankt in der aktiven Phase zwischen 0,70 und 1,00, Herzschlag bis 106/min. 73 von 73 Tests bestanden.
+- 2026-09-20: Zwei Fehler durch Messung gefunden: Der Geburtsfortschritt lief zwischen den Wehen weiter (26 statt 9 Stunden), und die Testabtastung im Minutentakt traf bei vier Minuten Wehenabstand nie eine Wehe (Aliasing).
+- Offen: Kreißsaal und Gestalt sind Platzhalter; Ton der Geburt fehlt (MetaSounds, GENESIS-012); Nabelschnur und Nachgeburt fehlen; Apgar nach einer und fünf Minuten fehlt als eigener Wert.
+- **Status: DONE** (Umfang: Simulation und Wahrnehmung der Geburt; die Welt draußen als eigener Block).
+
+![Blick aus dem Geburtskanal](Media/GENESIS-021_BirthCanal.png)
