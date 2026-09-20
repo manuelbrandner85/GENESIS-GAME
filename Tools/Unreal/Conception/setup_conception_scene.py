@@ -288,11 +288,14 @@ base *= lerp(1.0, 0.55, cavity);
 base = lerp(base, float3(0.32, 0.055, 0.05), vessels * 0.55);
 
 // Zellmosaik moduliert die Helligkeit minimal (Zellkuppen heller als die Grenzen)
-base *= 0.94 + 0.12 * Cells;
+// Epithel: Flimmer- und Drüsenzellen liegen in Flecken, die Zellgrößen wechseln – kein gleichmäßiges Strickmuster
+float mosaic = lerp(Cells, Cells2, saturate(Patch * 1.4 - 0.2));
+base *= 0.88 + 0.26 * mosaic;
+base *= 1.0 - 0.10 * saturate(Patch - 0.55);   // Drüsenzellfelder etwas matter und dunkler
 
 // Schleimfilm: überall feucht, an den umströmten Faltenspitzen am glattesten
 float roughness = lerp(0.42, 0.22, saturate(height));
-roughness *= 0.88 + 0.28 * (1.0 - Cells);
+roughness *= 0.88 + 0.28 * (1.0 - mosaic) + 0.12 * saturate(Patch - 0.5);
 Roughness = saturate(roughness);
 Vessels = vessels;
 return base;
@@ -349,8 +352,10 @@ def create_mucosa_material():
     vessel_coarse = noise(210.0, -1100, voronoi, levels=1)
     vessel_break = noise(320.0, -1300, gradient, levels=3, turbulence=True)
     cells = noise(11.0, -1500, voronoi, levels=1)
+    cells_coarse = noise(16.0, -1600, voronoi, levels=1)
+    patches = noise(190.0, -1700, gradient, levels=2)
 
-    surface = custom(material, -1100, 0, "Schleimhaut", MUCOSA_SURFACE_CODE, ["VC", "Vessel1", "Vessel2", "Break", "Cells"], float3)
+    surface = custom(material, -1100, 0, "Schleimhaut", MUCOSA_SURFACE_CODE, ["VC", "Vessel1", "Vessel2", "Break", "Cells", "Cells2", "Patch"], float3)
     outputs = [unreal.CustomOutput(), unreal.CustomOutput()]
     outputs[0].set_editor_property("output_name", "Roughness")
     outputs[0].set_editor_property("output_type", float1)
@@ -362,6 +367,8 @@ def create_mucosa_material():
     connect(vessel_coarse, "", surface, ["Vessel2"])
     connect(vessel_break, "", surface, ["Break"])
     connect(cells, "", surface, ["Cells"])
+    connect(cells_coarse, "", surface, ["Cells2"])
+    connect(patches, "", surface, ["Patch"])
 
     mel.connect_material_property(surface, "", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(surface, "Roughness", unreal.MaterialProperty.MP_ROUGHNESS)
@@ -399,6 +406,93 @@ def create_mucosa_material():
     eal.save_loaded_asset(material)
     log("Material M_GEN_OviductMucosa erstellt")
     return material
+
+
+CILIA_CODE = """
+// Metachroner Schlag: Die Zilien schlagen nicht gleichzeitig, sondern als Welle, die über das Epithel läuft
+// (Wellenlänge ~25 µm, 8 Schläge/s). Der Halm biegt sich zur Spitze hin immer stärker.
+// Der Arbeitsschlag geht Richtung Gebärmutter (−X), die Rückholbewegung ist langsamer und flacher.
+float h = UV.y;                       // 0 am Fuß, 1 an der Spitze
+float jitter = UV.x;
+float wave = sin(6.2831853 * (WorldPos.x / 25.0 - Time * 8.0 + jitter));
+float stroke = wave >= 0.0 ? pow(wave, 0.6) : -pow(-wave, 1.6) * 0.55;   // schneller Arbeitsschlag, weiche Rückholung
+float bend = pow(h, 1.8) * Amplitude;
+return float3(-stroke * bend, 0.0, 0.0) + float3(0.0, 0.0, -0.25 * bend * (1.0 - abs(stroke)));
+"""
+
+
+def create_cilia_material():
+    path = MATERIALS + "/M_GEN_Cilia"
+    if eal.does_asset_exist(path):
+        eal.delete_asset(path)
+    material = asset_tools.create_asset("M_GEN_Cilia", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+    material.set_editor_property("two_sided", True)
+
+    float3 = unreal.CustomMaterialOutputType.CMOT_FLOAT3
+    uv = expression(material, unreal.MaterialExpressionTextureCoordinate, -1200, 0)
+    world_position = expression(material, unreal.MaterialExpressionWorldPosition, -1200, 150)
+    time = expression(material, unreal.MaterialExpressionTime, -1400, 300)
+    time_scale = expression(material, unreal.MaterialExpressionScalarParameter, -1400, 380, parameter_name="TimeScale", default_value=0.25)
+    scaled_time = expression(material, unreal.MaterialExpressionMultiply, -1200, 320)
+    connect(time, "", scaled_time, ["A"])
+    connect(time_scale, "", scaled_time, ["B"])
+    amplitude = expression(material, unreal.MaterialExpressionScalarParameter, -1200, 450, parameter_name="BeatAmplitudeUm", default_value=2.6)
+
+    beat = custom(material, -800, 100, "Metachroner Zilienschlag", CILIA_CODE, ["UV", "WorldPos", "Time", "Amplitude"], float3)
+    connect(uv, "", beat, ["UV"])
+    connect(world_position, "", beat, ["WorldPos"])
+    connect(scaled_time, "", beat, ["Time"])
+    connect(amplitude, "", beat, ["Amplitude"])
+    mel.connect_material_property(beat, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+
+    # Zilien sind fast durchsichtig; sichtbar werden sie durch Streuung – blasser Ton, kaum Spiegelung
+    color = expression(material, unreal.MaterialExpressionConstant3Vector, -800, 400)
+    color.set_editor_property("constant", unreal.LinearColor(0.30, 0.28, 0.27, 1.0))
+    mel.connect_material_property(color, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    roughness = expression(material, unreal.MaterialExpressionConstant, -800, 500, r=0.35)
+    mel.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
+    specular = expression(material, unreal.MaterialExpressionConstant, -800, 560, r=0.03)
+    mel.connect_material_property(specular, "", unreal.MaterialProperty.MP_SPECULAR)
+
+    mel.recompile_material(material)
+    eal.save_loaded_asset(material)
+    log("Material M_GEN_Cilia erstellt")
+    return material
+
+
+def import_mesh(fbx_name, asset_name, destination, nanite):
+    unreal.SystemLibrary.execute_console_command(None, "Interchange.FeatureFlags.Import.FBX false")
+    options = unreal.FbxImportUI()
+    options.set_editor_property("import_mesh", True)
+    options.set_editor_property("import_as_skeletal", False)
+    options.set_editor_property("import_materials", False)
+    options.set_editor_property("import_textures", False)
+    options.set_editor_property("import_animations", False)
+    options.set_editor_property("mesh_type_to_import", unreal.FBXImportType.FBXIT_STATIC_MESH)
+    data = options.get_editor_property("static_mesh_import_data")
+    data.set_editor_property("vertex_color_import_option", unreal.VertexColorImportOption.REPLACE)
+    data.set_editor_property("combine_meshes", True)
+    data.set_editor_property("auto_generate_collision", False)
+    data.set_editor_property("generate_lightmap_u_vs", False)
+    data.set_editor_property("build_nanite", nanite)
+    data.set_editor_property("remove_degenerates", False)
+    data.set_editor_property("convert_scene_unit", True)
+
+    task = unreal.AssetImportTask()
+    task.set_editor_property("filename", os.path.join(REPO, "ArtSource", "Generated", "Conception", fbx_name))
+    task.set_editor_property("destination_path", destination)
+    task.set_editor_property("destination_name", asset_name)
+    task.set_editor_property("replace_existing", True)
+    task.set_editor_property("automated", True)
+    task.set_editor_property("save", True)
+    task.set_editor_property("options", options)
+    asset_tools.import_asset_tasks([task])
+    asset = eal.load_asset(destination + "/" + asset_name)
+    if asset:
+        log("%s importiert, Ausdehnung %s" % (asset_name, asset.get_bounds().box_extent))
+    else:
+        unreal.log_error("GENESIS: Import fehlgeschlagen: " + fbx_name)
+    return asset
 
 
 def import_wall():
@@ -449,6 +543,12 @@ def build_level(mesh, material, wall_mesh=None, wall_material=None):
             wall_mesh.set_material(0, wall_material)
             eal.save_loaded_asset(wall_mesh)
         # Vier Abschnitte: Die offenen Schnittflächen liegen weit außerhalb des Kamerabereichs
+        cilia_mesh = eal.load_asset(ROOT + "/Environment/SM_GEN_OviductCilia")
+        cilia_material = eal.load_asset(MATERIALS + "/M_GEN_Cilia")
+        if cilia_mesh and cilia_material:
+            cilia_mesh.set_material(0, cilia_material)
+            eal.save_loaded_asset(cilia_mesh)
+
         for index in range(-1, 3):
             segment = actors.spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(index * 1500.0, 0.0, 0.0))
             segment.set_actor_label("OviductWall_%d" % (index + 1))
@@ -456,6 +556,18 @@ def build_level(mesh, material, wall_mesh=None, wall_material=None):
             component.set_editor_property("mobility", unreal.ComponentMobility.STATIC)
             component.set_static_mesh(wall_mesh)
             component.set_editor_property("cast_shadow", True)
+
+            if cilia_mesh:
+                # Flimmerhärchen: bewegen sich im Material, deshalb beweglich und ohne Schatten (bei 0,2 µm Dicke unsichtbar)
+                cilia_actor = actors.spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(index * 1500.0, 0.0, 0.0))
+                cilia_actor.set_actor_label("OviductCilia_%d" % (index + 1))
+                cilia_component = cilia_actor.static_mesh_component
+                cilia_component.set_editor_property("mobility", unreal.ComponentMobility.MOVABLE)
+                cilia_component.set_static_mesh(cilia_mesh)
+                cilia_component.set_editor_property("cast_shadow", False)
+                # Bei 0,2 µm Halmdicke bringt Raytracing nichts, kostet aber viel Speicher
+                cilia_component.set_editor_property("visible_in_ray_tracing", False)
+                cilia_component.set_editor_property("affect_distance_field_lighting", False)
 
         # Schwebeteilchen der Eileiterflüssigkeit (Zelltrümmer, Sekretflocken), driften mit dem Zilienstrom
         debris_meshes = [eal.load_asset(ROOT + "/Environment/SM_GEN_Debris_%02d" % (i + 1)) for i in range(4)]
@@ -539,6 +651,9 @@ sperm_mesh = eal.load_asset(CELLS + "/SM_GEN_SpermCell") if os.environ.get("GENE
 collection = create_parameter_collection()
 sperm_material = create_sperm_material(collection)
 mucosa_material = create_mucosa_material()
+create_cilia_material()
+if not os.environ.get("GENESIS_SKIP_CILIA_IMPORT"):
+    import_mesh("SM_GEN_OviductCilia.fbx", "SM_GEN_OviductCilia", ROOT + "/Environment", nanite=False)
 oviduct_wall = eal.load_asset(ROOT + "/Environment/SM_GEN_OviductWall") if os.environ.get("GENESIS_SKIP_WALL_IMPORT") else import_wall()
 if sperm_mesh:
     build_level(sperm_mesh, sperm_material, oviduct_wall, mucosa_material)

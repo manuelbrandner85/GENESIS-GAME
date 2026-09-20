@@ -85,8 +85,10 @@ def organic_variation(s, theta):
     value = 0.012 * math.sin(3.0 * theta + s * 1.9) + 0.008 * math.sin(5.0 * theta - s * 3.7 + 1.3) + 0.006 * math.sin(s * 0.9 + 0.7)
     if s < HEAD_LENGTH:
         value += 0.02 * math.cos(theta) * math.sin(math.pi * s / HEAD_LENGTH)
-        # Äquatorialsegment: feine Rinne am Übergang Akrosom → postakrosomale Region
-        value -= 0.018 * math.exp(-((s - 2.55) / 0.12) ** 2)
+        # Akrosomkappe: Sie liegt als Haube über den vorderen ~55 % des Kopfes und steht minimal vor
+        value += 0.035 * (1.0 - smoothstep(2.1, 2.6, s))
+        # Äquatorialsegment: deutliche Rinne am Übergang Akrosom → postakrosomale Region
+        value -= 0.055 * math.exp(-((s - 2.62) / 0.16) ** 2)
     return value
 
 

@@ -81,6 +81,18 @@ Zytoplasma (n ≈ 1,38) und Eileiterflüssigkeit (n ≈ 1,335) brechen Licht fas
 - `genesis.Debug.Page Conception` – Zustand des Schwarms (Bewegungsarten, Wandnähe, Ausrichtung, CPU).
 - Szene starten: `Tools\Build\Capture-GameScreenshot.ps1 -Map "/Game/Genesis/Conception/Maps/L_GEN_OviductAmpulla"`.
 
+## Flimmerhärchen (Kinozilien)
+
+Real stehen Zilien etwa 0,3 µm auseinander – als Geometrie wären das Millionen Halme je Abschnitt. Sichtbar sind sie an zwei Stellen:
+auf der **Silhouette** (Faltenkanten) als Saum und auf zugewandten Flächen als feines Flimmern. Deshalb:
+
+- Halme 10 µm lang, 0,4 µm Fußdurchmesser, zur Spitze verjüngt, leicht geneigt – Abstand 2,5 µm nahe den Faltenspitzen, 6 µm in der Fläche.
+- 81.456 Halme je Abschnitt (1,3 Mio. Flächen), nur auf Flächen, die in den freien Kanal zeigen.
+- **Metachroner Schlag im Material:** Die Zilien schlagen nicht gleichzeitig, sondern als Welle über das Epithel (Wellenlänge 25 µm, 8 Schläge/s). Der Arbeitsschlag Richtung Gebärmutter ist schnell, die Rückholbewegung weich – daher die gerichtete Strömung, gegen die die Spermien anschwimmen.
+- Kein Raytracing und keine Schatten für die Halme (bei 0,2 µm Dicke ohne sichtbaren Unterschied, spart Speicher).
+
+**Gemessen im Spiel:** 5,53 ms je Bild (≈ 180 fps), GPU 3,71 ms, 71 Draw Calls, 10,5 Mio. Dreiecke sichtbar (RTX 5070, 1600 × 900).
+
 ## Gefundene und behobene Fehler (Sichtprüfung)
 
 | Fehler | Ursache | Behebung |
@@ -96,7 +108,8 @@ Zytoplasma (n ≈ 1,38) und Eileiterflüssigkeit (n ≈ 1,335) brechen Licht fas
 
 ## Offen (bewusst, nicht versteckt)
 
-- **Flimmerhärchen** (Kinozilien, ~10 µm, schlagend) fehlen noch; sie sind für Nahaufnahmen der Schleimhaut nötig.
-- **Schwebeteilchen ruhen** noch, statt mit der Strömung zu driften.
+- Das **Epithel-Mosaik** wirkt aus mittlerer Entfernung noch etwas textil; Zellgrößen und Flecken variieren zwar, aber echte Epithelien sind unregelmäßiger.
+- **Zilien nur im Kanalbereich**: In tiefen Spalten fehlen sie (dort sieht man sie nicht, spart aber Geometrie).
+- **Schwebeteilchen** sind sehr dezent (real sind sie es auch, aber sie tragen wenig zur Lesbarkeit der Flüssigkeit bei).
 - Das Kapillarnetz im Blender-Referenzmaterial ist noch zu regelmäßig (wabenartig).
 - Eizelle und Corona radiata stammen aus der Trailer-Session und sind für Nahaufnahmen noch nicht realistisch genug (glatte, gleichförmige Zellen ohne Cumulus-Matrix).

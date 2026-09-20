@@ -443,6 +443,90 @@ def render_lookdev(obj, out_dir, exposure, samples, args_energy=4000.0):
     measure_exposure(scene.render.filepath)
 
 
+def build_cilia(wall, spacing_um=6.0, edge_spacing_um=2.5):
+    """
+    Flimmerhärchen (Kinozilien) auf den zum Kanal zeigenden Flächen.
+
+    Real stehen sie ~0,3 µm auseinander – Millionen Halme sind als Geometrie unmöglich. Sichtbar sind sie an zwei Stellen:
+    als dichter Saum auf den Silhouetten (Faltenkanten) und als feines Flimmern auf den zugewandten Flächen.
+    Deshalb: enger Abstand nahe den Faltenspitzen, weiter in der Fläche. Länge 10 µm wie in der Anatomie.
+    UV: y = Höhe am Halm (0 Fuß … 1 Spitze), x = Zufallsphase je Halm (Variation des Schlags).
+    """
+    mesh = wall.data
+    count = len(mesh.vertices)
+    co = np.empty(count * 3)
+    mesh.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3) / UM
+    normals = np.empty(count * 3)
+    mesh.vertices.foreach_get("normal", normals)
+    normals = normals.reshape(-1, 3)
+
+    radius = np.hypot(co[:, 1], co[:, 2])
+    radial = np.stack([np.zeros(count), co[:, 1] / np.maximum(radius, 1e-3), co[:, 2] / np.maximum(radius, 1e-3)], axis=1)
+    facing = -(normals * radial).sum(axis=1)
+    # Nur Flächen, die in den freien Kanal schauen; in den tiefen Spalten sieht man ohnehin nichts
+    candidates = np.where((radius < CHANNEL_RADIUS + 260.0) & (facing > 0.25) & (co[:, 0] > 2.0) & (co[:, 0] < SEGMENT_LENGTH - 2.0))[0]
+    if len(candidates) == 0:
+        return None
+
+    # Dichter an den Faltenspitzen (dort bilden die Halme die Silhouette), weiter in der Fläche
+    tip_proximity = np.clip((CHANNEL_RADIUS + 120.0 - radius[candidates]) / 120.0, 0.0, 1.0)
+    spacing = edge_spacing_um + (spacing_um - edge_spacing_um) * (1.0 - tip_proximity)
+    keys = np.floor(co[candidates] / spacing[:, None]).astype(np.int64)
+    _, unique_index = np.unique(keys, axis=0, return_index=True)
+    picks = candidates[np.sort(unique_index)]
+    print("GENESIS: Zilien-Standorte", len(picks))
+
+    rng_local = np.random.default_rng(4711)
+    sides, segments = 4, 4
+    verts, faces, uvs = [], [], []
+    for index in picks:
+        base = co[index]
+        axis = normals[index]
+        axis = axis / (np.linalg.norm(axis) + 1e-9)
+        # Leichte Neigung: Zilien stehen nie exakt senkrecht
+        tilt = rng_local.normal(0.0, 0.18, 3)
+        axis = axis + tilt - axis * float(np.dot(axis, tilt))
+        axis /= np.linalg.norm(axis) + 1e-9
+        helper = np.array([1.0, 0.0, 0.0]) if abs(axis[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+        u_dir = np.cross(helper, axis)
+        u_dir /= np.linalg.norm(u_dir) + 1e-9
+        v_dir = np.cross(axis, u_dir)
+        length = rng_local.uniform(8.5, 11.5)
+        phase = rng_local.random()
+        start = len(verts)
+        for segment in range(segments + 1):
+            h = segment / segments
+            ring_radius = 0.20 * (1.0 - 0.75 * h)
+            center = base + axis * (length * h)
+            for side in range(sides):
+                angle = 2.0 * math.pi * side / sides
+                point = center + (u_dir * math.cos(angle) + v_dir * math.sin(angle)) * ring_radius
+                verts.append((point[0] * UM, point[1] * UM, point[2] * UM))
+                uvs.append((phase, h))
+        for segment in range(segments):
+            for side in range(sides):
+                a = start + segment * sides + side
+                b = start + segment * sides + (side + 1) % sides
+                c = start + (segment + 1) * sides + (side + 1) % sides
+                d = start + (segment + 1) * sides + side
+                faces.append((a, b, c, d))
+
+    cilia_mesh = bpy.data.meshes.new("SM_GEN_OviductCilia")
+    cilia_mesh.from_pydata(verts, [], faces)
+    cilia_mesh.validate()
+    uv_layer = cilia_mesh.uv_layers.new(name="UVMap")
+    for poly in cilia_mesh.polygons:
+        poly.use_smooth = True
+        for corner in range(poly.loop_total):
+            loop_index = poly.loop_start + corner
+            uv_layer.data[loop_index].uv = uvs[cilia_mesh.loops[loop_index].vertex_index]
+    obj = bpy.data.objects.new("SM_GEN_OviductCilia", cilia_mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    print("GENESIS: Zilien", len(cilia_mesh.vertices), "Vertices", len(cilia_mesh.polygons), "Faces")
+    return obj
+
+
 def decimate(obj, ratio):
     """Dreiecke reduzieren (Nanite braucht die volle Dichte nicht), Randzone der Abschnittsenden dabei unangetastet lassen."""
     if ratio >= 1.0:
@@ -492,7 +576,11 @@ def main():
     dims = wall.dimensions
     print("GENESIS: Abmessungen µm", round(dims.x / UM, 1), round(dims.y / UM, 1), round(dims.z / UM, 1))
 
+    cilia = build_cilia(wall, spacing_um=float(args.get("cilia_spacing", 6.0)), edge_spacing_um=float(args.get("cilia_edge_spacing", 2.5)))
+
     if args.get("export"):
+        if cilia:
+            export_fbx(cilia, os.path.join(out_dir, "SM_GEN_OviductCilia.fbx"))
         decimate(wall, float(args.get("decimate", 0.25)))
         export_fbx(wall, os.path.join(out_dir, "SM_GEN_OviductWall.fbx"))
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, "OviductWall.blend"))

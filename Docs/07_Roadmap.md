@@ -29,7 +29,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-015 | Vertical-Slice-Audio | Entstehung, Embryo, Geburt, erste Minuten | OFFEN |
 | GENESIS-016 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
 | GENESIS-017 | Relationships & NPC Memory | Beziehungsdimensionen, NPC-Erinnerungssätze | OFFEN |
-| GENESIS-018 | Entstehung: Feinschliff | Flimmerhärchen, Schleimfilm, Epithel-Zellmosaik, sichtbare Schwebeteilchen | OFFEN |
+| GENESIS-018 | Entstehung: Feinschliff | Flimmerhärchen mit metachronem Schlag, Akrosomkappe, Epithel-Zellmosaik, durchscheinendes Gewebe | DONE |
 | GENESIS-019 | Fertilization | Befruchtung, Eizelle, Corona radiata, Genom-Erzeugung, Übergang | OFFEN |
 | GENESIS-020 | Embryo | Zellteilung, Organe, Minispiele | OFFEN |
 | GENESIS-021 | Birth | Geburts-Cinematic, First-Person-Sequenz | OFFEN |
@@ -140,3 +140,15 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE** (Umfang: erste sichtbare Szene mit Simulation; Feinschliff bewusst als eigener Block).
 
 ![Eileiter-Szene](Media/GENESIS-010_OviductScene.png)
+
+### GENESIS-018 – Entstehung: Feinschliff
+- 2026-09-20: Nach Kritik des Game Directors („Spermium nicht realistisch, zu flach, Artefakte unrealistisch") direkt im Anschluss an GENESIS-010 gemacht.
+- 2026-09-20: **Flimmerhärchen**: 81.456 Halme je Abschnitt auf den zum Kanal zeigenden Flächen (dicht an den Faltenkanten, locker in der Fläche), metachroner Schlag im Material (25 µm Wellenlänge, 8 Hz, schneller Arbeitsschlag Richtung Gebärmutter).
+- 2026-09-20: **Spermienkopf**: Akrosomkappe mit Äquatorialfurche in der Geometrie; Material mit Randstreuung und Dichteverlauf statt gleichmäßigem Weiß.
+- 2026-09-20: **Epithel**: Zellmosaik mit wechselnden Zellgrößen und Flecken aus Flimmer- und Drüsenzellen; Schleimfilm (glatter an umströmten Spitzen).
+- 2026-09-20: **Gemessen im Spiel:** 5,53 ms je Bild (≈ 180 fps), GPU 3,71 ms, 71 Draw Calls; Belichtung gemessen, nichts ausgebrannt.
+- 2026-09-20: **Sichtprüfung:** `Docs/Media/GENESIS-018_CiliaEpithelium.png`.
+- Offen: Epithel wirkt aus mittlerer Entfernung noch textil; Eizelle und Corona radiata (GENESIS-019).
+- **Status: DONE.**
+
+![Zilien und Epithel](Media/GENESIS-018_CiliaEpithelium.png)
