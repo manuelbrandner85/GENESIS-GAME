@@ -278,16 +278,16 @@ def create_ooplasm_material():
     grain = add(material, -800, 300, multiply(material, -950, 260, fine, constant(material, -1150, 330, 0.45)),
                 multiply(material, -950, 620, coarse, constant(material, -1150, 690, 0.55)))
 
-    dark = color(material, -700, -200, 0.09, 0.07, 0.06)
-    light = color(material, -700, -60, 0.26, 0.21, 0.18)
+    dark = color(material, -700, -200, 0.045, 0.034, 0.028)
+    light = color(material, -700, -60, 0.16, 0.125, 0.10)
     base = lerp3(material, -450, -120, dark, light, grain)
     mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
     # Streuung: warmes, fleischfarbenes Durchleuchten – der Zellleib ist keine klare Flüssigkeit
-    subsurface = color(material, -450, 200, 0.78, 0.42, 0.30)
+    subsurface = color(material, -450, 200, 0.45, 0.21, 0.14)
     mel.connect_material_property(subsurface, "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
 
-    opacity = scalar(material, -450, 340, "ScatterAmount", 0.38)
+    opacity = scalar(material, -450, 340, "ScatterAmount", 0.16)
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
 
     rough_base = constant(material, -900, 460, 0.28)
@@ -331,13 +331,13 @@ def create_zona_material():
     cortical = scalar(material, -1500, 300, "CorticalReaction", 0.0)
 
     # Farbe: fast farblos, nach der Cortikalreaktion leicht bernsteinfarben und dichter
-    clear = color(material, -1200, -200, 0.26, 0.28, 0.30)
-    hardened = color(material, -1200, -60, 0.42, 0.34, 0.24)
+    clear = color(material, -1200, -200, 0.15, 0.16, 0.175)
+    hardened = color(material, -1200, -60, 0.26, 0.20, 0.14)
     base = lerp3(material, -950, -120, clear, hardened, cortical)
     mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
     # Durchsichtigkeit: dünne, klare Hülle; die Fasern zeichnen sie, die Verhärtung macht sie milchig
-    thin = constant(material, -1200, 200, 0.09)
+    thin = constant(material, -1200, 200, 0.06)
     dense = constant(material, -1200, 280, 0.34)
     opacity_level = lerp3(material, -950, 220, thin, dense, cortical)
     fibre_amount = multiply(material, -1200, 380, fibres, constant(material, -1400, 430, 0.12))
@@ -373,7 +373,7 @@ def create_corona_material():
     material.set_editor_property("two_sided", True)
 
     position = local_position(material, -1600, 0)
-    freq = constant(material, -1600, 400, 0.9)
+    freq = constant(material, -1600, 400, 0.16)
     grain = custom(material, -1200, 0, "Zellkorn", FBM_CODE, ["P", "Freq"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     connect(position, "", grain, ["P"])
     connect(freq, "", grain, ["Freq"])
@@ -387,8 +387,8 @@ def create_corona_material():
 
     # Deutlich dunkler als Papier: Eine Zellwolke unter dem Endoskoplicht ist keine weiße Wand.
     # Mit hellem Grundton frisst das nahe Licht jede Zeichnung weg (gemessen: Median 0,87 bei 0,04 Tonumfang).
-    dark = color(material, -900, -200, 0.035, 0.022, 0.018)
-    light = color(material, -900, -60, 0.13, 0.095, 0.08)
+    dark = color(material, -900, -200, 0.018, 0.011, 0.009)
+    light = color(material, -900, -60, 0.22, 0.155, 0.125)
     base = lerp3(material, -650, -120, dark, light, variation)
     mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
@@ -470,6 +470,21 @@ def place_oocyte(meshes, materials):
         # Feinste Membranen: Distanzfelder kosten hier nur Speicher; die klare Gallerte auch im Raytracing nichts
         component.set_editor_property("affect_distance_field_lighting", False)
         component.set_editor_property("visible_in_ray_tracing", ray_tracing)
+
+    # Hyaluronsäure-Gallerte des Cumulus als lokales Streumedium statt als Kugel mit harter Kante:
+    # So bekommt der Komplex den milchigen Hof, den ein Cumulus im Gegenlicht hat, ohne sichtbare Silhouette.
+    for actor in actors.get_all_level_actors():
+        if isinstance(actor, unreal.LocalFogVolume):
+            actors.destroy_actor(actor)
+    gel = actors.spawn_actor_from_class(unreal.LocalFogVolume, OOCYTE_LOCATION)
+    gel.set_actor_label("CumulusGel")
+    gel.set_actor_scale3d(unreal.Vector(1.45, 1.45, 1.45))  # Radius ≈ 145 µm um den Komplex
+    gel_component = gel.get_component_by_class(unreal.LocalFogVolumeComponent)
+    gel_component.set_editor_property("radial_fog_extinction", 3.5)
+    gel_component.set_editor_property("height_fog_extinction", 0.0)
+    gel_component.set_editor_property("fog_phase_g", 0.55)   # vorwärtsstreuend wie wässrige Gallerte
+    gel_component.set_editor_property("fog_albedo", unreal.LinearColor(0.96, 0.94, 0.92, 1.0))
+    log("Cumulus-Gallerte als lokales Streuvolumen gesetzt (Radius ≈ 145 µm)")
 
     # Streulicht der Eileiterflüssigkeit dämpfen: Direkt vor der Optik entsteht im Lichtkegel sonst ein weißer
     # Schleier, der jeden Materialunterschied überdeckt (nachgewiesen mit einer grün eingefärbten Probe,

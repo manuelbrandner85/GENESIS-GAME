@@ -179,3 +179,65 @@ Maße aus der Anatomie einer reifen Eizelle (Metaphase II), Aufbau in `Tools/Ble
 - Das **Ooplasma** ist aus mittlerer Entfernung noch eine helle Fläche; die Granulation braucht größere Strukturen (Schlieren) und weniger Eigenhelligkeit.
 - Die **entscheidende Nahaufnahme fehlt**: Gebundene Spermien stecken anatomisch richtig unter dem Zellkranz – dafür muss die Kamera *in* den Cumulus, zwischen die Zellen an die Zona.
 - Die Hyaluronsäure-**Gallerte** ist gebaut (`SM_GEN_OocyteMatrix`), aber nicht in der Szene.
+
+## Feinschliff der Eizelle (GENESIS-024)
+
+### Die Optik war das eigentliche Problem
+
+Im Mikrometerraum ist mit einer normalen Kameralinse **alles scharf**: Bei 430 µm Motivabstand und 50 mm Brennweite
+liegt der Zerstreuungskreis bei Bruchteilen eines Bildpunkts. Genau daran erkennt das Auge sofort ein Modell –
+jede echte Mikroskopaufnahme hat eine hauchdünne Schärfeebene.
+
+Echte Makro-Optik (hier etwa 15:1) lässt sich mit einer dünnen Linse in Weltmaßstab nicht nachbilden. Der Ausweg:
+**Sensor und Brennweite gemeinsam um den Faktor `MacroScale` vergrößern.** Das Verhältnis beider bestimmt den
+Bildwinkel – der bleibt also gleich –, aber der Zerstreuungskreis wächst mit dem Quadrat der Brennweite und
+wird nur linear auf den größeren Sensor bezogen. Unterm Strich: **Unschärfe × MacroScale bei identischem Bildausschnitt.**
+
+| Einstellung | Wert | Begründung |
+|---|---|---|
+| Bildwinkel | wie 50 mm (Kleinbild) | Zelle bei 150 µm bildfüllend, Eizell-Komplex bei 430 µm zu 70 % |
+| Makro-Faktor | 18 | Gewebe im Hintergrund löst sich auf, die Schärfeebene liegt auf dem Motiv |
+| Blende | f/16 | wirkt über die physikalische Kamerabelichtung auch auf die Helligkeit |
+| Belichtungskorrektur | 13 EV | gleicht den Maßstabssprung aus (im Mikrometerraum nur wenige Lux) |
+
+### Corona radiata: von Popcorn zu Zellmasse
+
+| Vorher | Nachher | Wirkung |
+|---|---|---|
+| 950 Zellen, eine Schale, Abstand 8,6 µm | 2.100 Zellen, fünf überlappende Lagen, Abstand 6,2 µm | zusammenhängende Masse statt einzelner Körner |
+| Länge 10–17 µm, radial ausgerichtet (Streuung 0,35) | 8,5–13 µm, Streuung wächst mit der Lage (0,35 → 1,7) | kein Strahlenkranz mehr; nur die innerste Lage zeigt zur Zona |
+| ein Farbton für alle | Zufallston je Zelle im Farbattribut (R-Kanal) | jede Zelle wirkt einzeln, die Masse bekommt Tiefe |
+| undurchsichtiges Streumodell | zweiseitiges Laubmodell mit rötlicher Durchleuchtung | Licht geht durch die ~12 µm dünnen Zellen |
+| keine Eigenverschattung | Zellen werfen Schatten | erst dadurch wirkt die Wolke räumlich |
+
+### Was nicht geht – und warum es so bleibt
+
+Eine Nahaufnahme der Bindungsstelle **von außen ist anatomisch unmöglich**: Der Cumulus ist dicht, gebundene Zellen
+stecken darunter. Zwei Versuche (Kamera seitlich neben der Zelle, Kamera radial außerhalb mit Tele) endeten beide
+mitten im Zellkranz, mit unscharfen Nachbarzellen im Bild. Echte Befruchtungsaufnahmen entstehen an Eizellen,
+denen der Cumulus vorher enzymatisch entfernt wurde.
+
+Deshalb die ehrliche Dramaturgie:
+
+1. Die Kamera begleitet eine Zelle im Kanal.
+2. Sobald eine Zelle an der Zona bindet, **wechselt sie auf diese Zelle** – man folgt ihr zwischen die Coronazellen.
+3. Mit der Verschmelzung **schneidet sie auf die ganze Eizelle**: Dort läuft die Cortikalreaktion sichtbar ab.
+
+### Gemessen
+
+| Bild | Median | P99 | Reinweiß | Schwarz |
+|---|---|---|---|---|
+| Zellansicht (150 µm) | 0,29 | 0,81 | 0 % | 0 % |
+| Eizelle nach der Verschmelzung | 0,33 | 0,76 | 0 % | 22 % (Kanal im Dunkeln) |
+
+![Cumulus-Oozyten-Komplex](Media/GENESIS-024_Cumulus.png)
+![Spermienzelle mit Makro-Schärfentiefe](Media/GENESIS-024_CellMacro.png)
+
+### Offen (bewusst, nicht versteckt)
+
+- Die **Cumulus-Gallerte** liegt als lokales Streuvolumen in der Szene (`r.SupportLocalFogVolumes=1`), ist aber
+  bei der gewählten Stärke kaum sichtbar. Als volumetrisches Medium mit Dichteverlauf hätte sie mehr Wirkung.
+- Die **Geißel flimmert** an den dünnsten Stellen (Treppenmuster bei unter einem Bildpunkt Breite).
+- Das **Ooplasma** ist nur durch die Lücken im Zellkranz zu sehen; seine Körnung ist dort noch zu gleichmäßig.
+- Die automatische **Lichtregelung** ist eingebaut, aber aus: Zellansicht und Eizelle sind bei derselben
+  Lichtstärke richtig belichtet; mit Regelung säuft die Umgebung ab.

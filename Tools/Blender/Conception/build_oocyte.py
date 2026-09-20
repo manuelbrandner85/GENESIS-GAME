@@ -157,24 +157,26 @@ def build_corona():
     centers = np.zeros((0, 3))
     tints = []
     attempts = 0
-    while count < 950 and attempts < 160000:
+    while count < 2100 and attempts < 400000:
         attempts += 1
         direction = rng.normal(size=3)
         direction /= np.linalg.norm(direction)
-        # Nach außen dünnt der Kranz aus: innen dicht an der Zona, außen einzelne Zellen in der Gallerte.
-        # Eine gleichmäßig dichte Kugelschale sähe aus wie Popcorn statt wie eine Zellwolke.
-        layer = int(rng.choice([0, 0, 0, 1, 1, 1, 2, 2, 3]))
-        distance = ZONA_INNER + ZONA_THICKNESS + 8.0 + layer * 14.0 + rng.normal(0.0, 3.5)
-        # Lücken in der Matrix: nicht überall sitzen Zellen
-        if 0.5 + 0.5 * value_noise(direction[None, :], 1.7, 41)[0] < 0.18 + 0.16 * layer:
+        # Fünf sich überlappende Lagen: Die Zellen liegen dicht gepackt wie bei einer Brombeere und berühren sich.
+        # Eine einzelne Schale aus abstehenden Zellen sieht aus wie ein Seeigel, nicht wie ein Cumulus.
+        layer = int(rng.choice([0, 0, 0, 1, 1, 1, 2, 2, 3, 3, 4]))
+        distance = ZONA_INNER + ZONA_THICKNESS + 6.0 + layer * 10.5 + rng.normal(0.0, 3.0)
+        # Lücken in der Matrix: nicht überall sitzen Zellen, nach außen immer weniger
+        if 0.5 + 0.5 * value_noise(direction[None, :], 1.7, 41)[0] < 0.10 + 0.17 * layer:
             continue
         position = direction * distance
-        if len(centers) and np.min(np.linalg.norm(centers - position, axis=1)) < 8.6:
+        # Abstand kleiner als die Zellgröße: Die Hüllen überlappen und verschmelzen optisch zu einer Masse
+        if len(centers) and np.min(np.linalg.norm(centers - position, axis=1)) < 6.2:
             continue
         centers = np.vstack([centers, position])
 
-        long_axis = rng.uniform(10.0, 17.0)
-        cross = rng.uniform(5.5, 9.0)
+        # Kaum noch gestreckt: Cumuluszellen sind rundlich-polygonal, nur die innerste Lage steht radial
+        long_axis = rng.uniform(8.5, 13.0)
+        cross = rng.uniform(6.5, 10.0)
         temp = bmesh.new()
         # Unterteilung 3: Lebende Zellen haben keine Facetten. Bei 80 Flächen je Zelle bleiben harte Kanten sichtbar.
         bmesh.ops.create_icosphere(temp, subdivisions=3, radius=1.0)
@@ -182,8 +184,9 @@ def build_corona():
         local *= np.array([long_axis * 0.5, cross * 0.5, cross * 0.5 * rng.uniform(0.85, 1.05)])
         local *= (1.0 + 0.20 * value_noise(local / cross, 0.7, int(rng.integers(1e6))))[:, None]
 
-        # Lange Achse überwiegend radial, aber nicht wie Speichen – echte Cumuluszellen liegen unregelmäßig
-        jitter = rng.normal(size=3) * 0.35
+        # Nur die innerste Lage richtet sich radial aus (ihre Fortsätze reichen zur Zona);
+        # weiter außen liegen die Zellen fast beliebig – sonst entsteht ein Strahlenkranz
+        jitter = rng.normal(size=3) * (0.35 + 0.45 * layer)
         x_axis = direction + jitter
         x_axis /= np.linalg.norm(x_axis)
         helper = np.array([0.0, 0.0, 1.0]) if abs(x_axis[2]) < 0.9 else np.array([1.0, 0.0, 0.0])

@@ -35,6 +35,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-021 | Birth | Geburts-Cinematic, First-Person-Sequenz | OFFEN |
 | GENESIS-022 | Early Childhood | Unscharfe Wahrnehmung, erste Minuten | OFFEN |
 | GENESIS-023 | Vertical Slice Polish | Performance, Übergänge | OFFEN |
+| GENESIS-024 | Befruchtung: Feinschliff | Makro-Schärfentiefe, dichter Cumulus, Zellton je Zelle, Kameraführung der Befruchtung | DONE |
 
 ## Protokoll
 
@@ -152,3 +153,14 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Zilien und Epithel](Media/GENESIS-018_CiliaEpithelium.png)
+
+### GENESIS-024 – Befruchtung: Feinschliff
+- 2026-09-20: **Makro-Optik**: Sensor und Brennweite werden gemeinsam um `MacroScale` (18) vergrößert – gleicher Bildwinkel, aber die hauchdünne Schärfeebene einer Mikroskopaufnahme. Vorher war im Mikrometerraum alles scharf, und die Szene wirkte wie ein Kunststoffmodell.
+- 2026-09-20: **Corona radiata neu gebaut**: 2.100 Zellen in fünf überlappenden Lagen (vorher 950 in einer Schale), rundlicher statt radial gestreckt, Ausrichtungsstreuung wächst nach außen, Zufallston je Zelle im Farbattribut, zweiseitiges Laubmodell mit Durchleuchtung, Eigenverschattung an.
+- 2026-09-20: **Kameraführung der Befruchtung**: Bindung → Kamera wechselt auf die erfolgreiche Zelle; Verschmelzung → Schnitt auf die ganze Eizelle mit der Cortikalreaktion. Eine Nahaufnahme der Bindungsstelle von außen ist anatomisch unmöglich (der Cumulus ist dicht) – zwei Versuche sind dokumentiert.
+- 2026-09-20: **Gemessen:** Zellansicht Median 0,29 / P99 0,81; Eizelle nach der Verschmelzung Median 0,33 / P99 0,76; nichts ausgebrannt. 63 von 63 Tests bestanden.
+- 2026-09-20: Neue Entwicklerbefehle für Abstand, Bildwinkel, Blende, Makro-Faktor; automatische Lichtregelung eingebaut (standardmäßig aus, begründet).
+- Offen: Cumulus-Gallerte als Streuvolumen kaum sichtbar; Geißel flimmert an den dünnsten Stellen; Ooplasma-Körnung in den Lücken noch zu gleichmäßig.
+- **Status: DONE.**
+
+![Cumulus-Oozyten-Komplex](Media/GENESIS-024_Cumulus.png)

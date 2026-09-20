@@ -228,6 +228,29 @@ void AGenesisSpermSwarm::PushInstances(bool bTeleport)
 	Instances->MarkRenderStateDirty();
 }
 
+int32 AGenesisSpermSwarm::FindAttachedCell() const
+{
+	// Die verschmolzene Zelle zuerst – sie ist der Moment, um den es geht
+	int32 Bound = INDEX_NONE;
+	for (int32 Index = 0; Index < Cells.Num(); ++Index)
+	{
+		switch (GenesisFertilizationLogic::GetPhase(Cells[Index]))
+		{
+		case EGenesisSpermPhase::Fused:
+			return Index;
+		case EGenesisSpermPhase::Penetrating:
+			Bound = Index;
+			break;
+		case EGenesisSpermPhase::Bound:
+			Bound = Bound == INDEX_NONE ? Index : Bound;
+			break;
+		default:
+			break;
+		}
+	}
+	return Bound;
+}
+
 FTransform AGenesisSpermSwarm::GetCellWorldTransform(int32 Index) const
 {
 	const FGenesisSpermCell* Cell = GetCell(Index);

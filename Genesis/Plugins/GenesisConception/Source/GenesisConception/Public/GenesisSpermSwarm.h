@@ -57,6 +57,9 @@ public:
 
 	AGenesisOocyte* GetOocyte() const { return Oocyte; }
 
+	/** Index der Zelle, die an der Zona hängt oder sich hindurchbohrt (INDEX_NONE = keine). Für die Nahaufnahme. */
+	int32 FindAttachedCell() const;
+
 	FGenesisOnFertilized OnFertilized;
 
 	/** Aus der Verschmelzung entsteht sofort ein Mensch (Genom, Körper, Inkarnation). */

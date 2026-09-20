@@ -35,7 +35,7 @@ namespace
 
 	FAutoConsoleCommandWithWorldAndArgs GenesisCameraCommand(
 		TEXT("genesis.Conception.Cam"),
-		TEXT("Kamera einstellen: <Abstand µm> [Brennweite mm] [Blende]. Für Bildmessreihen."),
+		TEXT("Kamera einstellen: <Abstand µm> [Brennweite mm] [Blende] [Makro-Faktor]. Für Bildmessreihen."),
 		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
 		{
 			for (TActorIterator<AGenesisMicroscopeCameraRig> It(World); It; ++It)
@@ -45,16 +45,22 @@ namespace
 					It->OocyteDistanceUm = FCString::Atof(*Args[0]);
 					It->OrbitDistanceUm = FCString::Atof(*Args[0]);
 				}
-				if (Args.Num() > 1 && It->Camera)
+				if (Args.Num() > 1)
 				{
-					It->Camera->SetCurrentFocalLength(FCString::Atof(*Args[1]));
+					It->NominalFocalLengthMm = FCString::Atof(*Args[1]);
 				}
-				if (Args.Num() > 2 && It->Camera)
+				if (Args.Num() > 2)
 				{
-					It->Camera->SetCurrentAperture(FCString::Atof(*Args[2]));
+					It->Aperture = FCString::Atof(*Args[2]);
 				}
-				UE_LOG(LogTemp, Display, TEXT("GENESIS Kamera: Abstand %.0f µm, Brennweite %.1f mm, Blende f/%.1f"),
-					It->OocyteDistanceUm, It->Camera ? It->Camera->CurrentFocalLength : 0.0f, It->Camera ? It->Camera->CurrentAperture : 0.0f);
+				if (Args.Num() > 3)
+				{
+					It->MacroScale = FCString::Atof(*Args[3]);
+				}
+				It->ApplyOptics();
+				UE_LOG(LogTemp, Display, TEXT("GENESIS Kamera: Abstand %.0f µm, Bildwinkel wie %.1f mm, Blende f/%.1f, Makro ×%.1f (echte Brennweite %.0f mm)"),
+					It->OocyteDistanceUm, It->NominalFocalLengthMm, It->Aperture, It->MacroScale,
+					It->Camera ? It->Camera->CurrentFocalLength : 0.0f);
 			}
 		}));
 
@@ -83,7 +89,7 @@ namespace
 
 	FAutoConsoleCommandWithWorldAndArgs GenesisLightCommand(
 		TEXT("genesis.Conception.Light"),
-		TEXT("Endoskoplicht in Candela setzen. Für Belichtungsmessreihen."),
+		TEXT("Endoskoplicht beim Bezugsabstand in Candela setzen. Für Belichtungsmessreihen."),
 		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
 		{
 			if (Args.Num() == 0)
@@ -93,11 +99,13 @@ namespace
 			const float Candelas = FCString::Atof(*Args[0]);
 			for (TActorIterator<AGenesisMicroscopeCameraRig> It(World); It; ++It)
 			{
-				if (It->EndoscopeLight)
+				It->LightCandelasAtReference = Candelas;
+				if (It->EndoscopeLight && !It->bAutoLightControl)
 				{
 					It->EndoscopeLight->SetIntensity(Candelas);
-					UE_LOG(LogTemp, Display, TEXT("GENESIS Endoskoplicht: %.0f cd"), Candelas);
 				}
+				UE_LOG(LogTemp, Display, TEXT("GENESIS Endoskoplicht: %.0f cd bei %.0f µm (Regelung %s)"),
+					Candelas, It->LightReferenceDistanceUm, It->bAutoLightControl ? TEXT("an") : TEXT("aus"));
 			}
 		}));
 }
@@ -184,8 +192,44 @@ void AGenesisMicroscopeCameraRig::BeginPlay()
 	}
 }
 
+void AGenesisMicroscopeCameraRig::ApplyOptics()
+{
+	if (!Camera)
+	{
+		return;
+	}
+
+	// Sensor und Brennweite gemeinsam vergrößern: gleicher Bildwinkel, aber die Schärfentiefe einer Makro-Optik
+	const float Scale = FMath::Max(1.0f, MacroScale);
+	Camera->LensSettings.MaxFocalLength = FMath::Max(Camera->LensSettings.MaxFocalLength, NominalFocalLengthMm * Scale + 1.0f);
+	Camera->Filmback.SensorWidth = 36.0f * Scale;
+	Camera->Filmback.SensorHeight = 20.25f * Scale;
+	Camera->SetCurrentFocalLength(NominalFocalLengthMm * Scale);
+	Camera->SetCurrentAperture(Aperture);
+	// Nahe Zellen sollen ausblenden, nicht aufgeschnitten werden: Die Nahgrenze liegt bei einem halben Mikrometer
+	Camera->bOverride_CustomNearClippingPlane = true;
+	Camera->CustomNearClippingPlane = 0.5f;
+}
+
+void AGenesisMicroscopeCameraRig::UpdateLight()
+{
+	if (!EndoscopeLight || !bAutoLightControl)
+	{
+		return;
+	}
+
+	// Automatische Lichtregelung wie an einem Endoskop: Das Licht sitzt an der Optik, die Beleuchtungsstärke
+	// fällt mit dem Quadrat des Arbeitsabstands. Ohne Regelung ist jede Nahaufnahme ausgebrannt
+	// (gemessen: 40 % der Fläche reinweiß bei 95 µm Abstand mit der Einstellung für 430 µm).
+	const float Reference = FMath::Max(1.0f, LightReferenceDistanceUm) * GenesisMicroScale::UnitsPerMicrometer;
+	const float Working = FMath::Max(1.0f, CurrentFocusDistance);
+	const float Factor = FMath::Clamp(FMath::Square(Working / Reference), 0.02f, 6.0f);
+	EndoscopeLight->SetIntensity(LightCandelasAtReference * Factor);
+}
+
 bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const
 {
+
 	const AGenesisOocyte* Egg = Swarm ? Swarm->GetOocyte() : nullptr;
 	if (!Egg)
 	{
@@ -299,11 +343,36 @@ void AGenesisMicroscopeCameraRig::UpdateBeatNormal(float DeltaSeconds)
 void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	ApplyOptics();
 	UpdateBeatNormal(DeltaSeconds);
 	OocyteOrbitPhase += DeltaSeconds * OocyteOrbitSpeed;
 
-	// Sobald die erste Zelle an der Zona hängt, gehört das Bild der Eizelle
-	if (bWatchFertilization && !bWatchOocyte)
+	// Sobald eine Zelle an der Zona hängt, gehört das Bild ihr: Die Kamera wechselt auf die Zelle,
+	// die es geschafft hat, und begleitet sie beim Bohren durch die Zona. Von außen wäre davon nichts zu sehen –
+	// gebundene Zellen stecken unter dem Zellkranz.
+	if (bCloseUpOnBinding && Swarm && Swarm->GetOocyte())
+	{
+		const FGenesisOocyteState& Egg = Swarm->GetOocyte()->GetState();
+		const int32 Attached = Swarm->FindAttachedCell();
+		if (Egg.IsFertilized())
+		{
+			// Nach der Verschmelzung gehört das Bild der ganzen Eizelle: Dort läuft die Cortikalreaktion sichtbar ab.
+			if (!bWatchOocyte)
+			{
+				bWatchOocyte = true;
+				bInitialized = false;
+			}
+		}
+		else if (Attached != INDEX_NONE && Attached != FollowCellIndex)
+		{
+			// Bis dahin begleitet die Kamera die Zelle, die es geschafft hat – durch den Zellkranz hindurch.
+			// Ein Blick von außen auf die Eintrittsstelle ist anatomisch unmöglich: Der Cumulus ist dicht.
+			FollowCellIndex = Attached;
+			bWatchOocyte = false;
+			bInitialized = false; // harter Schnitt statt Fahrt quer durch das Gewebe
+		}
+	}
+	else if (bWatchFertilization && !bWatchOocyte)
 	{
 		if (const AGenesisOocyte* Egg = Swarm ? Swarm->GetOocyte() : nullptr)
 		{
@@ -344,6 +413,7 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 	Focus.FocusMethod = ECameraFocusMethod::Manual;
 	Focus.ManualFocusDistance = CurrentFocusDistance;
 	Camera->SetFocusSettings(Focus);
+	UpdateLight();
 
 	// Die Kamera belichtet wie eine echte Kamera: feste Belichtung, Blende und Verschlusszeit wirken auf die Helligkeit.
 	// Die Korrektur gleicht den Maßstabssprung aus – im Mikrometerraum trifft die Optik nur wenige Lux.
