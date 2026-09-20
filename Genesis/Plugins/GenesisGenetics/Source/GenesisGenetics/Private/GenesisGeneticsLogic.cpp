@@ -116,6 +116,7 @@ namespace GenesisGeneticsLogic
 		Genome.GenomeId = Rng.NewGuid();
 		Genome.IndividualSeed = Rng.NextUInt64();
 		Genome.Generation = 0;
+		Genome.Sex = Rng.NextFloat() < 0.5f ? EGenesisBiologicalSex::Female : EGenesisBiologicalSex::Male;
 
 		Genome.Traits.Reserve(Traits.Num());
 		for (const FGenesisTraitDefinition& Definition : Traits)
@@ -148,6 +149,9 @@ namespace GenesisGeneticsLogic
 		Child.MaternalGenomeId = Mother.GenomeId;
 		Child.PaternalGenomeId = Father.GenomeId;
 		Child.Generation = FMath::Max(Mother.Generation, Father.Generation) + 1;
+		// Die Eizelle trägt immer ein X, das Spermium ein X oder ein Y – das Geschlecht des Kindes
+		// entscheidet sich also im väterlichen Gameten, und zwar hälftig.
+		Child.Sex = Rng.NextFloat() < 0.5f ? EGenesisBiologicalSex::Female : EGenesisBiologicalSex::Male;
 
 		Child.Traits.Reserve(Traits.Num());
 		for (const FGenesisTraitDefinition& Definition : Traits)

@@ -24,7 +24,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-010 | Entstehung: Mikrowelt | Eileiter-Ampulle (Blender, Nanite), Spermienzelle, Schwimmmodell (CASA, Rheotaxis, Wandbindung), Schwarm, Schwebeteilchen, Mikroskop-Kamera mit Endoskoplicht | DONE |
 | GENESIS-011 | Seelenmusik hörbar | Acht Instrumente als Synthese, Nachhall, Leitmotiv folgt der Lebensphase, Hörproben als WAV | DONE (Music Director offen) |
 | GENESIS-012 | Körperklang | Synthese von Herzschlag, Blutstrom, Mutterleib, Atem; Hörwahrnehmung wird hörbar; Hörproben als WAV | DONE (Musik und Weltklang offen) |
-| GENESIS-013 | Voice System | VoiceProfile, Stimmalterung, Gesundheit, Babylaute → Sprache | OFFEN |
+| GENESIS-013 | Voice System | Stimmprofil aus dem Körper, Stimmwechsel, Alters- und Krankheitsstimme, Säuglingslaute, Stimme der Mutter durch den Mutterleib | DONE (Sprache offen) |
 | GENESIS-014 | Dialogue System | Dialog-Datenbank, Lokalisierung DE/EN/IT, Weltwahrheit, Gerüchte, Untertitel | OFFEN |
 | GENESIS-015 | Vertical-Slice-Audio | Entstehung, Embryo, Geburt, erste Minuten | OFFEN |
 | GENESIS-016 | Mind: Emotion & Thoughts | Emotions-Wahrnehmung, Gedankeninventar, Unterbewusstsein | OFFEN |
@@ -217,3 +217,16 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE** (Umfang: Simulation und Wahrnehmung der ersten Stunde; Gestalt und Ton als eigene Blöcke).
 
 ![Die erste Stunde](Media/GENESIS-022_FirstHour.png)
+
+### GENESIS-013 – Die Stimme
+- 2026-09-20: Plugin `GenesisVoice`: Stimmprofil aus Alter, Geschlecht, Körpergröße, Lungengesundheit, Krankheit, Erschöpfung und Erregung – Grundfrequenz aus den Stimmlippen, Klangfarbe aus der Länge des Ansatzrohrs.
+- 2026-09-20: **Synthese nach dem Quelle-Filter-Modell**: Rosenberg-Luftstoß mit Jitter und Shimmer, vier Formantresonanzen, Nasenresonanz, Abstrahlung an den Lippen. Zehn nicht-sprachliche Laute (Schreien, Quengeln, Gurren, Lallen, Lachen, Seufzen, Summen, Beruhigen, Sprechen ohne Worte, Rufen) mit Altersgrenzen: Ein Neugeborenes kann nicht lachen.
+- 2026-09-20: **Biologisches Geschlecht im Genom** (Voraussetzung für den Stimmwechsel): Die Eizelle gibt ein X, das Spermium X oder Y – hälftig und deterministisch. Körperliche Angabe; Geschlechtsidentität wird bewusst nicht mitmodelliert.
+- 2026-09-20: **Gemessen:** Profil 112 Hz → synthetisiert 112 Hz (0,0 % Abweichung), Frau 196 → 196 Hz (0,2 %); Neugeborenes 450 Hz gegen Kind 265 Hz; Stimmwechsel senkt die Männerstimme um den Faktor 2,1, die Frauenstimme um 1,2; mit 80 Jahren Mann 135 Hz und Frau 175 Hz (Annäherung von 85 auf 40 Hz); Kinderstimme über 1,5 kHz 0,445 gegen 0,277 beim Mann; Schrei 0,263 gegen Sprechen 0,108 mit 25 Atempausen; Stimme der Mutter im Mutterleib über 2 kHz um den Faktor 10,7 gedämpft, Tonhöhe unverändert 203 Hz. 95 von 95 Tests bestanden.
+- 2026-09-20: **Im Spiel geprüft** (Geburt im Zeitraffer, HUD-Seite „Stimmen"): Kind 0,0 Jahre, Säuglingsklang 499 Hz, Behauchtheit 0,34, Rauigkeit 0,30; Mutter (Platzhalter) heller Klang 206 Hz; zuletzt „Summen" – die Mutter summt dem schreienden Kind zu. Zwei Stimm-Actors in `L_GEN_Birth`.
+- 2026-09-20: `genesis.Voice.RenderWav <neugeboren|saeugling|kind|frau|mann|alt|mutter|heiser>` schreibt Hörproben; vier liegen unter `Docs/Media/Audio/`.
+- 2026-09-20: Durch die Messung gefunden: Die Resonanzkette lief dauerhaft in die Begrenzung – jede Stimme war gleich laut und gleich hart, ein Schrei nicht lauter als ruhiges Sprechen. Nach der Pegelkorrektur stimmen die Verhältnisse. Außerdem fehlte der Heiserkeit das Rauschen der unvollständig schließenden Stimmritze.
+- Offen: keine Sprache (Worte kommen mit GENESIS-014); die Mutter ist noch keine Person der Simulation; mono, ohne Raum und Ortung; Husten, Niesen, Gähnen fehlen; der Mix im Spiel ist noch nicht gemessen, nur die Hörproben.
+- **Status: DONE** (Umfang: Stimme als Körper und nicht-sprachliche Laute; Sprache als eigener Block).
+
+![Stimmen in der Geburtsszene](Media/GENESIS-013_Voices.png)

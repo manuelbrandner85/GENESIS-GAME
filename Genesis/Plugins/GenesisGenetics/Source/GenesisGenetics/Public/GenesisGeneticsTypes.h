@@ -108,11 +108,29 @@ struct GENESISGENETICS_API FGenesisEpigeneticMark
 	float Level = 0.0f;
 };
 
+/**
+ * Biologisches Geschlecht aus den Geschlechtschromosomen.
+ *
+ * Das ist eine körperliche Angabe – sie steuert Stimmbruch, Hormonverläufe und Körperbau.
+ * Über die Person, die daraus wird, sagt sie nichts: Geschlechtsidentität ist ein eigenes Thema
+ * und wird hier bewusst nicht mitmodelliert.
+ */
+UENUM(BlueprintType)
+enum class EGenesisBiologicalSex : uint8
+{
+	Female,
+	Male
+};
+
 /** Genom eines Individuums. Unabhängig von der Seele. */
 USTRUCT()
 struct GENESISGENETICS_API FGenesisGenome
 {
 	GENERATED_BODY()
+
+	/** Aus dem väterlichen Gameten: X ergibt XX, Y ergibt XY. Die Mutter gibt immer ein X weiter. */
+	UPROPERTY()
+	EGenesisBiologicalSex Sex = EGenesisBiologicalSex::Female;
 
 	UPROPERTY()
 	FGuid GenomeId;

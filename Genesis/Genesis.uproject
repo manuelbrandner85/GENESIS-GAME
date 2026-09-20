@@ -72,6 +72,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GenesisVoice",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [

@@ -27,6 +27,14 @@ Für jedes Merkmal und jeden Genort gilt:
 
 Der Spermium-Prolog beeinflusst **Basisparameter des Körpers** (GenesisBody), **nicht** die DNA. So bleibt die Genetik biologisch plausibel.
 
+**Biologisches Geschlecht** (`FGenesisGenome::Sex`): Die Eizelle trägt immer ein X, das Spermium ein X oder ein Y –
+das Geschlecht des Kindes entscheidet sich also im väterlichen Gameten, hälftig und aus demselben deterministischen
+Zufallsstrom wie alles andere. Gebraucht wird es vor allem für den Stimmwechsel (`18_Stimme.md`) und später für
+Hormonverläufe und Körperbau.
+
+Das ist eine körperliche Angabe. Über die Person, die daraus wird, sagt sie nichts: Geschlechtsidentität ist ein
+eigenes Thema und wird bewusst nicht mitmodelliert.
+
 ## 3. Epigenetik
 
 | Einfluss | Pfad | Wirkung |

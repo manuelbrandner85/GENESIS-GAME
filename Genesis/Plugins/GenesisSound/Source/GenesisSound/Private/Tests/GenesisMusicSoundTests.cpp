@@ -100,12 +100,14 @@ namespace GenesisMusicTests
 }
 
 /** Ein Kammerton muss ein Kammerton sein: MIDI 69 sind 440 Hz, gemessen und nicht behauptet. */
-using namespace GenesisMusicTests;
+// Kein using auf Dateiebene: Im Unity-Build würden sich die gleichnamigen
+// Hilfsfunktionen der anderen Testdatei damit gegenseitig mehrdeutig machen.
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicPitchTest, "Genesis.Music.PitchIsAccurate", MusicTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicPitchTest, "Genesis.Music.PitchIsAccurate", GenesisMusicTests::MusicTestFlags)
 
 bool FGenesisMusicPitchTest::RunTest(const FString& Parameters)
 {
+	using namespace GenesisMusicTests;
 	const int32 Pitches[3] = { 57, 69, 76 };   // A3, A4 (Kammerton), E5
 	const float Expected[3] = { 220.0f, 440.0f, 659.26f };
 
@@ -123,10 +125,11 @@ bool FGenesisMusicPitchTest::RunTest(const FString& Parameters)
 }
 
 /** Acht Instrumente müssen acht Klänge sein – sonst wäre die Instrumentierung eine leere Angabe. */
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicTimbreTest, "Genesis.Music.InstrumentsDiffer", MusicTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicTimbreTest, "Genesis.Music.InstrumentsDiffer", GenesisMusicTests::MusicTestFlags)
 
 bool FGenesisMusicTimbreTest::RunTest(const FString& Parameters)
 {
+	using namespace GenesisMusicTests;
 	const TArray<float> MusicBox = Render(MakeSingleNote(72, EGenesisInstrument::MusicBox), 2.5f);
 	const TArray<float> Strings = Render(MakeSingleNote(72, EGenesisInstrument::Strings), 2.5f);
 	const TArray<float> Pad = Render(MakeSingleNote(72, EGenesisInstrument::CosmicPad), 2.5f);
@@ -153,10 +156,11 @@ bool FGenesisMusicTimbreTest::RunTest(const FString& Parameters)
  * Der Kern von Soul Music: dasselbe Motiv, andere Lebensphase, anderer Klang.
  * Wenn das nicht messbar ist, ist die ganze Idee nur eine Behauptung.
  */
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicPhaseTest, "Genesis.Music.PhasesSoundDifferent", MusicTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicPhaseTest, "Genesis.Music.PhasesSoundDifferent", GenesisMusicTests::MusicTestFlags)
 
 bool FGenesisMusicPhaseTest::RunTest(const FString& Parameters)
 {
+	using namespace GenesisMusicTests;
 	const uint64 Seed = 0x50BA5E11ull;
 	const FGenesisMusicPhrase Childhood = GenesisMusicExport::BuildPhrase(Seed, GenesisTags::LifePhase_Childhood);
 	const FGenesisMusicPhrase Elder = GenesisMusicExport::BuildPhrase(Seed, GenesisTags::LifePhase_Elder);
@@ -181,10 +185,11 @@ bool FGenesisMusicPhaseTest::RunTest(const FString& Parameters)
 }
 
 /** Nichts darf übersteuern, und nach der letzten Note darf der Raum noch nachklingen. */
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicLevelTest, "Genesis.Music.LevelAndTail", MusicTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicLevelTest, "Genesis.Music.LevelAndTail", GenesisMusicTests::MusicTestFlags)
 
 bool FGenesisMusicLevelTest::RunTest(const FString& Parameters)
 {
+	using namespace GenesisMusicTests;
 	FGenesisMusicPhrase Phrase = GenesisMusicExport::BuildPhrase(0x9911ull, GenesisTags::LifePhase_Adulthood);
 	Phrase.Space = 0.8f;
 	const float Length = Phrase.GetLengthSeconds();
@@ -212,10 +217,11 @@ bool FGenesisMusicLevelTest::RunTest(const FString& Parameters)
 }
 
 /** Gleiches Motiv, gleicher Klang – zweimal gerendert muss dasselbe herauskommen. */
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicDeterminismTest, "Genesis.Music.Determinism", MusicTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicDeterminismTest, "Genesis.Music.Determinism", GenesisMusicTests::MusicTestFlags)
 
 bool FGenesisMusicDeterminismTest::RunTest(const FString& Parameters)
 {
+	using namespace GenesisMusicTests;
 	const FGenesisMusicPhrase Phrase = GenesisMusicExport::BuildPhrase(4242, GenesisTags::LifePhase_Youth);
 	const TArray<float> First = Render(Phrase, 6.0f);
 	const TArray<float> Second = Render(Phrase, 6.0f);

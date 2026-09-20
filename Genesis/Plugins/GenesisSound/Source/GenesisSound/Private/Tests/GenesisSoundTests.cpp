@@ -64,12 +64,14 @@ namespace GenesisBodySoundTests
 }
 
 /** Der Herzschlag muss zählbar sein: 120 Schläge je Minute heißt 120 Schläge in einer Minute. */
-using namespace GenesisBodySoundTests;
+// Kein using auf Dateiebene: Im Unity-Build würden sich die gleichnamigen
+// Hilfsfunktionen der anderen Testdatei damit gegenseitig mehrdeutig machen.
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundHeartbeatTest, "Genesis.Sound.HeartbeatMatchesPulse", SoundTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundHeartbeatTest, "Genesis.Sound.HeartbeatMatchesPulse", GenesisBodySoundTests::SoundTestFlags)
 
 bool FGenesisSoundHeartbeatTest::RunTest(const FString& Parameters)
 {
+	using namespace GenesisBodySoundTests;
 	FGenesisBodySoundParams Params;
 	Params.HeartRateBpm = 120.0f;
 	Params.MotherHeartRateBpm = 0.0f;
@@ -103,10 +105,11 @@ bool FGenesisSoundHeartbeatTest::RunTest(const FString& Parameters)
  * Der Mutterleib ist ein Tiefpass. Das ist der ganze Unterschied zwischen Hören im Wasser und in Luft –
  * und er muss messbar sein, nicht nur behauptet.
  */
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundWombFilterTest, "Genesis.Sound.WombIsMuffled", SoundTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundWombFilterTest, "Genesis.Sound.WombIsMuffled", GenesisBodySoundTests::SoundTestFlags)
 
 bool FGenesisSoundWombFilterTest::RunTest(const FString& Parameters)
 {
+	using namespace GenesisBodySoundTests;
 	FGenesisBodySoundParams Womb;
 	Womb.bInWomb = true;
 	Womb.LowPassCutoffHz = 400.0f;
@@ -132,10 +135,11 @@ bool FGenesisSoundWombFilterTest::RunTest(const FString& Parameters)
 }
 
 /** Die Geburt ist ein Sprung: Der Ton wird innerhalb eines Augenblicks hell. */
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundBirthJumpTest, "Genesis.Sound.BirthOpensTheEars", SoundTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundBirthJumpTest, "Genesis.Sound.BirthOpensTheEars", GenesisBodySoundTests::SoundTestFlags)
 
 bool FGenesisSoundBirthJumpTest::RunTest(const FString& Parameters)
 {
+	using namespace GenesisBodySoundTests;
 	TArray<float> Samples;
 	GenesisSoundExport::RenderPreset(GenesisSoundExport::EPreset::Birth, TestSampleRate, 10.0f, Samples);
 
@@ -152,10 +156,11 @@ bool FGenesisSoundBirthJumpTest::RunTest(const FString& Parameters)
 }
 
 /** Gleiche Werte, gleicher Klang – sonst wäre kein Ton reproduzierbar und keine Messung etwas wert. */
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundDeterminismTest, "Genesis.Sound.Determinism", SoundTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundDeterminismTest, "Genesis.Sound.Determinism", GenesisBodySoundTests::SoundTestFlags)
 
 bool FGenesisSoundDeterminismTest::RunTest(const FString& Parameters)
 {
+	using namespace GenesisBodySoundTests;
 	FGenesisBodySoundParams Params;
 	Params.HeartRateBpm = 138.0f;
 
@@ -183,10 +188,11 @@ bool FGenesisSoundDeterminismTest::RunTest(const FString& Parameters)
 }
 
 /** Eine Wehe presst und dämpft: Unter Druck wird es lauter und dumpfer. */
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundPressureTest, "Genesis.Sound.ContractionPresses", SoundTestFlags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundPressureTest, "Genesis.Sound.ContractionPresses", GenesisBodySoundTests::SoundTestFlags)
 
 bool FGenesisSoundPressureTest::RunTest(const FString& Parameters)
 {
+	using namespace GenesisBodySoundTests;
 	FGenesisBodySoundParams Calm;
 	Calm.bInWomb = true;
 	Calm.LowPassCutoffHz = 400.0f;

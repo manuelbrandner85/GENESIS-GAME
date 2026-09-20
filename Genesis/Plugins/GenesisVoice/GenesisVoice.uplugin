@@ -1,0 +1,27 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Genesis Voice",
+	"Description": "Die Stimme als Synthese: Grundfrequenz und Klangfarbe folgen Alter, Körperbau, Geschlecht und Gesundheit. Vom ersten Schrei über Gurren und Lallen bis zur brüchigen Altersstimme – erzeugt, nicht abgespielt.",
+	"Category": "Genesis",
+	"CreatedBy": "GENESIS Team",
+	"CanContainContent": true,
+	"EnabledByDefault": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "GenesisVoice",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{ "Name": "GenesisCore", "Enabled": true },
+		{ "Name": "GenesisGenetics", "Enabled": true },
+		{ "Name": "GenesisBody", "Enabled": true },
+		{ "Name": "GenesisAudioCore", "Enabled": true },
+		{ "Name": "GenesisSound", "Enabled": true },
+		{ "Name": "GenesisEarlyLife", "Enabled": true }
+	]
+}
