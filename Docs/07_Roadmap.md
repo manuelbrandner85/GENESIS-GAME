@@ -23,7 +23,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-009 | Soul Music | Seelenmotiv, Phasen-Instrumentierung, Charaktermotive, Vererbung, Erinnerungsfragmente, Lebens-Soundtrack, Todeskomposition | DONE |
 | GENESIS-010 | Entstehung: Mikrowelt | Eileiter-Ampulle (Blender, Nanite), Spermienzelle, Schwimmmodell (CASA, Rheotaxis, Wandbindung), Schwarm, Schwebeteilchen, Mikroskop-Kamera mit Endoskoplicht | DONE |
 | GENESIS-011 | Music Director | Musikschichten, Emotion → musikalische Parameter, Stille, subjektive Zeit, Quartz | OFFEN |
-| GENESIS-012 | MetaSounds-Basis | Submixes/Sound Classes, prozedurale MetaSounds (Herz, Atem, Mutterleib, Motiv), Wiedergabe, Aufnahme-Prüfung | OFFEN |
+| GENESIS-012 | Körperklang | Synthese von Herzschlag, Blutstrom, Mutterleib, Atem; Hörwahrnehmung wird hörbar; Hörproben als WAV | DONE (Musik und Weltklang offen) |
 | GENESIS-013 | Voice System | VoiceProfile, Stimmalterung, Gesundheit, Babylaute → Sprache | OFFEN |
 | GENESIS-014 | Dialogue System | Dialog-Datenbank, Lokalisierung DE/EN/IT, Weltwahrheit, Gerüchte, Untertitel | OFFEN |
 | GENESIS-015 | Vertical-Slice-Audio | Entstehung, Embryo, Geburt, erste Minuten | OFFEN |
@@ -187,3 +187,12 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE** (Umfang: Simulation und Wahrnehmung der Geburt; die Welt draußen als eigener Block).
 
 ![Blick aus dem Geburtskanal](Media/GENESIS-021_BirthCanal.png)
+
+### GENESIS-012 – Körperklang: die hörbare Simulation
+- 2026-09-20: Plugin `GenesisSound`: Herzschlag (zwei gedämpfte Schwingungen je Schlag), Herzschlag der Mutter, Blutstrom im Takt des Auswurfs, braunes Grundrauschen des Mutterleibs, Atem und Ohrenrauschen bei Sauerstoffmangel – alles als Synthese aus den Werten der Simulation, keine Klangdateien.
+- 2026-09-20: Die Hörwahrnehmung des Audio Core (Tiefpass, Lautheiten) wirkt jetzt hörbar; der Druck einer Wehe macht den Klang lauter und dumpfer.
+- 2026-09-20: **Gemessen:** 120 Schläge in 60 s bei 120/min; Energie über 2 kHz an Luft 10,8-mal stärker als im Mutterleib; bei der Geburt springen die Höhen um den Faktor 7,6; Spitzenwert 0,689 (kein Übersteuern); gleicher Seed → Unterschied 0,00000000. 78 von 78 Tests bestanden.
+- 2026-09-20: `genesis.Sound.RenderWav <mutterleib|wehen|geburt|neugeboren> [s]` schreibt Hörproben; zwei liegen als Beleg unter `Docs/Media/Audio/`.
+- 2026-09-20: Abweichung vom Plan, bewusst: statt MetaSounds-Graphen eigene Synthese in C++ – sie ist kopflos baubar, reproduzierbar und im Test messbar. MetaSounds bleiben für die Musik vorgesehen, wo ein bearbeitbarer Graph den Unterschied macht.
+- Offen: Musik wird noch nicht gespielt (GENESIS-011/012 MetaSounds); Welt draußen klingt nicht; Synthese ist mono; Darmgeräusche der Mutter fehlen.
+- **Status: DONE** (Umfang: Körperklang; Musik und Weltklang als eigene Blöcke).

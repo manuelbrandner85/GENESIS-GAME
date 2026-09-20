@@ -1,0 +1,37 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Genesis Sound",
+	"Description": "Körperklang: Herzschlag, Blutstrom, Mutterleib und Atem werden aus der Simulation heraus erzeugt – kein abgespieltes Tonmaterial, sondern Synthese aus den Werten, die der Körper gerade hat.",
+	"Category": "Genesis",
+	"CreatedBy": "GENESIS Team",
+	"CanContainContent": true,
+	"EnabledByDefault": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "GenesisSound",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "GenesisCore",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisAudioCore",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisBody",
+			"Enabled": true
+		},
+		{
+			"Name": "GenesisBirth",
+			"Enabled": true
+		}
+	]
+}
