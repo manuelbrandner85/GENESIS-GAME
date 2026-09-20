@@ -33,7 +33,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-019 | Fertilization | Befruchtung, Eizelle, Corona radiata, Genom-Erzeugung, Übergang | DONE (Bildqualität der Corona offen) |
 | GENESIS-020 | Embryo | Furchung, Kompaktierung, Blastozyste, Schlüpfen, Einnistung, Übergabe an den Körper | DONE (Minispiele offen) |
 | GENESIS-021 | Birth | Wehen aus Sicht des Kindes, Geburtskanal, erster Atemzug, Übergabe an Körper und Audio | DONE (Kreißsaal offen) |
-| GENESIS-022 | Early Childhood | Unscharfe Wahrnehmung, erste Minuten | OFFEN |
+| GENESIS-022 | Early Childhood | Die erste Stunde: Wärme, Ruhe, Bindung, erstes Anlegen – und die erste Erinnerung eines Lebens | DONE (Kreißsaal und Ton offen) |
 | GENESIS-023 | Vertical Slice Polish | Performance, Übergänge | OFFEN |
 | GENESIS-024 | Befruchtung: Feinschliff | Makro-Schärfentiefe, dichter Cumulus, Zellton je Zelle, Kameraführung der Befruchtung | DONE |
 
@@ -205,3 +205,15 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-20: Durch die Messung gefunden: Die Hörprobe wiederholte die Phrase stillschweigend und ließ den Nachhall anschwellen statt verklingen. Wiederholen ist jetzt ein ausdrücklicher Schalter.
 - Offen: kein Music Director (Schichten, Emotion → Parameter, subjektive Zeit); keine Überblendung zwischen Phrasen; mono; Erinnerungsfragmente und Todeskomposition werden noch nicht gespielt.
 - **Status: DONE** (Umfang: Seelenmusik hörbar; Regie der Musik als eigener Block).
+
+### GENESIS-022 – Die ersten Minuten
+- 2026-09-20: Plugin `GenesisEarlyLife`: Stufen der ersten Stunde (erste Atemzüge, ruhige Wachheit, Haut an Haut, erstes Anlegen, erster Schlaf, Unterkühlung), Wärmehaushalt nach dem Newtonschen Abkühlungsgesetz, Ruhe aus Wärme und Stimme, Hunger, Schreien, Bindung mit Sättigung.
+- 2026-09-20: **Anschluss ohne Gameplay-Code**: Mit der Geburt beginnt die erste Stunde von selbst; mit dem ersten Anlegen wechselt die Lebensphase auf `LifePhase.Childhood`.
+- 2026-09-20: **Die erste Erinnerung eines Lebens** wird im Causal Memory Graph abgelegt – aus der Perspektive dessen, dem etwas geschieht, mit den Sinnesankern Tasten, Riechen und Hören, ohne Bild und ohne Sprache. Die Seele verstärkt ihre Resonanz auf `Theme.Care`.
+- 2026-09-20: **Gemessen im Spiel** (Zeugung → Termin → Geburt → erste Stunde in einem Durchlauf): geboren nach 9,2 h; erstes Anlegen nach 32 min bei 37,0 °C und Ruhe 1,00; nach 54 min Bindung 0,78, vertraute Stimme 0,90, erste Erinnerung abgelegt. 88 von 88 Tests bestanden.
+- 2026-09-20: **Gemessen im Test:** nach 20 min allein 33,0 °C (unterkühlt) gegen 37,1 °C auf der Haut; nach 45 min Bindung 0,71 mit Haut und Stimme gegen 0,00 allein (dort 45 min geschrien); erste Sekunde Blendung 1,00 bei Sehschärfe 0,040.
+- 2026-09-20: Durch die Messung gefunden: Bindung erreichte in einer halben Stunde 1,00 und machte den Wert bedeutungslos – sie wächst jetzt mit Sättigung (eine perfekte erste Stunde legt eine Bindung an, vollendet sie aber nicht).
+- Offen: Kreißsaal, Mutter und Gestalt bleiben Platzhalter – die Kamera zeigt die Wahrnehmung, aber es gibt noch nichts zu sehen; Ton der ersten Stunde (Stimme, Raum, Schreien) fehlt; Nabelschnur, Nachgeburt und Apgar nach einer und fünf Minuten fehlen.
+- **Status: DONE** (Umfang: Simulation und Wahrnehmung der ersten Stunde; Gestalt und Ton als eigene Blöcke).
+
+![Die erste Stunde](Media/GENESIS-022_FirstHour.png)

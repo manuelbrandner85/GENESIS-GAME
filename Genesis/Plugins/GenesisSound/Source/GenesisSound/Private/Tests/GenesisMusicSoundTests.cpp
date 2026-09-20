@@ -7,7 +7,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace GenesisMusicTests
 {
 	constexpr EAutomationTestFlags MusicTestFlags = EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter;
 	constexpr float TestSampleRate = 48000.0f;
@@ -100,6 +100,8 @@ namespace
 }
 
 /** Ein Kammerton muss ein Kammerton sein: MIDI 69 sind 440 Hz, gemessen und nicht behauptet. */
+using namespace GenesisMusicTests;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMusicPitchTest, "Genesis.Music.PitchIsAccurate", MusicTestFlags)
 
 bool FGenesisMusicPitchTest::RunTest(const FString& Parameters)

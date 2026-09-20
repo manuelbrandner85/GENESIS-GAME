@@ -6,7 +6,9 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+// Eigener Namensraum: Im Unity-Build landen mehrere Testdateien in derselben Übersetzungseinheit,
+// und gleichnamige Hilfsfunktionen kollidieren dort.
+namespace GenesisBodySoundTests
 {
 	constexpr EAutomationTestFlags SoundTestFlags = EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter;
 	constexpr float TestSampleRate = 48000.0f;
@@ -62,6 +64,8 @@ namespace
 }
 
 /** Der Herzschlag muss zählbar sein: 120 Schläge je Minute heißt 120 Schläge in einer Minute. */
+using namespace GenesisBodySoundTests;
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSoundHeartbeatTest, "Genesis.Sound.HeartbeatMatchesPulse", SoundTestFlags)
 
 bool FGenesisSoundHeartbeatTest::RunTest(const FString& Parameters)

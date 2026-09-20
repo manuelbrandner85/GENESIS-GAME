@@ -1,0 +1,28 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Genesis Early Life",
+	"Description": "Die ersten Minuten: Wärme oder Auskühlen, die Stimme, die das Kind schon kennt, der erste Blick auf Armlänge, das erste Anlegen – und die erste Erinnerung eines Lebens.",
+	"Category": "Genesis",
+	"CreatedBy": "GENESIS Team",
+	"CanContainContent": true,
+	"EnabledByDefault": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "GenesisEarlyLife",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{ "Name": "GenesisCore", "Enabled": true },
+		{ "Name": "GenesisBody", "Enabled": true },
+		{ "Name": "GenesisBirth", "Enabled": true },
+		{ "Name": "GenesisMemory", "Enabled": true },
+		{ "Name": "GenesisSoul", "Enabled": true },
+		{ "Name": "GenesisSoulMusic", "Enabled": true },
+		{ "Name": "GenesisAudioCore", "Enabled": true }
+	]
+}
