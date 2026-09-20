@@ -140,7 +140,7 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	/** Mindestabstand Kopfspitze–Wand (µm). */
 	UPROPERTY(EditAnywhere, Category = "Behaviour") float WallMarginUm = 3.0f;
 	/** Rollen um die Längsachse relativ zur Schlagfrequenz. */
-	UPROPERTY(EditAnywhere, Category = "Behaviour") float RollPerBeat = 0.3f;
+	UPROPERTY(EditAnywhere, Category = "Behaviour") float RollPerBeat = 0.02f;
 
 	/** Feste Simulationsschrittweite (s Simulationszeit). */
 	UPROPERTY(EditAnywhere, Category = "Simulation", meta = (ClampMin = "0.001")) float FixedStepSeconds = 1.0f / 240.0f;

@@ -31,6 +31,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Follow", meta = (ClampMin = "0"))
 	int32 FollowCellIndex = 0;
 
+	/** Beim Start automatisch eine gut sichtbare Zelle wählen: frei im Kanal schwimmend statt an der Wand klebend. */
+	UPROPERTY(EditAnywhere, Category = "Follow")
+	bool bAutoPickCell = true;
+
 	/** Abstand zum Kopf (µm). */
 	UPROPERTY(EditAnywhere, Category = "Follow", meta = (ClampMin = "10"))
 	float OrbitDistanceUm = 110.0f;
@@ -69,7 +73,10 @@ public:
 
 private:
 	bool ComputeDesired(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const;
+	void UpdateBeatNormal(float DeltaSeconds);
 
+	FVector SmoothedBeatNormal = FVector::UpVector;
 	bool bInitialized = false;
+	bool bDebugPageRegistered = false;
 	float CurrentFocusDistance = 0.0f;
 };

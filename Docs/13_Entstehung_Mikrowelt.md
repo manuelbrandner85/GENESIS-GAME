@@ -81,6 +81,19 @@ Zytoplasma (n ≈ 1,38) und Eileiterflüssigkeit (n ≈ 1,335) brechen Licht fas
 - `genesis.Debug.Page Conception` – Zustand des Schwarms (Bewegungsarten, Wandnähe, Ausrichtung, CPU).
 - Szene starten: `Tools\Build\Capture-GameScreenshot.ps1 -Map "/Game/Genesis/Conception/Maps/L_GEN_OviductAmpulla"`.
 
+## Gefundene und behobene Fehler (Sichtprüfung)
+
+| Fehler | Ursache | Behebung |
+|---|---|---|
+| Geißel blieb starr | Positionsknoten liefern bei Instanzen die Lage im ganzen Kanal, nicht in der Zelle → die Welle verschob die Zelle nur | Position entlang der Zelle aus der UV-Koordinate |
+| Zelle wie weißer Kunststoff | Zu heller Grundton, beidseitiges Rendern der dünnen Röhre, kein Randsaum | Einseitig, dunklerer Grundton, Randstreuung und Dichteverlauf nach der Blender-Referenz |
+| Falten als schwarze Platten | Dünnes Gewebe wurde undurchsichtig gerechnet | Material für beidseitig durchscheinendes Gewebe (Durchleuchtung rötlich) |
+| „Cordsamt“ auf dem Gewebe | Loft-Rippen und Voxel-Treppen | Feineres Raster, 6× Glättung, organische Störung |
+| Harte Schnittflächen zwischen Abschnitten | Glättung verschob die Ränder | Randzone eingefroren, Störung läuft zu den Enden auf null |
+| Graue Suppe im Bild | Flüssigkeitsstreuung viel zu stark | Nebel fast aus; Flüssigkeit zeigt sich über Schwebeteilchen |
+| Graue Kugel in der Szene | Standard-Pawn der Engine | Pawn wird beim Start ausgeblendet |
+| Kamera im Gewebe, Kopf hinter der Kamera | Kamera folgte der rollenden Schlagebene und wurde herumgeschleudert | Geglättete Schlagebene, langsamere Eigenrotation, Ausweichen ohne Abstandsverlust |
+
 ## Offen (bewusst, nicht versteckt)
 
 - **Flimmerhärchen** (Kinozilien, ~10 µm, schlagend) fehlen noch; sie sind für Nahaufnahmen der Schleimhaut nötig.

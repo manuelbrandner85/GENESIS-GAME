@@ -132,8 +132,10 @@ def custom(material, x, y, description, code, inputs, output_type):
 
 
 WPO_CODE = """
-// Geißelschlag: laufende Welle vom Hals zur Spitze, Amplitude wächst zur Spitze, Hyperaktivierung zieht einseitig (Peitschenschlag)
-float s = -LocalPos.x;                       // µm ab Kopfspitze
+// Geißelschlag: laufende Welle vom Hals zur Spitze, Amplitude wächst zur Spitze, Hyperaktivierung zieht einseitig (Peitschenschlag).
+// Die Position entlang der Zelle kommt aus dem Farbattribut (Kanal A, 0 an der Kopfspitze … 1 am Geißelende).
+// Positionsknoten liefern bei Instanzen die Lage im ganzen Kanal – damit würde die Zelle nur verschoben statt gebogen.
+float s = UV.y * 60.6;                       // µm ab Kopfspitze (UV-Kanal 0, V-Achse)
 float t = saturate((s - 5.6) / 55.0);
 float envelope = pow(t, 1.3) * Amp;
 float wave = sin(6.2831853 * (Phase - (s - 5.6) / max(Lambda, 1.0)));
@@ -150,18 +152,29 @@ return frac(T * BeatHz + h);
 OPACITY_CODE = """
 // Optische Dichte entlang der Zelle (Referenz: Blender-Volumenmaterial). Kern und postakrosomale Region am dichtesten,
 // Mittelstück (Mitochondrien) mittel, Geißel fast durchsichtig. Dünnere Weglänge am Rand (Blickwinkel).
-float s = -LocalPos.x;
+float s = UV.y * 60.6;
 float post = smoothstep(2.3, 2.8, s) * (1.0 - smoothstep(3.9, 4.6, s));
 float core = smoothstep(0.8, 1.8, s) * (1.0 - smoothstep(3.4, 4.3, s));
-float tau = 0.04 + 0.24 * VC.b + 0.26 * post + 0.12 * core + 0.22 * VC.g;
+float tau = 0.03 + 0.55 * VC.b + 0.55 * post + 0.40 * core + 0.30 * VC.g;
+
+// Weglänge durch die Zelle: mittig blickt man durch die volle Dicke, am Rand nur streifend.
+// Die Kante streut zusätzlich stark (Brechung am Übergang Zelle/Flüssigkeit) – daraus entsteht der helle Saum,
+// an dem man eine Zelle im Mikroskop überhaupt erst erkennt.
 float facing = saturate(abs(dot(normalize(N), normalize(V))));
-tau *= 0.35 + 0.65 * facing;
-return 1.0 - exp(-tau);
+float rim = pow(1.0 - facing, 3.0);
+tau *= 0.30 + 0.70 * facing;
+// Der Saum gehört vor allem zum dicken Kopf; die haarfeine Geißel bliebe sonst als heller Draht stehen
+tau += rim * (0.06 + 0.6 * VC.b);
+return saturate(1.0 - exp(-tau));
 """
 
 COLOR_CODE = """
-// Streufarbe: blass, Mittelstück leicht gelblich (Cytochrome)
-return lerp(float3(0.52, 0.51, 0.49), float3(0.50, 0.45, 0.37), VC.g);
+// Streufarbe: blass, Mittelstück leicht gelblich (Cytochrome). Der dicht gepackte Kern streut am stärksten
+// und hebt sich dadurch heller ab; die Akrosomkappe davor bleibt klarer.
+float s = UV.y * 60.6;
+float core = smoothstep(0.9, 1.9, s) * (1.0 - smoothstep(3.6, 4.4, s));
+float3 base = lerp(float3(0.22, 0.215, 0.205), float3(0.21, 0.19, 0.16), VC.g);
+return lerp(base, float3(0.34, 0.335, 0.32), core * 0.7);
 """
 
 
@@ -179,6 +192,7 @@ def create_sperm_material(mpc):
 
     local_pos = expression(material, unreal.MaterialExpressionLocalPosition, -1600, 0)
     vertex_color = expression(material, unreal.MaterialExpressionVertexColor, -1600, 300)
+    texture_coords = expression(material, unreal.MaterialExpressionTextureCoordinate, -1600, 450)
 
     # Zeitquelle: Echtzeit oder Sequencer-Zeit (MPC) für bildgenaue Renders
     time = expression(material, unreal.MaterialExpressionTime, -2000, -600)
@@ -209,8 +223,8 @@ def create_sperm_material(mpc):
     asymmetry = instance_data(2, asym, -200)
     lam = instance_data(3, wavelength, -100)
 
-    wpo = custom(material, -800, -300, "Geisselschlag", WPO_CODE, ["LocalPos", "Phase", "Amp", "Asym", "Lambda"], float3)
-    connect(local_pos, "", wpo, ["LocalPos"])
+    wpo = custom(material, -800, -300, "Geisselschlag", WPO_CODE, ["UV", "Phase", "Amp", "Asym", "Lambda"], float3)
+    connect(texture_coords, "", wpo, ["UV"])
     connect(phase, "", wpo, ["Phase"])
     connect(amplitude, "", wpo, ["Amp"])
     connect(asymmetry, "", wpo, ["Asym"])
@@ -223,14 +237,15 @@ def create_sperm_material(mpc):
 
     normal = expression(material, unreal.MaterialExpressionVertexNormalWS, -1200, 500)
     camera_vector = expression(material, unreal.MaterialExpressionCameraVectorWS, -1200, 600)
-    opacity = custom(material, -800, 300, "Optische Dichte", OPACITY_CODE, ["LocalPos", "VC", "N", "V"], float1)
-    connect(local_pos, "", opacity, ["LocalPos"])
+    opacity = custom(material, -800, 300, "Optische Dichte", OPACITY_CODE, ["UV", "VC", "N", "V"], float1)
+    connect(texture_coords, "", opacity, ["UV"])
     connect(vertex_color, "", opacity, ["VC"])
     connect(normal, "", opacity, ["N"])
     connect(camera_vector, "", opacity, ["V"])
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
 
-    color = custom(material, -800, 100, "Streufarbe", COLOR_CODE, ["VC"], float3)
+    color = custom(material, -800, 100, "Streufarbe", COLOR_CODE, ["UV", "VC"], float3)
+    connect(texture_coords, "", color, ["UV"])
     connect(vertex_color, "", color, ["VC"])
     mel.connect_material_property(color, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
@@ -275,8 +290,9 @@ base = lerp(base, float3(0.32, 0.055, 0.05), vessels * 0.55);
 // Zellmosaik moduliert die Helligkeit minimal (Zellkuppen heller als die Grenzen)
 base *= 0.94 + 0.12 * Cells;
 
-float roughness = lerp(0.52, 0.34, saturate(height));      // Spitzen im Strom sind glatter (Schleimfilm)
-roughness *= 0.9 + 0.25 * (1.0 - Cells);
+// Schleimfilm: überall feucht, an den umströmten Faltenspitzen am glattesten
+float roughness = lerp(0.42, 0.22, saturate(height));
+roughness *= 0.88 + 0.28 * (1.0 - Cells);
 Roughness = saturate(roughness);
 Vessels = vessels;
 return base;
@@ -295,7 +311,10 @@ def create_mucosa_material():
     if eal.does_asset_exist(path):
         eal.delete_asset(path)
     material = asset_tools.create_asset("M_GEN_OviductMucosa", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
-    material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_SUBSURFACE)
+    # Schleimhautfalten sind dünne Blätter (50–120 µm). Vom Licht abgewandte Seiten werden von hinten durchleuchtet,
+    # deshalb das Modell für beidseitig durchscheinendes Gewebe statt einfachem Subsurface.
+    material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_TWO_SIDED_FOLIAGE)
+    material.set_editor_property("two_sided", True)
 
     float1 = unreal.CustomMaterialOutputType.CMOT_FLOAT1
     float3 = unreal.CustomMaterialOutputType.CMOT_FLOAT3
@@ -368,13 +387,12 @@ def create_mucosa_material():
     mel.connect_material_property(to_tangent, "", unreal.MaterialProperty.MP_NORMAL)
 
     # Subsurface: gut durchblutetes Bindegewebe unter dünnem Epithel
+    # Durchleuchtungsfarbe: Blut im gut durchbluteten Bindegewebe – dünne Faltenränder glühen rötlich
     subsurface_color = expression(material, unreal.MaterialExpressionConstant3Vector, -700, 400)
-    subsurface_color.set_editor_property("constant", unreal.LinearColor(0.55, 0.09, 0.07, 1.0))
+    subsurface_color.set_editor_property("constant", unreal.LinearColor(0.42, 0.055, 0.04, 1.0))
     mel.connect_material_property(subsurface_color, "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
-    subsurface_amount = expression(material, unreal.MaterialExpressionScalarParameter, -700, 500, parameter_name="SubsurfaceAmount", default_value=0.75)
-    mel.connect_material_property(subsurface_amount, "", unreal.MaterialProperty.MP_OPACITY)
-    # In Flüssigkeit ist der Brechungsunterschied klein → sehr wenig Spiegelung (kein "nasser Glanz" wie an Luft)
-    specular = expression(material, unreal.MaterialExpressionConstant, -700, 600, r=0.02)
+    # In Flüssigkeit ist der Brechungsunterschied klein; ein dünner Schleimfilm gibt aber etwas mehr Glanz als nacktes Gewebe
+    specular = expression(material, unreal.MaterialExpressionConstant, -700, 600, r=0.035)
     mel.connect_material_property(specular, "", unreal.MaterialProperty.MP_SPECULAR)
 
     mel.recompile_material(material)
@@ -462,13 +480,17 @@ def build_level(mesh, material, wall_mesh=None, wall_material=None):
     rig.set_actor_label("MicroscopeCamera")
     rig.set_editor_property("swarm", swarm)
     rig.set_editor_property("orbit_distance_um", 150.0)
+    # Seitlicher Blick: nur quer zur Schwimmrichtung ist die Geißelwelle zu sehen
+    rig.set_editor_property("orbit_azimuth_degrees", 96.0)
+    rig.set_editor_property("orbit_elevation_degrees", 12.0)
+    rig.set_editor_property("look_behind_head_um", 22.0)
     camera = rig.get_editor_property("camera")
     camera.set_editor_property("current_focal_length", 50.0)
     camera.set_editor_property("current_aperture", 16.0)
     light = rig.get_editor_property("endoscope_light")
     # Physikalisch: 3.000 cd ergeben im Arbeitsabstand ~110 µm (= 1,1 m skaliert) ca. 2.500 lx → Belichtung EV100 ≈ 10
     light.set_editor_property("intensity_units", unreal.LightUnits.CANDELAS)
-    light.set_editor_property("intensity", 3000.0)
+    light.set_editor_property("intensity", float(os.environ.get("GENESIS_LIGHT_CD", "1500.0")))
     # Mehrfachstreuung im Gewebe: ohne indirektes Licht sind die Faltenrücken hart schwarz
     light.set_editor_property("indirect_lighting_intensity", 3.0)
     light.set_editor_property("volumetric_scattering_intensity", 2.5)

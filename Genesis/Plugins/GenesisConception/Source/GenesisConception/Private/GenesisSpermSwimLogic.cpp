@@ -235,6 +235,12 @@ namespace GenesisSpermSwimLogic
 		return Steps;
 	}
 
+	void ComputeBeatFrame(const FGenesisSpermCell& Cell, FVector& OutSide, FVector& OutNormal)
+	{
+		OutSide = BeatSide(Cell);
+		OutNormal = SafeNormal(FVector::CrossProduct(Cell.Heading, OutSide), FVector::UpVector);
+	}
+
 	FVector ComputeHeadPosition(const FGenesisSpermCell& Cell)
 	{
 		return Cell.Position + BeatSide(Cell) * (0.5f * Cell.HeadAmplitudeUm * FMath::Sin(2.0 * UE_DOUBLE_PI * Cell.BeatPhase));

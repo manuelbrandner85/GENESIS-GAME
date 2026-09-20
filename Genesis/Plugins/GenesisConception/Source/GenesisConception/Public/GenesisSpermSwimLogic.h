@@ -43,6 +43,12 @@ namespace GenesisSpermSwimLogic
 	/** Kopfposition inklusive seitlicher Auslenkung (für Kurvengeschwindigkeit VCL und Kamera). */
 	GENESISCONCEPTION_API FVector ComputeHeadPosition(const FGenesisSpermCell& Cell);
 
+	/**
+	 * Schlagebene der Zelle: OutSide liegt in der Ebene (Richtung der Auslenkung), OutNormal steht senkrecht darauf.
+	 * Die Geißelwelle ist nur sichtbar, wenn man entlang OutNormal blickt – die Kamera richtet sich danach aus.
+	 */
+	GENESISCONCEPTION_API void ComputeBeatFrame(const FGenesisSpermCell& Cell, FVector& OutSide, FVector& OutNormal);
+
 	/** Per-Instance-Daten für das Material: [0] Schlagphase (Zyklen), [1] Amplitude an der Geißelspitze (µm), [2] Asymmetrie, [3] Wellenlänge (µm). */
 	GENESISCONCEPTION_API void ComputeMaterialData(const FGenesisSpermCell& Cell, float OutData[4]);
 }
