@@ -34,7 +34,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-020 | Embryo | Furchung, Kompaktierung, Blastozyste, Schlüpfen, Einnistung, Übergabe an den Körper | DONE (Minispiele offen) |
 | GENESIS-021 | Birth | Wehen aus Sicht des Kindes, Geburtskanal, erster Atemzug, Übergabe an Körper und Audio | DONE (Kreißsaal offen) |
 | GENESIS-022 | Early Childhood | Die erste Stunde: Wärme, Ruhe, Bindung, erstes Anlegen – und die erste Erinnerung eines Lebens | DONE (Kreißsaal und Ton offen) |
-| GENESIS-023 | Vertical Slice Polish | Performance, Übergänge | OFFEN |
+| GENESIS-023 | Vertical Slice Polish | Ein Durchlauf von der Befruchtung bis zum ersten Schlaf: Phasenregie, Zeitsprünge, Ortswechsel, Performance gemessen | DONE (Eingabe offen) |
 | GENESIS-024 | Befruchtung: Feinschliff | Makro-Schärfentiefe, dichter Cumulus, Zellton je Zelle, Kameraführung der Befruchtung | DONE |
 
 ## Protokoll
@@ -243,3 +243,15 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE** (Umfang: Klang der Orte des Vertical Slice und wirksame Mischung; Raumakustik als eigener Block).
 
 ![Klang der Orte](Media/GENESIS-015_Places.png)
+
+### GENESIS-023 – Der Durchlauf
+- 2026-09-20: Plugin `GenesisSlice`: Phasenregie von der Befruchtung über die erste Woche und die Schwangerschaft bis zur Geburt und zur ersten Stunde. Die Regie liest nur, was die Systeme melden, und entscheidet, wann gewartet, gesprungen und der Ort gewechselt wird.
+- 2026-09-20: **Ein Leben am Stück, gemessen:** Befruchtung nach 26,3 s, Einnistung 34,2 s, Termin (39,1 Wochen) 47,7 s mit Ortswechsel nach `L_GEN_Birth`, geboren 53,9 s, erstes Anlegen und erste Erinnerung um 70 s, erster Schlaf nach 86,0 s bei 37,0 °C, Ruhe 1,00, Bindung 0,83. Keine Fehler und keine Warnungen aus Genesis-Modulen. 104 von 104 Tests bestanden.
+- 2026-09-20: **Performance gemessen** (1137×600): Eileiter 178 FPS (Frame 5,62 ms, Spiel-Thread 2,73 ms, GPU 3,83 ms, 72 Draws, 5,33 M Dreiecke), Geburt 193 FPS (5,18 / 2,01 / 3,19 ms, 75 Draws). Die Simulation ist nicht der Engpass. Offene Engine-Warnung: Ray-Tracing-Geometrie belegt 83 von 400 MiB des Budgets.
+- 2026-09-20: **Ehrliche Enden:** „Das Kind schläft" gibt es nur, wenn es eingeschlafen ist; sonst heißt es „Die erste Stunde ist vorbei – das Kind ist nicht zur Ruhe gekommen". Ein abgestorbener Keim und ein Kind, das die Geburt nicht überlebt, beenden den Durchlauf mit ihrem jeweiligen Grund.
+- 2026-09-20: Die Versorgung nach der Geburt (Haut an Haut, Ansprache) übernimmt die Welt, nicht der Spieler – bis es eine Eingabe gibt. Mit `genesis.Newborn.SkinToSkin 0` lässt sich das Gegenteil erzwingen.
+- 2026-09-20: Zwei Fehler durch den ersten Durchlauf gefunden: (1) Weltuhr und Phasenzeitraffer liefen übereinander, die erste Stunde war nach sieben Sekunden vorbei – die Uhr wird jetzt je Phase gestellt; (2) der Durchlauf meldete „Das Kind schläft", obwohl das Kind unterkühlt und wach war. Außerdem überleben verzögerte Entwicklerbefehle (`genesis.Debug.After`) jetzt einen Ortswechsel und laufen über den PlayerController – ohne diese Korrektur hätte es von diesem Block kein Bild gegeben.
+- Offen: keine Eingabe – der Spieler kann noch nichts entscheiden; der Ortswechsel ist ein harter Ladevorgang; zwischen Einnistung und Geburt gibt es nichts zu sehen; Kreißsaal, Mutter und Gestalt bleiben Platzhalter.
+- **Status: DONE** (Umfang: der Slice als ein Durchlauf mit gemessener Performance; Eingabe und Gestalt als eigene Blöcke).
+
+![Der Durchlauf](Media/GENESIS-023_Run.png)

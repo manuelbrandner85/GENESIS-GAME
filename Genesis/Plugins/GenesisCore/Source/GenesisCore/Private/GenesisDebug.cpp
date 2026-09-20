@@ -7,6 +7,7 @@
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
 #include "GameFramework/HUD.h"
+#include "GameFramework/PlayerController.h"
 #include "Containers/Ticker.h"
 #include "HAL/IConsoleManager.h"
 #include "Misc/ScopeLock.h"
@@ -44,14 +45,29 @@ namespace GenesisDebug
 				FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([WeakWorld, Commands](float)
 				{
 					UWorld* TargetWorld = WeakWorld.Get();
+					// Ein verzögerter Befehl soll einen Ortswechsel überleben. Die Welt von damals ist
+					// danach zwar oft noch im Speicher, aber nicht mehr die, in der gespielt wird –
+					// maßgeblich ist die Welt des Viewports.
+					if (GEngine && GEngine->GameViewport)
+					{
+						if (UWorld* ViewportWorld = GEngine->GameViewport->GetWorld())
+						{
+							TargetWorld = ViewportWorld;
+						}
+					}
 					if (TargetWorld && GEngine)
 					{
 						TArray<FString> Parts;
 						Commands.ParseIntoArray(Parts, TEXT(";"));
 						for (const FString& Part : Parts)
 						{
-							// Über den Viewport wie eine Konsoleneingabe – nur so erreichen Viewport-Befehle (z. B. "shot") ihr Ziel
-							if (GEngine->GameViewport && GEngine->GameViewport->GetWorld() == TargetWorld)
+							// Über den Spieler wie eine Konsoleneingabe: Nur so erreichen Befehle, die im
+							// PlayerController oder im HUD stecken (z. B. "showdebug"), überhaupt ihr Ziel.
+							if (APlayerController* Controller = TargetWorld->GetFirstPlayerController())
+							{
+								Controller->ConsoleCommand(Part.TrimStartAndEnd());
+							}
+							else if (GEngine->GameViewport && GEngine->GameViewport->GetWorld() == TargetWorld)
 							{
 								GEngine->GameViewport->ConsoleCommand(Part.TrimStartAndEnd());
 							}

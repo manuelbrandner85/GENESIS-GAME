@@ -80,6 +80,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GenesisSlice",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [
