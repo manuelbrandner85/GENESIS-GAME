@@ -30,6 +30,12 @@ public:
 private:
 	void DrawLine(const FString& Text, float LineIndex, float Alpha);
 
+	/** Startbildschirm und Pausenmenü. Gibt zurück, ob gezeichnet wurde. */
+	bool DrawMenu();
+	void DrawMenuTitle(const FString& Text, float Y, float Scale);
+	void DrawMenuHint(const FString& Text, float Y, float Scale, float Alpha);
+	void DrawMenuRow(const FString& Left, const FString& Right, float Y, bool bSelected, float Scale, bool bSection = false);
+
 	float CryUsedSeconds = -1.0f;
 	float RootUsedSeconds = -1.0f;
 };

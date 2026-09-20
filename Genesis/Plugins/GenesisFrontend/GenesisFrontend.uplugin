@@ -1,0 +1,23 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Genesis Frontend",
+	"Description": "Startbildschirm, Pausenmenü und Einstellungen – Bild, Grafik, Ton, Steuerung und Barrierefreiheit, vollständig mit Controller bedienbar.",
+	"Category": "Genesis",
+	"CreatedBy": "GENESIS Team",
+	"CanContainContent": false,
+	"EnabledByDefault": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "GenesisFrontend",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{ "Name": "GenesisCore", "Enabled": true },
+		{ "Name": "GenesisAudioCore", "Enabled": true }
+	]
+}

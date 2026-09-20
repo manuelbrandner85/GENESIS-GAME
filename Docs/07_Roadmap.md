@@ -42,6 +42,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-028 | Matrix des Cumulus | Expandierter Komplex (innen dicht, außen locker), 2 687 Hyaluronsäure-Fäden zwischen den Zellen | DONE (Verformung der Fäden offen) |
 | GENESIS-029 | Die erste Entscheidung | Rufen, suchen, hinsehen – die drei Werkzeuge eines Neugeborenen, mit Kosten und Wirkung; Steuerung, Anzeige, Game Mode | DONE (Tastendruck von Hand zu bestätigen) |
 | GENESIS-030 | Schwimmbewegung gegen die Literatur | Aliasing durch Echtzeit behoben, zwei falsche Modellwerte korrigiert, CASA-Messung auf 60 Hz und Ebenenprojektion umgestellt; alle Kenngrößen in der Streubreite der Referenz | DONE (Sichtbestätigung der Bewegung offen) |
+| GENESIS-031 | Startbildschirm, Einstellungen, Controller | Menü und Pause, 17 Einstellungen in fünf Abschnitten, jede Handlung auf Taste **und** Controller-Taste | DONE (Gefühl am echten Controller von Hand zu bestätigen) |
 
 ## Protokoll
 
@@ -328,3 +329,18 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Der Schwarm vor dem Cumulus](Media/GENESIS-030_Schwarm.png)
+
+### GENESIS-031 – Startbildschirm, Einstellungen und Controller
+- 2026-09-21: Auftrag des Game Directors: „auch ein startbildschirm fehlt wo mann das spiel starten kann und auch einstellungen usw. das spiel soll nicht nur per tastatur und maus sonden auch pecontroller steuerbar sein". Neues Plugin `GenesisFrontend`: Menü als **Zustand**, nicht als Level – das HUD zeichnet ihn, die Steuerung bedient ihn, beide wissen nichts über den Inhalt.
+- 2026-09-21: **Hinter dem Menü läuft die Szene weiter.** Kein Standbild, kein Hintergrundvideo: Der Startbildschirm ist der Eileiter, in dem gerade sechstausend Zellen schwimmen. Erst wenn ein Durchlauf läuft, hält das Menü die Welt an.
+- 2026-09-21: **17 Einstellungen in fünf Abschnitten** (Bild, Grafik, Ton, Steuerung, Barrierefreiheit), jede mit einem Satz darunter, was sie kostet oder bringt. Die Auflösungsskala hängt bewusst **nicht** an der Grafikstufe; Lumen läuft ohne Hardware-Strahlen über Abstandsfelder weiter; lebenswichtige Signale bekommen keinen eigenen Regler, damit man sich das Spiel nicht unspielbar stellen kann.
+- 2026-09-21: **Vollständige Controller-Bedienung.** Jede Handlung liegt auf einer Taste und auf einer Controller-Taste; der Test `Genesis.Frontend.EveryActionHasAGamepadKey` geht alle neun Aktionen und beide Blickachsen durch und verlangt beides. Die Anzeige nennt die Tasten aus den Einstellungen („Leertaste / A: rufen"), nicht aus dem Quelltext.
+- 2026-09-21: **Die Regie startet nicht mehr von selbst.** `-genesisplay` öffnet jetzt den Startbildschirm; „Leben beginnen" startet den Durchlauf. Im Editor und in den Messläufen bleibt das Menü aus – dort öffnet es `genesis.Menu`.
+- 2026-09-21: **Im Spiel geprüft:** Log zeigt die Kette `Einstellungen angewendet: Grafik Episch, Auflösung 100 %, Bildrate unbegrenzt, Strahlen an` → `Startbildschirm: Der Spieler beginnt ein Leben.` → `Durchlauf: beginnt`. 111 von 111 Tests bestanden (fünf neue).
+- 2026-09-21: Nebenbefund des Game Directors: beim Start kam „The map specified on the commandline 'C:/Program' could not be found". Unreal nimmt den ersten Eintrag der Befehlszeile, der kein Schalter ist, als Karte. `GENESIS spielen.bat` übergibt die Karte jetzt ausdrücklich als erstes Argument, damit dort nichts anderes stehen kann.
+- Offen: Die Schrift ist die Engine-Schrift – der Titel wird beim Hochskalieren weich; eine eigene Schriftart gehört in den Fotorealismus-Block. Keine Tastenbelegung zum Umstellen, keine Auflösungsauswahl, kein Speicherstand.
+- **Status: DONE.**
+
+![Der Startbildschirm](Media/GENESIS-031_Startbildschirm.png)
+
+![Die Einstellungen](Media/GENESIS-031_Einstellungen.png)

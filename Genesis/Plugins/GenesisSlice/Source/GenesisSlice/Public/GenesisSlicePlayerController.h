@@ -47,7 +47,27 @@ public:
 	float GetCryInput() const { return CryInput; }
 	float GetRootInput() const { return RootInput; }
 
+	/**
+	 * Wie eine Handlung dem Spieler genannt wird, z. B. "Leertaste / A".
+	 *
+	 * Gelesen aus den Einstellungen, nicht in die Anzeige geschrieben: Ein Hinweis auf eine Taste,
+	 * die gar nicht belegt ist, wäre eine Lüge – und genau das passiert, wenn beides getrennt gepflegt wird.
+	 */
+	static FString DescribeAction(FName Action);
+
 private:
+	/** Menü-Eingaben. Sie laufen auch, während das Spiel pausiert ist. */
+	void MenuToggle();
+	void MenuAccept();
+	void MenuBack();
+	void MenuUp();
+	void MenuDown();
+	void MenuLeft();
+	void MenuRight();
+
+	/** Ist gerade ein Menü offen? Dann bekommt das Kind keine Eingabe. */
+	bool IsMenuOpen() const;
+
 	void PressCry() { bCryHeld = true; }
 	void ReleaseCry() { bCryHeld = false; }
 	void PressRoot() { bRootHeld = true; }

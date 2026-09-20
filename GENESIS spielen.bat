@@ -15,5 +15,9 @@ if not exist "%SPIEL%" (
     pause
     exit /b 1
 )
-start "" "%SPIEL%" -genesisplay -windowed -ResX=1600 -ResY=900
+REM Die Karte steht bewusst als erstes Argument da. Unreal nimmt den ersten Eintrag der
+REM Befehlszeile, der kein Schalter ist, als Karte – steht dort versehentlich ein Pfad, kommt
+REM "The map specified on the commandline could not be found". Mit der Karte an erster Stelle
+REM kann das nicht mehr passieren.
+start "" "%SPIEL%" /Game/Genesis/Conception/Maps/L_GEN_OviductAmpulla -genesisplay -windowed -ResX=1600 -ResY=900
 endlocal

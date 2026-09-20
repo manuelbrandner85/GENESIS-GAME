@@ -80,6 +80,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GenesisFrontend",
+			"Enabled": true
+		},
+		{
 			"Name": "GenesisSlice",
 			"Enabled": true
 		},

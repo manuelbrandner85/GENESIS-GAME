@@ -182,23 +182,9 @@ FGenesisSliceSignals UGenesisSliceDirector::ReadSignals() const
 
 bool UGenesisSliceDirector::Tick(float DeltaSeconds)
 {
-	// Die spielbare Fassung startet von selbst: Sie wird mit -genesisplay aufgerufen und soll
-	// nichts weiter verlangen als einen Doppelklick. Im Editor und in den Messläufen bleibt der
-	// Schalter aus, sonst würde jede Aufnahme ihren eigenen Durchlauf anwerfen.
-	if (!bAutoStartChecked)
-	{
-		const UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
-		if (World && World->HasBegunPlay())
-		{
-			bAutoStartChecked = true;
-			if (FParse::Param(FCommandLine::Get(), TEXT("genesisplay")) && State.Phase == EGenesisSlicePhase::Idle)
-			{
-				UE_LOG(LogGenesis, Display, TEXT("Durchlauf: startet von selbst (spielbare Fassung)."));
-				StartRun(0);
-			}
-		}
-	}
-
+	// Der Durchlauf startet nicht mehr von selbst: Seit GENESIS-031 gibt es einen Startbildschirm,
+	// und der Spieler entscheidet dort, wann sein Leben beginnt. Der Spielmodus hängt sich in
+	// `OnStartRequested` ein. Im Editor und in den Messläufen startet weiterhin `genesis.Slice.Start`.
 	if (!State.IsRunning())
 	{
 		return true;

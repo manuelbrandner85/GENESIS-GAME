@@ -70,6 +70,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Genesis|Audio")
 	float GetBusGainLinear(EGenesisAudioBus Bus) const;
 
+	/**
+	 * Die Lautstärkeregler des Spielers. Sie liegen **über** der Mischung: Die Mischung regelt,
+	 * was im Moment wichtig ist; der Spieler regelt, wie laut das Ganze überhaupt sein darf.
+	 */
+	void SetUserVolumes(float Master, float Dialogue, float Music, float World);
+
+	/** Der Reglerwert für diesen Bus, ohne die Mischung. */
+	float GetUserVolume(EGenesisAudioBus Bus) const;
+
 	/** Mutterleib ↔ Luft (Geburt) – Schlüsselmoment für Audio und Cinematics. */
 	FGenesisOnHearingEnvironmentChanged OnHearingEnvironmentChanged;
 
@@ -91,4 +100,8 @@ private:
 	bool bHasPerception = false;
 	bool bInitialized = false;
 	float LastTickSeconds = 0.0f;
+	float UserMasterVolume = 1.0f;
+	float UserDialogueVolume = 1.0f;
+	float UserMusicVolume = 1.0f;
+	float UserWorldVolume = 1.0f;
 };

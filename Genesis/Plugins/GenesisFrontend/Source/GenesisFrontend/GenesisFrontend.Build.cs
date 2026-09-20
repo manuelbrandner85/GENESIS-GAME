@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class GenesisSlice : ModuleRules
+public class GenesisFrontend : ModuleRules
 {
-	public GenesisSlice(ReadOnlyTargetRules Target) : base(Target)
+	public GenesisFrontend(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
@@ -14,14 +14,10 @@ public class GenesisSlice : ModuleRules
 			"CoreUObject",
 			"Engine",
 			"InputCore",
-			"GameplayTags",
+			"ApplicationCore",
+			"RHI",
 			"GenesisCore",
-			"GenesisConception",
-			"GenesisEmbryo",
-			"GenesisBody",
-			"GenesisBirth",
-			"GenesisEarlyLife",
-			"GenesisFrontend"
+			"GenesisAudioCore"
 		});
 	}
 }

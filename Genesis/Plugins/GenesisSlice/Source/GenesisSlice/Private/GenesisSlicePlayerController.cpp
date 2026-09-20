@@ -5,6 +5,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "GenesisEarlyLifeSubsystem.h"
+#include "GenesisFrontendSubsystem.h"
 #include "GenesisEarlyLifeTypes.h"
 #include "GenesisBirthCameraRig.h"
 #include "EngineUtils.h"
@@ -16,6 +17,8 @@ AGenesisSlicePlayerController::AGenesisSlicePlayerController()
 	PrimaryActorTick.bCanEverTick = true;
 	// Der Blick gehört dem Spieler, nicht der Maus: Kein Cursor, keine Menüführung in der Szene
 	bShowMouseCursor = false;
+	// Ohne das hier bliebe die Steuerung in der Pause stehen – und man käme nie wieder heraus.
+	bShouldPerformFullTickWhenPaused = true;
 }
 
 void AGenesisSlicePlayerController::SetupInputComponent()
@@ -32,6 +35,21 @@ void AGenesisSlicePlayerController::SetupInputComponent()
 	InputComponent->BindAction(TEXT("GenesisRoot"), IE_Released, this, &AGenesisSlicePlayerController::ReleaseRoot);
 	InputComponent->BindAxis(TEXT("GenesisLookRight"), this, &AGenesisSlicePlayerController::LookRight);
 	InputComponent->BindAxis(TEXT("GenesisLookUp"), this, &AGenesisSlicePlayerController::LookUp);
+
+	// Das Menü muss auch dann reagieren, wenn die Welt steht – sonst kommt man aus der Pause
+	// nicht mehr heraus. `bExecuteWhenPaused` ist genau dafür da.
+	auto BindMenu = [this](const TCHAR* Action, void (AGenesisSlicePlayerController::*Handler)())
+	{
+		FInputActionBinding& Binding = InputComponent->BindAction(Action, IE_Pressed, this, Handler);
+		Binding.bExecuteWhenPaused = true;
+	};
+	BindMenu(TEXT("GenesisMenu"), &AGenesisSlicePlayerController::MenuToggle);
+	BindMenu(TEXT("GenesisAccept"), &AGenesisSlicePlayerController::MenuAccept);
+	BindMenu(TEXT("GenesisBack"), &AGenesisSlicePlayerController::MenuBack);
+	BindMenu(TEXT("GenesisMenuUp"), &AGenesisSlicePlayerController::MenuUp);
+	BindMenu(TEXT("GenesisMenuDown"), &AGenesisSlicePlayerController::MenuDown);
+	BindMenu(TEXT("GenesisMenuLeft"), &AGenesisSlicePlayerController::MenuLeft);
+	BindMenu(TEXT("GenesisMenuRight"), &AGenesisSlicePlayerController::MenuRight);
 
 	// Nachsehen, welche Tasten die Einstellungen dafür wirklich hergeben – eine Bindung ohne
 	// Mapping wäre eine Steuerung, die es nur im Code gibt.
@@ -54,11 +72,155 @@ void AGenesisSlicePlayerController::SetupInputComponent()
 
 	UE_LOG(LogGenesis, Display, TEXT("Steuerung: Rufen auf %s, Suchen auf %s – mehr kann ein Neugeborenes nicht."),
 		*KeysFor(TEXT("GenesisCry")), *KeysFor(TEXT("GenesisRoot")));
+	UE_LOG(LogGenesis, Display, TEXT("Menü: Öffnen auf %s, Bestätigen auf %s, Zurück auf %s."),
+		*KeysFor(TEXT("GenesisMenu")), *KeysFor(TEXT("GenesisAccept")), *KeysFor(TEXT("GenesisBack")));
+}
+
+FString AGenesisSlicePlayerController::DescribeAction(FName Action)
+{
+	const UInputSettings* Settings = GetDefault<UInputSettings>();
+	if (!Settings)
+	{
+		return FString();
+	}
+
+	// Die Engine-Namen ("SpaceBar", "Gamepad_FaceButton_Bottom") stehen so nicht im Bild.
+	// Für die wenigen Tasten, die dieses Spiel hat, genügt eine kurze Übersetzung.
+	static const TMap<FName, FString> Names = {
+		{ TEXT("SpaceBar"), TEXT("Leertaste") },
+		{ TEXT("Escape"), TEXT("Esc") },
+		{ TEXT("Enter"), TEXT("Enter") },
+		{ TEXT("BackSpace"), TEXT("Rücktaste") },
+		{ TEXT("Gamepad_FaceButton_Bottom"), TEXT("A") },
+		{ TEXT("Gamepad_FaceButton_Right"), TEXT("B") },
+		{ TEXT("Gamepad_FaceButton_Left"), TEXT("X") },
+		{ TEXT("Gamepad_FaceButton_Top"), TEXT("Y") },
+		{ TEXT("Gamepad_Special_Right"), TEXT("Start") },
+		{ TEXT("Gamepad_Special_Left"), TEXT("Zurück") }
+	};
+	auto Pretty = [](const FKey& Key)
+	{
+		if (const FString* Found = Names.Find(Key.GetFName()))
+		{
+			return *Found;
+		}
+		return Key.GetDisplayName().ToString();
+	};
+
+	FString Keyboard;
+	FString Gamepad;
+	for (const FInputActionKeyMapping& Mapping : Settings->GetActionMappings())
+	{
+		if (Mapping.ActionName != Action)
+		{
+			continue;
+		}
+		if (Mapping.Key.IsGamepadKey())
+		{
+			if (Gamepad.IsEmpty()) { Gamepad = Pretty(Mapping.Key); }
+		}
+		else if (Keyboard.IsEmpty())
+		{
+			Keyboard = Pretty(Mapping.Key);
+		}
+	}
+
+	if (Keyboard.IsEmpty()) { return Gamepad; }
+	if (Gamepad.IsEmpty()) { return Keyboard; }
+	return Keyboard + TEXT(" / ") + Gamepad;
+}
+
+bool AGenesisSlicePlayerController::IsMenuOpen() const
+{
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UGenesisFrontendSubsystem* Frontend = GameInstance ? GameInstance->GetSubsystem<UGenesisFrontendSubsystem>() : nullptr;
+	return Frontend && Frontend->GetPage() != EGenesisMenuPage::Keine;
+}
+
+void AGenesisSlicePlayerController::MenuToggle()
+{
+	if (UGenesisFrontendSubsystem* Frontend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>() : nullptr)
+	{
+		Frontend->ToggleMenu();
+	}
+}
+
+void AGenesisSlicePlayerController::MenuAccept()
+{
+	if (!IsMenuOpen())
+	{
+		return;
+	}
+	if (UGenesisFrontendSubsystem* Frontend = GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>())
+	{
+		Frontend->Accept();
+	}
+}
+
+void AGenesisSlicePlayerController::MenuBack()
+{
+	if (!IsMenuOpen())
+	{
+		return;
+	}
+	if (UGenesisFrontendSubsystem* Frontend = GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>())
+	{
+		Frontend->Back();
+	}
+}
+
+void AGenesisSlicePlayerController::MenuUp()
+{
+	if (IsMenuOpen())
+	{
+		GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>()->MoveSelection(-1);
+	}
+}
+
+void AGenesisSlicePlayerController::MenuDown()
+{
+	if (IsMenuOpen())
+	{
+		GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>()->MoveSelection(1);
+	}
+}
+
+void AGenesisSlicePlayerController::MenuLeft()
+{
+	if (IsMenuOpen())
+	{
+		GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>()->AdjustSelection(-1);
+	}
+}
+
+void AGenesisSlicePlayerController::MenuRight()
+{
+	if (IsMenuOpen())
+	{
+		GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>()->AdjustSelection(1);
+	}
 }
 
 void AGenesisSlicePlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
+
+	// Solange ein Menü offen ist, bekommt das Kind keine Eingabe: Wer im Menü nach unten geht,
+	// soll nicht nebenbei schreien. Angefangene Eingaben laufen dabei aus, sie brechen nicht ab.
+	if (IsMenuOpen())
+	{
+		bCryHeld = false;
+		bRootHeld = false;
+		LookInput = FVector2D::ZeroVector;
+	}
+
+	// Blickempfindlichkeit und Y-Achse kommen aus den Einstellungen – für Maus und Stick gleich
+	if (const UGenesisFrontendSubsystem* Frontend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>() : nullptr)
+	{
+		const FGenesisPlayerSettings& Settings = Frontend->GetSettings();
+		LookInput.X *= Settings.LookSensitivity;
+		LookInput.Y *= Settings.LookSensitivity * (Settings.bInvertLookY ? -1.0f : 1.0f);
+	}
 
 	// Schreien und Suchen schwellen an und ab – ein Neugeborenes schaltet nichts ein und aus
 	const float CryTarget = bCryHeld ? 1.0f : 0.0f;

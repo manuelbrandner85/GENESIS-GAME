@@ -75,7 +75,34 @@ void UGenesisAudioSubsystem::PushMixRequest(EGenesisAudioBus Bus, float Importan
 
 float UGenesisAudioSubsystem::GetBusGainLinear(EGenesisAudioBus Bus) const
 {
-	return GenesisAudioCoreLogic::DbToLinear(Mix.GetGainDb(Bus));
+	// Mischung mal Regler: Dass die Mischung etwas leiser macht, weil gerade etwas Wichtigeres
+	// läuft, und dass der Spieler es leiser gestellt hat, sind zwei verschiedene Dinge – beide wirken.
+	return GenesisAudioCoreLogic::DbToLinear(Mix.GetGainDb(Bus)) * GetUserVolume(Bus);
+}
+
+void UGenesisAudioSubsystem::SetUserVolumes(float Master, float Dialogue, float Music, float World)
+{
+	UserMasterVolume = FMath::Clamp(Master, 0.0f, 1.0f);
+	UserDialogueVolume = FMath::Clamp(Dialogue, 0.0f, 1.0f);
+	UserMusicVolume = FMath::Clamp(Music, 0.0f, 1.0f);
+	UserWorldVolume = FMath::Clamp(World, 0.0f, 1.0f);
+}
+
+float UGenesisAudioSubsystem::GetUserVolume(EGenesisAudioBus Bus) const
+{
+	switch (Bus)
+	{
+	case EGenesisAudioBus::Dialogue:
+		return UserMasterVolume * UserDialogueVolume;
+	case EGenesisAudioBus::Music:
+		return UserMasterVolume * UserMusicVolume;
+	case EGenesisAudioBus::VitalSignal:
+		// Lebenswichtige Signale hängen am Gesamtregler, bekommen aber keinen eigenen: Wer sie
+		// wegdrehen könnte, könnte sich das Spiel unspielbar einstellen.
+		return UserMasterVolume;
+	default:
+		return UserMasterVolume * UserWorldVolume;
+	}
 }
 
 FGuid UGenesisAudioSubsystem::ResolveListener() const

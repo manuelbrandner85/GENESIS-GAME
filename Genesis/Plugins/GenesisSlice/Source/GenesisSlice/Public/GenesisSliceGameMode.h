@@ -20,4 +20,7 @@ class GENESISSLICE_API AGenesisSliceGameMode : public AGameModeBase
 
 public:
 	AGenesisSliceGameMode();
+
+	/** Einstellungen anwenden, Startbildschirm öffnen und die Regie daran hängen. */
+	virtual void BeginPlay() override;
 };

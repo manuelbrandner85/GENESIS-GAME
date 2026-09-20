@@ -22,6 +22,7 @@
 		{ "Name": "GenesisEmbryo", "Enabled": true },
 		{ "Name": "GenesisBody", "Enabled": true },
 		{ "Name": "GenesisBirth", "Enabled": true },
-		{ "Name": "GenesisEarlyLife", "Enabled": true }
+		{ "Name": "GenesisEarlyLife", "Enabled": true },
+		{ "Name": "GenesisFrontend", "Enabled": true }
 	]
 }
