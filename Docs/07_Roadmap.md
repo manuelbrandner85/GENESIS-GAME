@@ -39,6 +39,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-025 | Schwarm: Richtung und Dichte | Strömung im ganzen Lumen, weniger Taumeln, Vortrieb hyperaktivierter Zellen, Lockwirkung für alle, 6 000 Zellen als Pulk | DONE (LODs offen) |
 | GENESIS-026 | Mikrowelt: Licht und Belichtung | Geregeltes Endoskoplicht in zwei Bereichen, Streulicht der Umgebung, keine ausgebrannten Flächen mehr | DONE (Form der Coronazellen offen) |
 | GENESIS-027 | Coronazellen | Zellen drücken sich gegenseitig platt (Potenz-Voronoi mit weichem Schnitt), dunkle Fugen, Mikrovilli-Rauheit | DONE (Matrix zwischen den Zellen offen) |
+| GENESIS-028 | Matrix des Cumulus | Expandierter Komplex (innen dicht, außen locker), 2 687 Hyaluronsäure-Fäden zwischen den Zellen | DONE (Verformung der Fäden offen) |
 
 ## Protokoll
 
@@ -291,3 +292,14 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Coronazellen in der Nahaufnahme](Media/GENESIS-027_CoronaSharp.png)
+
+### GENESIS-028 – Die Matrix zwischen den Zellen
+- 2026-09-20: Beim Eisprung geben die Cumuluszellen Hyaluronsäure ab; sie bindet Wasser und drückt die Zellen auseinander – der Komplex expandiert. Bisher war er überall gleich dicht gepackt, also im Zustand *vor* dem Eisprung.
+- 2026-09-20: **Innen dicht, außen locker:** Die Corona radiata liegt der Zona weiterhin an, nach außen wächst der Mindestabstand der Zellen von 5,4 auf 10,0 µm.
+- 2026-09-20: **Fäden in den Lücken:** Zwischen Zellen mit 0,5–7 µm Abstand spannt sich ein Faden – an den Enden breiter (dort haftet das Gel), in der Mitte 0,09–0,22 µm dünn, mit Durchhang. Gemessen: 2 687 Fäden, 2 299 von 2 600 Zellen hängen an mindestens einem; 67 175 Flächen gegenüber 852 825 der Corona.
+- 2026-09-20: **Material:** fast klares Gel (Grundfarbe 0,52, Deckkraft 0,02 plus 0,16 über den Blickwinkel). Der erste Versuch war zu grob – mit bis zu 1,43 µm dicken Fäden und Deckkraft 0,42 sahen sie aus wie weiße Papierschnipsel; erst dünn und fast durchsichtig sehen sie aus wie Gel.
+- 2026-09-20: Kosten unverändert (Frame 7,34 ms, GPU 4,66 ms). 105 von 105 Tests bestanden (die eine Warnung stammt aus einer Netzwerkprüfung der Engine).
+- Offen: Die Fäden sind starr – ein Spermium, das sich hindurchwindet, verformt sie nicht. Die Gallerte als Volumen bleibt unsichtbar und wirkt nur über Zellen, Fäden und die Bremswirkung auf die Spermien.
+- **Status: DONE.**
+
+![Fäden zwischen den Zellen](Media/GENESIS-028_Strands.png)

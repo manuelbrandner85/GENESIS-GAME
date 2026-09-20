@@ -367,3 +367,41 @@ Kosten: unverändert (Frame 7,76 ms, GPU 4,78 ms) – die Corona ist ein Nanite-
 Offen: Die Oberfläche ist noch glatt; echte Mikrovilli-Zotteligkeit bräuchte eine Verdrängung im
 Material. Und der Komplex hat keine sichtbare Matrix zwischen den Zellen – die Gallerte ist bisher nur
 eine Hülle um das Ganze.
+
+## GENESIS-028 – Die Matrix zwischen den Zellen
+
+Beim Eisprung geben die Cumuluszellen Hyaluronsäure ab. Sie bindet Wasser, quillt auf und drückt die
+Zellen auseinander – der Komplex **expandiert**. Was danach zwischen den Zellen steht, ist kein leerer
+Raum, sondern ein zähes, fast klares Gel, das an beiden Zellen hängt und beim Auseinanderdriften Fäden
+zieht. Genau diese Fäden lassen den Komplex im Mikroskop wie eine Wolke aussehen – und sie sind der
+Grund, warum die Spermien kurz vor der Zona langsamer werden.
+
+**Zwei Änderungen im Aufbau:**
+
+1. **Innen dicht, außen locker.** Die Corona radiata liegt der Zona weiterhin dicht an; nach außen
+   wächst der Mindestabstand der Zellen (5,4 µm innen bis 10,0 µm in der fünften Lage). Vorher war
+   der Komplex überall gleich dicht gepackt – das ist der Zustand *vor* dem Eisprung, nicht danach.
+2. **Fäden in den Lücken.** Zwischen Zellen, deren Oberflächen 0,5–7 µm auseinanderliegen, spannt sich
+   ein Faden: an den Enden breiter (dort haftet das Gel an der Zelle), in der Mitte am dünnsten
+   (0,09–0,22 µm), mit Durchhang quer zur Verbindung. Nach außen zieht die Gallerte mehr Fäden.
+
+**Gemessen im Aufbau:** 2 687 Fäden, 2 299 von 2 600 Zellen hängen an mindestens einem; 67 175 Flächen
+(die Corona selbst hat 852 825).
+
+**Im Material:** fast klares Gel – Grundfarbe 0,52, Deckkraft 0,02 plus 0,16 über den Blickwinkel.
+Ein Faden aus Wasser mit Zuckerketten hat einen Brechungsindex von etwa 1,34, kaum anders als die
+Eileiterflüssigkeit: Er glänzt nicht, er wirft keinen Schatten, er schimmert nur.
+
+Der erste Versuch war zu grob: Mit 0,22–1,43 µm dicken Fäden und einer Deckkraft von 0,42 sahen sie
+aus wie weiße Papierschnipsel zwischen den Zellen. Erst dünn und fast durchsichtig sehen sie aus wie
+Gel.
+
+Kosten: Frame 7,34 ms, GPU 4,66 ms – unverändert.
+
+![Fäden zwischen den Zellen](Media/GENESIS-028_Strands.png)
+
+![Der expandierte Komplex](Media/GENESIS-028_Cumulus.png)
+
+Offen: Die Fäden sind starr. Ein Spermium, das sich hindurchwindet, verformt sie nicht – dafür bräuchte
+es eine Simulation der Gallerte. Und die Gallerte selbst (als Volumen) ist weiterhin nicht sichtbar;
+sie wirkt nur über die Zellen, die Fäden und die Bremswirkung auf die Spermien.

@@ -434,6 +434,41 @@ def create_corona_material():
     return material
 
 
+def create_strands_material():
+    """
+    Die Fäden der Hyaluronsäure-Matrix: fast klares Gel, das an den Zellen hängt.
+
+    Ein Faden aus Wasser mit Zuckerketten hat einen Brechungsindex von etwa 1,34 – kaum anders als
+    die Eileiterflüssigkeit. Er glänzt nicht und wirft keinen Schatten; sichtbar wird er nur,
+    weil er Licht streut und an den Rändern heller wird. Deshalb: durchscheinend, sehr geringe
+    Deckkraft, und mit dem Blickwinkel steigend (Fresnel).
+    """
+    material = load_or_create_material("M_GEN_Oocyte_Strands")
+    material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    material.set_editor_property("translucency_lighting_mode", unreal.TranslucencyLightingMode.TLM_SURFACE_PER_PIXEL_LIGHTING)
+    material.set_editor_property("two_sided", True)
+
+    base = color(material, -700, -100, 0.52, 0.50, 0.47)
+    mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
+
+    # Quer getroffen ist ein Faden dicker als längs – das macht der Fresnel-Term.
+    # Die Deckkraft bleibt insgesamt winzig: Gel aus 98 % Wasser verdeckt nichts, es schimmert nur.
+    rim = fresnel(material, -1050, 120, 2.2, 0.06)
+    rim_amount = multiply(material, -800, 140, rim, constant(material, -1000, 220, 0.16))
+    opacity = add(material, -560, 140, rim_amount, constant(material, -800, 260, 0.02))
+    mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
+
+    roughness = constant(material, -560, 340, 0.12)
+    mel.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
+    spec = constant(material, -560, 420, 0.02)
+    mel.connect_material_property(spec, "", unreal.MaterialProperty.MP_SPECULAR)
+
+    mel.recompile_material(material)
+    eal.save_loaded_asset(material)
+    log("Material M_GEN_Oocyte_Strands gebaut")
+    return material
+
+
 def create_matrix_material():
     """Hyaluronsäure-Gallerte des Cumulus: fast unsichtbar, verrät sich nur durch Streulicht an den Rändern."""
     material = load_or_create_material("M_GEN_Oocyte_Matrix")
@@ -480,8 +515,11 @@ def place_oocyte(meshes, materials):
         ("zona", "zona", "zona", False, True),
         ("polar_body", "polar_body", "ooplasm", False, True),
         ("corona", "corona", "corona", True, True),
-        # Die Gallerte bleibt vorerst ungesetzt: Als Kugel mit harter Silhouette wirkte sie wie eine Plastikschale.
-        # Sichtbar wird der Cumulus über die Zellen selbst und das Streulicht dazwischen.
+        # Die Fäden der Gallerte zwischen den Zellen. Sie werfen keine Schatten – ein 0,5 µm dünner
+        # Faden aus Wasser wirft keinen, und die Schattenkarte würde ihn ohnehin nicht auflösen.
+        ("cumulus_strands", "strands", "strands", False, True),
+        # Die Gallerte als Ganzes bleibt ungesetzt: Als Kugel mit harter Silhouette wirkte sie wie eine
+        # Plastikschale. Sichtbar wird der Cumulus über die Zellen und die Fäden dazwischen.
     )
     for property_name, mesh_key, material_key, cast_shadow, ray_tracing in parts:
         component = oocyte.get_editor_property(property_name)
@@ -541,6 +579,7 @@ if os.environ.get("GENESIS_SKIP_OOCYTE_IMPORT"):
         "polar_body": eal.load_asset(OOCYTE + "/SM_GEN_OocytePolarBody"),
         "corona": eal.load_asset(OOCYTE + "/SM_GEN_OocyteCorona"),
         "matrix": eal.load_asset(OOCYTE + "/SM_GEN_OocyteMatrix"),
+        "strands": eal.load_asset(OOCYTE + "/SM_GEN_OocyteStrands"),
     }
 else:
     mesh_assets = {
@@ -549,6 +588,8 @@ else:
         "polar_body": import_mesh("SM_GEN_OocytePolarBody.fbx", "SM_GEN_OocytePolarBody", nanite=False),
         "corona": import_mesh("SM_GEN_OocyteCorona.fbx", "SM_GEN_OocyteCorona", nanite=True, compute_normals=True),
         "matrix": import_mesh("SM_GEN_OocyteMatrix.fbx", "SM_GEN_OocyteMatrix", nanite=False),
+        # Fäden: Nanite aus, weil sie durchscheinend gerendert werden
+        "strands": import_mesh("SM_GEN_OocyteStrands.fbx", "SM_GEN_OocyteStrands", nanite=False, compute_normals=True),
     }
 
 material_assets = {
@@ -556,6 +597,7 @@ material_assets = {
     "zona": create_zona_material(),
     "corona": create_corona_material(),
     "matrix": create_matrix_material(),
+    "strands": create_strands_material(),
 }
 
 place_oocyte(mesh_assets, material_assets)

@@ -54,6 +54,10 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> CumulusMatrix;
 
+	/** Fäden der Gallerte zwischen den Zellen – erst sie machen aus dem Kranz eine Wolke. */
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> CumulusStrands;
+
 private:
 	void RegisterDebugPage();
 

@@ -182,8 +182,12 @@ def build_corona():
         if 0.5 + 0.5 * value_noise(direction[None, :], 1.7, 41)[0] < 0.10 + 0.17 * layer:
             continue
         position = direction * distance
-        # Enger als die Zellgröße: Die Zellen müssen sich berühren, sonst gibt es nichts zu drücken
-        if len(centers) and np.min(np.linalg.norm(centers - position, axis=1)) < 5.4:
+        # Innen dicht, außen locker – und das ist der eigentliche Zustand des Komplexes zum Eisprung:
+        # Die Corona radiata liegt der Zona noch dicht an, der äußere Cumulus ist **expandiert**.
+        # Die Zellen dort haben Hyaluronsäure abgegeben, die Gallerte hat sie auseinandergedrückt.
+        # Deshalb wächst der Mindestabstand nach außen; in die Lücken kommen später die Fäden.
+        spacing = 5.4 + 1.15 * layer
+        if len(centers) and np.min(np.linalg.norm(centers - position, axis=1)) < spacing:
             continue
 
         # Größenstreuung wie im Gewebe: Cumuluszellen messen 7–16 µm, keine zwei sind gleich
@@ -324,6 +328,95 @@ def build_corona():
           "| deutlich gedrueckte Punkte", round(pressed_share, 1), "%",
           "| Beruehrungstiefe P10", round(float(np.percentile(contact_array, 10)), 3),
           "Median", round(float(np.percentile(contact_array, 50)), 3))
+    return obj, centers, radii, np.array(layers)
+
+
+def build_strands(centers, radii, layers):
+    """
+    Die Hyaluronsäure-Matrix zwischen den Zellen.
+
+    Beim Eisprung geben die Cumuluszellen Hyaluronsäure ab; sie bindet Wasser, quillt auf und drückt
+    die Zellen auseinander – der Komplex **expandiert**. Was dabei zwischen den Zellen steht, ist kein
+    leerer Raum, sondern ein zähes, fast klares Gel, das an beiden Zellen hängt und beim Auseinander-
+    driften Fäden zieht. Genau diese Fäden sind das, was den Komplex im Mikroskop wie eine Wolke
+    aussehen lässt – und was die Spermien abbremst, bevor sie die Zona erreichen.
+
+    Gebaut wird zwischen Zellen, deren Oberflächen 0,5–7 µm auseinanderliegen: ein dünner Strang mit
+    Durchhang, an den Enden breiter (dort haftet er an der Zelle), in der Mitte am dünnsten.
+    """
+    strands = bmesh.new()
+    count = 0
+    per_cell = np.zeros(len(centers), dtype=int)
+
+    order = rng.permutation(len(centers))
+    for index in order:
+        distances = np.linalg.norm(centers - centers[index], axis=1)
+        neighbours = np.argsort(distances)[1:9]
+        for other in neighbours:
+            if per_cell[index] >= 3 or per_cell[other] >= 3:
+                continue
+            gap = distances[other] - radii[index] - radii[other]
+            # Zu dicht: Dort berühren sich die Zellen ohnehin. Zu weit: Der Faden wäre gerissen.
+            if gap < 0.5 or gap > 7.0:
+                continue
+            # Nach außen zieht die Gallerte mehr Fäden – dort ist der Komplex expandiert
+            layer = max(int(layers[index]), int(layers[other]))
+            if rng.random() > 0.25 + 0.18 * layer:
+                continue
+
+            start = centers[index]
+            end = centers[other]
+            axis = end - start
+            length = np.linalg.norm(axis)
+            axis_dir = axis / length
+            helper = np.array([0.0, 0.0, 1.0]) if abs(axis_dir[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+            side = np.cross(helper, axis_dir)
+            side /= np.linalg.norm(side)
+            up = np.cross(axis_dir, side)
+
+            # Durchhang quer zur Verbindung: Ein Faden aus Gel hängt, er steht nicht
+            sag_direction = side * rng.uniform(-1.0, 1.0) + up * rng.uniform(-1.0, 1.0)
+            sag_norm = np.linalg.norm(sag_direction)
+            sag_direction = sag_direction / sag_norm if sag_norm > 1e-6 else side
+            sag = gap * rng.uniform(0.12, 0.35)
+
+            rings = []
+            segments = 5
+            sides = 5
+            for segment in range(segments + 1):
+                fraction = segment / segments
+                # Von Zelloberfläche zu Zelloberfläche, nicht von Mittelpunkt zu Mittelpunkt
+                along = radii[index] + fraction * (length - radii[index] - radii[other])
+                center = start + axis_dir * along + sag_direction * sag * math.sin(math.pi * fraction)
+                # An den Enden breiter: Dort haftet das Gel an der Zelle
+                radius_here = rng.uniform(0.09, 0.22) * (1.0 + 1.1 * (1.0 - math.sin(math.pi * fraction)))
+                ring = []
+                for corner in range(sides):
+                    angle = 2.0 * math.pi * corner / sides
+                    offset = (side * math.cos(angle) + up * math.sin(angle)) * radius_here
+                    ring.append(strands.verts.new(Vector((center + offset) * UM)))
+                rings.append(ring)
+            for lower, upper in zip(rings[:-1], rings[1:]):
+                for corner in range(sides):
+                    other_corner = (corner + 1) % sides
+                    strands.faces.new((lower[corner], lower[other_corner], upper[other_corner], upper[corner]))
+
+            per_cell[index] += 1
+            per_cell[other] += 1
+            count += 1
+
+    bmesh.ops.recalc_face_normals(strands, faces=strands.faces)
+    mesh = bpy.data.meshes.new("SM_GEN_OocyteStrands")
+    strands.to_mesh(mesh)
+    strands.free()
+    for polygon in mesh.polygons:
+        polygon.use_smooth = True
+    obj = bpy.data.objects.new("SM_GEN_OocyteStrands", mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    co = read_vertices(obj)
+    add_uv_and_attribute(obj, np.clip((np.linalg.norm(co, axis=1) - ZONA_INNER - ZONA_THICKNESS) / 60.0, 0.0, 1.0))
+    print("GENESIS: Matrixfäden", count, "| Vertices", len(co),
+          "| Zellen mit Faden", int(np.count_nonzero(per_cell)), "von", len(centers))
     return obj
 
 
@@ -386,6 +479,7 @@ def render_lookdev(objects, out_dir, exposure, samples, energy):
         "SM_GEN_OocyteZona": make_material("M_Zona", (0.86, 0.80, 0.68, 1.0), (2.0, 1.8, 1.6), 25.0, 0.88, 0.10, ior=1.035),
         "SM_GEN_OocyteCorona": make_material("M_Corona", (0.80, 0.76, 0.70, 1.0), (1.2, 0.8, 0.6), 8.0, 0.86, 0.16, ior=1.045),
         "SM_GEN_OocyteMatrix": make_material("M_Matrix", (0.96, 0.96, 0.95, 1.0), (4.0, 4.0, 4.0), 160.0, 0.995, 0.05, ior=1.008),
+        "SM_GEN_OocyteStrands": make_material("M_Strands", (0.94, 0.93, 0.91, 1.0), (3.0, 3.0, 3.0), 90.0, 0.97, 0.08, ior=1.012),
         "SM_GEN_OocytePolarBody": make_material("M_PolarBody", (0.62, 0.58, 0.54, 1.0), (1.0, 0.7, 0.5), 3.0, 0.25, 0.30),
     }
     for obj in objects:
@@ -442,19 +536,21 @@ def main():
     ooplasm = build_ooplasm()
     zona = build_zona()
     polar_body = build_polar_body()
-    corona = build_corona()
+    corona, centers, radii, layers = build_corona()
+    strands = build_strands(centers, radii, layers)
     matrix = build_matrix()
-    for obj in (ooplasm, zona, polar_body, corona, matrix):
+    objects = (ooplasm, zona, polar_body, corona, strands, matrix)
+    for obj in objects:
         dimensions = obj.dimensions
         print("GENESIS: %-28s %6.1f × %6.1f × %6.1f µm, %d Flächen" % (
             obj.name, dimensions.x / UM, dimensions.y / UM, dimensions.z / UM, len(obj.data.polygons)))
 
     if args.get("export"):
-        for obj in (ooplasm, zona, polar_body, corona, matrix):
+        for obj in objects:
             export_fbx(obj, os.path.join(out_dir, obj.name + ".fbx"))
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, "Oocyte.blend"))
     if args.get("render"):
-        render_lookdev([ooplasm, zona, polar_body, corona, matrix], out_dir, float(args.get("exposure", 0.0)),
+        render_lookdev(list(objects), out_dir, float(args.get("exposure", 0.0)),
                        int(args.get("samples", 256)), float(args.get("energy", 30000.0)))
 
 

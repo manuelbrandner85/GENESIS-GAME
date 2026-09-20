@@ -27,6 +27,9 @@ AGenesisOocyte::AGenesisOocyte()
 	PolarBody = MakePart(TEXT("PolarBody"), false);
 	Corona = MakePart(TEXT("Corona"), false);
 	CumulusMatrix = MakePart(TEXT("CumulusMatrix"), false);
+	// Die Fäden der Hyaluronsäure-Matrix zwischen den Zellen: Sie halten den expandierten Cumulus
+	// zusammen und bremsen die Spermien, bevor diese die Zona erreichen.
+	CumulusStrands = MakePart(TEXT("CumulusStrands"), false);
 }
 
 void AGenesisOocyte::BeginPlay()
