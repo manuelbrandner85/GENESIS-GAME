@@ -58,6 +58,11 @@ AGenesisSpermSwarm::AGenesisSpermSwarm()
 	// Kleine, bewegte Objekte: keine Distanzfelder, aber Bewegungsunschärfe über vorherige Transformationen
 	Instances->bAffectDistanceFieldLighting = false;
 	Instances->SetCastShadow(true);
+	// Sechstausend Zellen, deren Geißel im Shader schlägt: Ihre Strahlengeometrie müsste jedes Bild
+	// neu gebaut werden und bliebe dauerhaft im Speicher – 87 MiB, die nichts zurückgeben. Eine
+	// 5 µm große, fast durchsichtige Zelle spiegelt sich in nichts und erhellt nichts. Sie bleibt
+	// deshalb aus der Strahlenszene heraus; gesehen, beleuchtet und beschattet wird sie weiterhin.
+	Instances->SetVisibleInRayTracing(false);
 }
 
 void AGenesisSpermSwarm::OnConstruction(const FTransform& Transform)
@@ -90,6 +95,10 @@ void AGenesisSpermSwarm::RebuildSwarm()
 	{
 		return;
 	}
+
+	// Auch hier und nicht nur im Konstruktor: Ein bereits im Level abgelegter Schwarm trägt seine
+	// eigenen gespeicherten Werte und würde eine Änderung am Konstruktor nie sehen.
+	Instances->SetVisibleInRayTracing(false);
 
 	Instances->SetStaticMesh(CellMesh);
 	if (CellMaterial)

@@ -320,6 +320,10 @@ def create_zona_material():
     """Zona pellucida: glasige Glykoprotein-Hülle mit radialer Faserstruktur, die nach der Befruchtung verhärtet."""
     material = load_or_create_material("M_GEN_Oocyte_Zona")
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    # Vor der Schaerfentiefe zeichnen. Unreal legt durchscheinende Flaechen sonst in einen Pass
+    # NACH der Schaerfentiefe - dann bleibt eine Zelle direkt vor der Linse gestochen scharf,
+    # waehrend alles andere weich ist. Genau daran erkennt man ein Bild als gerechnet.
+    material.set_editor_property("translucency_pass", unreal.MaterialTranslucencyPass.MTP_BEFORE_DOF)
     material.set_editor_property("translucency_lighting_mode", unreal.TranslucencyLightingMode.TLM_SURFACE_PER_PIXEL_LIGHTING)
     material.set_editor_property("two_sided", True)
     # Brechung nach Brechungsindex (Name der Eigenschaft je nach Engine-Version)
@@ -445,6 +449,10 @@ def create_strands_material():
     """
     material = load_or_create_material("M_GEN_Oocyte_Strands")
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    # Vor der Schaerfentiefe zeichnen. Unreal legt durchscheinende Flaechen sonst in einen Pass
+    # NACH der Schaerfentiefe - dann bleibt eine Zelle direkt vor der Linse gestochen scharf,
+    # waehrend alles andere weich ist. Genau daran erkennt man ein Bild als gerechnet.
+    material.set_editor_property("translucency_pass", unreal.MaterialTranslucencyPass.MTP_BEFORE_DOF)
     material.set_editor_property("translucency_lighting_mode", unreal.TranslucencyLightingMode.TLM_SURFACE_PER_PIXEL_LIGHTING)
     material.set_editor_property("two_sided", True)
 
@@ -473,6 +481,10 @@ def create_matrix_material():
     """Hyaluronsäure-Gallerte des Cumulus: fast unsichtbar, verrät sich nur durch Streulicht an den Rändern."""
     material = load_or_create_material("M_GEN_Oocyte_Matrix")
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    # Vor der Schaerfentiefe zeichnen. Unreal legt durchscheinende Flaechen sonst in einen Pass
+    # NACH der Schaerfentiefe - dann bleibt eine Zelle direkt vor der Linse gestochen scharf,
+    # waehrend alles andere weich ist. Genau daran erkennt man ein Bild als gerechnet.
+    material.set_editor_property("translucency_pass", unreal.MaterialTranslucencyPass.MTP_BEFORE_DOF)
     material.set_editor_property("translucency_lighting_mode", unreal.TranslucencyLightingMode.TLM_SURFACE_PER_PIXEL_LIGHTING)
     material.set_editor_property("two_sided", True)
 

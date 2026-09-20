@@ -500,3 +500,57 @@ anschlagen, wenn eine Szene wirklich zu schwer wird.
   Belichtungsautomatik kommt mit dem Abstand < 60 µm nicht mit. Gehört in den Fotorealismus-Block.
 - **Ein Standbild kann Bewegung nicht belegen.** Dass es nicht mehr springt, steht in den Messwerten;
   dass es *aussieht* wie Schwimmen, muss ein Mensch einmal bestätigen.
+
+## GENESIS-032 – Durchscheinendes gehört in die Schärfentiefe
+
+Bei der Sichtprüfung der spielbaren Fassung stand eine Zelle dicht vor der Linse als **gestochen
+scharfer weißer Fleck** im Bild, während alles dahinter weich war. Das war der Rest von „sehen
+teilweise nicht realistisch aus" – und diesmal lag es nicht an der Bewegung, sondern an einem
+Schalter im Material.
+
+### Die Ursache
+
+Unreal zeichnet durchscheinende Flächen in einem eigenen Durchgang. Der steht in der Voreinstellung
+**nach** der Schärfentiefe (`Render After DOF`). Das ist für ein Interface sinnvoll und für alles
+andere falsch: Eine durchscheinende Fläche bekommt dann *nie* Unschärfe, egal wo sie steht. Unsere
+Spermien, die Zona, die Matrix und die Fäden sind alle durchscheinend – sie blieben also scharf,
+während die Umgebung weich wurde. Genau daran erkennt ein Auge ein Bild als gerechnet, auch ohne
+sagen zu können, warum.
+
+Alle vier Materialien stehen jetzt auf `Before DOF`. Eine Zelle direkt vor der Linse ist damit das,
+was sie in einer echten Makroaufnahme wäre: ein weicher heller Schemen.
+
+![Nahe Zellen sind jetzt weiche Schemen statt scharfer Flecken](Media/GENESIS-032_Schaerfentiefe.png)
+
+### Was dabei auffiel und ehrlich bleiben muss
+
+- **Frühere Bilder in dieser Dokumentation waren zu scharf.** Jedes Bild mit gut erkennbaren
+  Spermien im Vorder- oder Mittelgrund zeigte einen Zustand, den es physikalisch nicht gibt.
+- **Die Unschärfe hat ein Geometrieproblem verdeckt.** Mit einem kleineren Makro-Faktor (7 statt 18,
+  also mehr Tiefenschärfe) sieht man, dass die Coronazellen an den Rändern facettiert wirken – wie
+  geschnittener Stein, nicht wie Gewebe. Der weiche Schnitt aus GENESIS-027 (0,9 µm) ist zu klein,
+  um scharf gezeichnet als Zellrand durchzugehen. Das gehört in den Fotorealismus-Block und steht
+  unten unter „Offen".
+
+### Nebenbefund: mein eigener Fehler von GENESIS-030
+
+Der größere Vorrat für Strahlengeometrie (768 statt 400 MiB) hat die rote Warnung beseitigt – und
+auf der Testkarte (RTX 5070, 12 GB) dafür gesorgt, dass der Grafikspeicher um **329 MB überläuft**:
+fast genau der Betrag, den der größere Vorrat belegt. Im Bild stand dann „Video memory has been
+exhausted. Expect extremely poor performance." Eine Warnung verschwinden zu lassen, indem man ihr
+mehr Speicher gibt, verschiebt das Problem nur.
+
+Der Vorrat steht wieder auf dem Vorgabewert. Stattdessen ist der Schwarm aus der Strahlenszene
+heraus (`SetVisibleInRayTracing(false)`): Sechstausend Zellen, deren Geißel im Shader schlägt,
+müssten jedes Bild neu in die Strahlenszene gebaut werden – und eine 5 µm große, fast durchsichtige
+Zelle spiegelt sich in nichts und erhellt nichts. Gesehen, beleuchtet und beschattet wird sie
+weiterhin. Der Grafikspeicher läuft damit nicht mehr über.
+
+### Offen
+
+- **Die Warnung zur Strahlengeometrie steht wieder im Bild** (83–87 MiB von 400). Der Schwarm war
+  nur 3,5 MiB davon; der Rest ist der Eizellkomplex (852 825 Flächen Corona, 2 687 Fäden). Das ist
+  ein Fall für den Fotorealismus-Block, nicht für einen größeren Vorrat. In einer
+  Veröffentlichungsfassung erscheint die Warnung ohnehin nicht – sie ist eine Entwicklerhilfe.
+- **Die Coronazellen wirken scharf gezeichnet facettiert.** Sichtbar, sobald die Tiefenschärfe
+  größer wird.

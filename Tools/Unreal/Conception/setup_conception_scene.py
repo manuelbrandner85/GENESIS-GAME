@@ -184,6 +184,10 @@ def create_sperm_material(mpc):
         eal.delete_asset(path)
     material = asset_tools.create_asset("M_GEN_SpermCell", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    # Vor der Schaerfentiefe zeichnen. Unreal legt durchscheinende Flaechen sonst in einen Pass
+    # NACH der Schaerfentiefe - dann bleibt eine Zelle direkt vor der Linse gestochen scharf,
+    # waehrend alles andere weich ist. Genau daran erkennt man ein Bild als gerechnet.
+    material.set_editor_property("translucency_pass", unreal.MaterialTranslucencyPass.MTP_BEFORE_DOF)
     material.set_editor_property("translucency_lighting_mode", unreal.TranslucencyLightingMode.TLM_SURFACE_PER_PIXEL_LIGHTING)
     material.set_editor_property("used_with_instanced_static_meshes", True)
 

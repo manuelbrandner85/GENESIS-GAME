@@ -43,6 +43,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-029 | Die erste Entscheidung | Rufen, suchen, hinsehen – die drei Werkzeuge eines Neugeborenen, mit Kosten und Wirkung; Steuerung, Anzeige, Game Mode | DONE (Tastendruck von Hand zu bestätigen) |
 | GENESIS-030 | Schwimmbewegung gegen die Literatur | Aliasing durch Echtzeit behoben, zwei falsche Modellwerte korrigiert, CASA-Messung auf 60 Hz und Ebenenprojektion umgestellt; alle Kenngrößen in der Streubreite der Referenz | DONE (Sichtbestätigung der Bewegung offen) |
 | GENESIS-031 | Startbildschirm, Einstellungen, Controller | Menü und Pause, 17 Einstellungen in fünf Abschnitten, jede Handlung auf Taste **und** Controller-Taste | DONE (Gefühl am echten Controller von Hand zu bestätigen) |
+| GENESIS-032 | Durchscheinendes in der Schärfentiefe | Alle durchscheinenden Materialien vor die Schärfentiefe gelegt; mein Speicherfehler aus 030 zurückgenommen, Schwarm aus der Strahlenszene | DONE (facettierte Coronazellen offen) |
 
 ## Protokoll
 
@@ -344,3 +345,13 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 ![Der Startbildschirm](Media/GENESIS-031_Startbildschirm.png)
 
 ![Die Einstellungen](Media/GENESIS-031_Einstellungen.png)
+
+### GENESIS-032 – Durchscheinendes gehört in die Schärfentiefe
+- 2026-09-21: In der spielbaren Fassung stand eine Zelle dicht vor der Linse als gestochen scharfer weißer Fleck im Bild, während alles dahinter weich war. Ursache: Unreal zeichnet durchscheinende Flächen in der Voreinstellung **nach** der Schärfentiefe – sie bekommen dann nie Unschärfe. Spermien, Zona, Matrix und Fäden sind alle durchscheinend. Alle vier stehen jetzt auf „Before DOF".
+- 2026-09-21: **Ehrlich dazu:** Frühere Bilder in dieser Dokumentation waren dadurch zu scharf. Und die Unschärfe hat ein Geometrieproblem verdeckt – mit mehr Tiefenschärfe wirken die Coronazellen facettiert wie geschnittener Stein. Das gehört in den Fotorealismus-Block.
+- 2026-09-21: **Mein Fehler aus GENESIS-030 zurückgenommen.** Der größere Vorrat für Strahlengeometrie (768 statt 400 MiB) hat die rote Warnung beseitigt und dafür den Grafikspeicher der Testkarte (RTX 5070, 12 GB) um 329 MB überlaufen lassen – fast genau der Betrag, den der Vorrat belegt. Im Bild stand „Video memory has been exhausted". Der Vorrat steht wieder auf dem Vorgabewert; stattdessen ist der Schwarm aus der Strahlenszene heraus (`SetVisibleInRayTracing(false)`), was jedes Bild 6 000 Neubauten der Strahlengeometrie spart.
+- 2026-09-21: 111 von 111 Tests bestanden. In der gebauten Fassung geprüft: keine Speicherwarnung mehr.
+- Offen: Die Warnung zur Strahlengeometrie steht wieder im Bild (83–87 MiB von 400); der Schwarm war nur 3,5 MiB davon, der Rest ist der Eizellkomplex. Die facettierten Coronazellen.
+- **Status: DONE.**
+
+![Nahe Zellen sind jetzt weiche Schemen](Media/GENESIS-032_Schaerfentiefe.png)
