@@ -10,6 +10,7 @@
 #include "GenesisEarlyLifeTypes.h"
 #include "GenesisSliceDirector.h"
 #include "GenesisFrontendSubsystem.h"
+#include "GenesisBootFlow.h"
 #include "GenesisSlicePlayerController.h"
 
 AGenesisSliceHud::AGenesisSliceHud()
@@ -119,6 +120,175 @@ void AGenesisSliceHud::DrawMenuRow(const FString& Left, const FString& Right, fl
 	}
 }
 
+void AGenesisSliceHud::DrawBlack(float Alpha)
+{
+	if (!Canvas || Alpha <= 0.001f)
+	{
+		return;
+	}
+	FCanvasTileItem Black(FVector2D::ZeroVector, FVector2D(Canvas->SizeX, Canvas->SizeY), FLinearColor(0.0f, 0.0f, 0.0f, FMath::Clamp(Alpha, 0.0f, 1.0f)));
+	Black.BlendMode = SE_BLEND_Translucent;
+	Canvas->DrawItem(Black);
+}
+
+void AGenesisSliceHud::DrawCentered(const FString& Text, float Y, float Scale, float Alpha, bool bLarge)
+{
+	UFont* Font = GEngine ? (bLarge ? GEngine->GetLargeFont() : GEngine->GetMediumFont()) : nullptr;
+	if (!Canvas || !Font || Text.IsEmpty() || Alpha <= 0.001f)
+	{
+		return;
+	}
+	float Width = 0.0f;
+	float Height = 0.0f;
+	Canvas->TextSize(Font, Text, Width, Height, Scale, Scale);
+	const FVector2D Position(0.5f * Canvas->SizeX - 0.5f * Width, Y);
+
+	// Ein weicher Schatten trägt die Schrift auch über hellem Gewebe
+	FCanvasTextItem Shadow(Position + FVector2D(1.5f, 1.5f), FText::FromString(Text), Font, FLinearColor(0.0f, 0.0f, 0.0f, 0.55f * Alpha));
+	Shadow.Scale = FVector2D(Scale, Scale);
+	Canvas->DrawItem(Shadow);
+	FCanvasTextItem Item(Position, FText::FromString(Text), Font, FLinearColor(1.0f, 0.95f, 0.90f, Alpha));
+	Item.Scale = FVector2D(Scale, Scale);
+	Canvas->DrawItem(Item);
+}
+
+bool AGenesisSliceHud::DrawBoot()
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	const UGenesisFrontendSubsystem* Frontend = GameInstance ? GameInstance->GetSubsystem<UGenesisFrontendSubsystem>() : nullptr;
+	if (!Canvas || !Frontend)
+	{
+		return false;
+	}
+
+	const FGenesisBootState& Boot = Frontend->GetBootState();
+	const float Scale = (Canvas->SizeY / 900.0f) * (Frontend->GetSettings().TextScalePercent / 100.0f);
+	const float Now = GetWorld() ? GetWorld()->GetRealTimeSeconds() : 0.0f;
+	const float CardAlpha = GenesisBootFlow::CardAlpha(Boot);
+	const TArray<FString> Lines = GenesisBootFlow::CardLines(Boot.Stage);
+
+	auto SkipPrompt = [&]()
+	{
+		if (Boot.bSkipArmed)
+		{
+			const FString Text = FString::Printf(TEXT("Nochmal drücken zum Überspringen"));
+			UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+			if (Font)
+			{
+				float Width = 0.0f;
+				float Height = 0.0f;
+				Canvas->TextSize(Font, Text, Width, Height, Scale * 0.8f, Scale * 0.8f);
+				FCanvasTextItem Item(FVector2D(Canvas->SizeX - Width - 48.0f * Scale, Canvas->SizeY - 60.0f * Scale), FText::FromString(Text), Font, FLinearColor(0.9f, 0.85f, 0.8f, 0.75f));
+				Item.Scale = FVector2D(Scale * 0.8f, Scale * 0.8f);
+				Canvas->DrawItem(Item);
+			}
+		}
+	};
+
+	switch (Boot.Stage)
+	{
+	case EGenesisBootStage::Studio:
+	case EGenesisBootStage::Engine:
+	{
+		DrawBlack(1.0f);
+		float Y = 0.44f * Canvas->SizeY;
+		for (int32 Index = 0; Index < Lines.Num(); ++Index)
+		{
+			// Die erste Zeile trägt, die zweite begleitet
+			const bool bMain = Index == 0;
+			DrawCentered(Lines[Index], Y, Scale * (bMain ? 2.4f : 1.3f), CardAlpha * (bMain ? 1.0f : 0.75f), bMain);
+			Y += (bMain ? 84.0f : 48.0f) * Scale;
+		}
+		return true;
+	}
+
+	case EGenesisBootStage::Hinweis:
+	{
+		DrawBlack(1.0f);
+		float Y = 0.40f * Canvas->SizeY;
+		for (int32 Index = 0; Index < Lines.Num(); ++Index)
+		{
+			DrawCentered(Lines[Index], Y, Scale * (Index == 0 ? 1.55f : 1.2f), CardAlpha * (Index == 0 ? 1.0f : 0.8f), false);
+			Y += (Index == 0 ? 66.0f : 42.0f) * Scale;
+		}
+		return true;
+	}
+
+	case EGenesisBootStage::Prolog:
+	{
+		DrawBlack(GenesisBootFlow::FadeAlpha(Boot));
+		// Untertitel wie im Kino: unten, ruhig, und nur, wenn der Spieler sie will
+		if (Frontend->GetSettings().bSubtitles)
+		{
+			const FString Subtitle = GenesisBootFlow::CurrentSubtitle(Boot);
+			DrawCentered(Subtitle, Canvas->SizeY - 150.0f * Scale, Scale * 1.5f, 0.95f, false);
+		}
+		SkipPrompt();
+		return true;
+	}
+
+	case EGenesisBootStage::Titel:
+	{
+		DrawBlack(1.0f);
+		if (Lines.Num() >= 2)
+		{
+			DrawCentered(Lines[0], 0.38f * Canvas->SizeY, Scale * 4.2f, CardAlpha, true);
+			DrawCentered(Lines[1], 0.38f * Canvas->SizeY + 124.0f * Scale, Scale * 1.6f, CardAlpha * 0.85f, false);
+		}
+		SkipPrompt();
+		return true;
+	}
+
+	case EGenesisBootStage::Taste:
+	{
+		// Der Eileiter hinter dem Titel ist das Bild des Startbildschirms – nur leicht abgedunkelt
+		FCanvasTileItem Veil(FVector2D::ZeroVector, FVector2D(Canvas->SizeX, Canvas->SizeY), FLinearColor(0.02f, 0.01f, 0.01f, 0.45f));
+		Veil.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Veil);
+
+		const TArray<FString> Title = GenesisBootFlow::CardLines(EGenesisBootStage::Titel);
+		const float TitleAlpha = FMath::Clamp(Boot.StageSeconds / 1.5f, 0.0f, 1.0f);
+		if (Title.Num() >= 2)
+		{
+			DrawCentered(Title[0], 0.22f * Canvas->SizeY, Scale * 3.4f, TitleAlpha, true);
+			DrawCentered(Title[1], 0.22f * Canvas->SizeY + 104.0f * Scale, Scale * 1.45f, TitleAlpha * 0.85f, false);
+		}
+		// Ein ruhiges Atmen statt eines Blinkens: 4 Sekunden je Zyklus, nie ganz weg
+		const float Breath = 0.55f + 0.45f * FMath::Sin(Now * 2.0f * PI / 4.0f);
+		const float PromptAlpha = FMath::Clamp((Boot.StageSeconds - 1.5f) / 1.0f, 0.0f, 1.0f) * Breath;
+		DrawCentered(TEXT("Drücke eine beliebige Taste"), 0.74f * Canvas->SizeY, Scale * 1.45f, PromptAlpha, false);
+		DrawBlack(GenesisBootFlow::FadeAlpha(Boot));
+		return true;
+	}
+
+	case EGenesisBootStage::Kapitel:
+	case EGenesisBootStage::Ende:
+	{
+		DrawBlack(GenesisBootFlow::FadeAlpha(Boot));
+		float Y = (Boot.Stage == EGenesisBootStage::Kapitel ? 0.40f : 0.44f) * Canvas->SizeY;
+		for (int32 Index = 0; Index < Lines.Num(); ++Index)
+		{
+			// Kapitel: kleine Überschrift, großer Titel, leiser Ort
+			float LineScale = 1.4f;
+			bool bLarge = false;
+			float Step = 54.0f;
+			if (Boot.Stage == EGenesisBootStage::Kapitel)
+			{
+				LineScale = Index == 1 ? 3.0f : 1.25f;
+				bLarge = Index == 1;
+				Step = Index == 0 ? 56.0f : (Index == 1 ? 108.0f : 48.0f);
+			}
+			DrawCentered(Lines[Index], Y, Scale * LineScale, CardAlpha * (Index == 1 || Boot.Stage == EGenesisBootStage::Ende ? 1.0f : 0.75f), bLarge);
+			Y += Step * Scale;
+		}
+		return true;
+	}
+
+	default:
+		return false;
+	}
+}
+
 bool AGenesisSliceHud::DrawMenu()
 {
 	UGameInstance* GameInstance = GetGameInstance();
@@ -214,6 +384,12 @@ void AGenesisSliceHud::DrawHUD()
 
 	const UGameInstance* GameInstance = GetGameInstance();
 	if (!GameInstance || !Canvas)
+	{
+		return;
+	}
+
+	// Der Startablauf hat das Bild für sich: Karten, Prolog, Titel, Kapitelkarte, Abspann.
+	if (DrawBoot())
 	{
 		return;
 	}

@@ -39,7 +39,8 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 20. [Der Durchlauf](Docs/20_Der_Durchlauf.md)
 21. [Die erste Entscheidung](Docs/21_Die_erste_Entscheidung.md)
 22. [Startbildschirm, Einstellungen und Controller](Docs/22_Startbildschirm_und_Steuerung.md)
-23. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
+23. [Der Spielstart](Docs/23_Der_Spielstart.md)
+24. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
 
 ## Voraussetzungen
 

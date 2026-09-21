@@ -137,6 +137,9 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	 */
 	UPROPERTY(EditAnywhere, Category = "Slice") float ConceptionTimeScale = 0.3f;
 
+	/** Wie lange der letzte Moment eines Lebens stehen bleibt, bevor der Abspann beginnt (s). */
+	UPROPERTY(EditAnywhere, Category = "Slice") float EndingHoldSeconds = 6.0f;
+
 	/** Simulationsminuten je Sekunde in der Geburt. */
 	UPROPERTY(EditAnywhere, Category = "Slice") float BirthTimeScale = 90.0f;
 

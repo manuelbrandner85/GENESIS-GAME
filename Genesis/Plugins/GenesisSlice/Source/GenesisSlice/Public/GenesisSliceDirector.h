@@ -71,7 +71,18 @@ private:
 	float GestationStepTimer = 0.0f;
 	bool bDebugPageRegistered = false;
 	bool bTravelPending = false;
-	/** Ob schon geprüft wurde, ob dieser Start ein Spielstart ist. */
 	/** Ob die Versorgung nach der Geburt schon geschehen ist. */
 	bool bCareGiven = false;
+	/**
+	 * Den nächsten Ort auch dann laden, wenn man schon dort ist. Ein Leben, das aus dem Menü
+	 * beginnt, braucht einen unberührten Eileiter – der Schwarm hinter dem Menü ist inzwischen
+	 * weitergeschwommen und hat die Eizelle womöglich schon erreicht.
+	 */
+	bool bForceTravel = false;
+	/** Wie lange der Durchlauf schon zu Ende ist – der Abspann kommt nicht im selben Augenblick. */
+	float EndedSeconds = 0.0f;
+	bool bEndReported = false;
+
+	/** Zurück in den Zustand vor dem ersten Leben, mit frischem Eileiter als Menühintergrund. */
+	void ReturnToMenu();
 };

@@ -21,6 +21,12 @@ class GENESISSLICE_API AGenesisSliceGameMode : public AGameModeBase
 public:
 	AGenesisSliceGameMode();
 
-	/** Einstellungen anwenden, Startbildschirm öffnen und die Regie daran hängen. */
+	/** Einstellungen anwenden und – in der spielbaren Fassung – den Startablauf beginnen. */
 	virtual void BeginPlay() override;
+
+	/** Führt im Startablauf die Kamera (Prolog-Fahrt, Blick hinter dem Menü). */
+	virtual void Tick(float DeltaSeconds) override;
+
+private:
+	class UGenesisFrontendSubsystem* GetFrontend() const;
 };

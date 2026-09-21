@@ -45,6 +45,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-031 | Startbildschirm, Einstellungen, Controller | Menü und Pause, 17 Einstellungen in fünf Abschnitten, jede Handlung auf Taste **und** Controller-Taste | DONE (Gefühl am echten Controller von Hand zu bestätigen) |
 | GENESIS-032 | Durchscheinendes in der Schärfentiefe | Alle durchscheinenden Materialien vor die Schärfentiefe gelegt; mein Speicherfehler aus 030 zurückgenommen, Schwarm aus der Strahlenszene | DONE (facettierte Coronazellen offen) |
 | GENESIS-033 | Coronazellen umschließen einander | Ebenen-Schnitt durch Umschließen der Nachbarzelle ersetzt, Unterteilung 4, Materialschwellen nachgeführt | DONE (110 MB Asset, Fäden weiter starr) |
+| GENESIS-034 | Spielstart wie ein echtes Spiel | Studio-, Engine- und Hinweiskarte, Echtzeit-Prolog mit Erzähler und Untertiteln, Titel, „Beliebige Taste", Menümusik (Suno), Kapitelkarte mit frischem Level, Abspann → Menü | DONE (Mischung von Ohr zu bestätigen) |
 
 ## Protokoll
 
@@ -367,3 +368,14 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Coronazellen aus der Nähe](Media/GENESIS-033_Corona_nah.png)
+
+### GENESIS-034 – Der Spielstart: vom Logo bis zum ersten Atemzug
+- 2026-09-21: Rückmeldung des Game Directors: „insgesamt ist es nicht wie ein richtiges Spiel … eine Art Anfangstrailer". Neuer Ablauf im Frontend (`GenesisBootFlow`, Zustand in der GameInstance): Studio → Engine → Hinweis → Echtzeit-Prolog (52 s Kamerafahrt auf die Eizelle, zehn Erzählersätze mit Untertiteln) → Titel → „Drücke eine beliebige Taste" → Menü → Kapitelkarte → Spiel → Abspann → Menü. Ohne Eingriff 72,8 s bis zum Titelbildschirm.
+- 2026-09-21: **Der Level wird beim Lebensbeginn frisch geladen, hinter Schwarz.** Vorher begann ein Leben in dem Eileiter, der schon hinter dem Menü lief – der Schwarm konnte die Eizelle bereits erreicht haben. Ende eines Lebens: 6 s Stillstand, Abspann, zurück ins Menü mit frischem Eileiter.
+- 2026-09-21: **Ton über kie.ai:** Hauptthema mit Suno V5 (instrumental, 2 Fassungen, 12 Credits). ElevenLabs für den Erzähler scheiterte vollständig („Internal Error"), die zunächst abgebuchten 60 Credits wurden erstattet; der Prolog nutzt die vorhandenen Gemini-Aufnahmen. Menüklänge selbst gebaut.
+- 2026-09-21: **Rückmeldung „Stimme zu leise im Vergleich zur Musik" umgesetzt:** Sätze auf −14 dBFS angeglichen (+0,8 bis +5,8 dB), Musik im Vorspann −4,4 dB, unter dem Erzähler weitere −7 dB (Ducking).
+- 2026-09-21: 115 von 115 Tests; gebaute Fassung einmal vollständig durchlaufen, alle Stufen und beide Ortswechsel im Protokoll, kein Ton fehlt.
+- Offen: Mischung von Ohr zu bestätigen; Engine-Schrift, kein Logo; Suno-Rechte vor einer Veröffentlichung prüfen.
+- **Status: DONE.**
+
+![Prolog](Media/GENESIS-034_Prolog.png)

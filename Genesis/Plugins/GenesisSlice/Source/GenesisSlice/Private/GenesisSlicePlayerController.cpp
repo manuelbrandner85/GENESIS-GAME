@@ -43,6 +43,12 @@ void AGenesisSlicePlayerController::SetupInputComponent()
 		FInputActionBinding& Binding = InputComponent->BindAction(Action, IE_Pressed, this, Handler);
 		Binding.bExecuteWhenPaused = true;
 	};
+	// „Drücke eine beliebige Taste" heißt wirklich jede: Tastatur, Maus, jeder Controller-Knopf.
+	// Achsen (Stick, Maus bewegen) zählen nicht – wer nur den Controller aufnimmt, soll nichts überspringen.
+	FInputKeyBinding& AnyKey = InputComponent->BindKey(EKeys::AnyKey, IE_Pressed, this, &AGenesisSlicePlayerController::AnyKeyPressed);
+	AnyKey.bExecuteWhenPaused = true;
+	AnyKey.bConsumeInput = false;
+
 	BindMenu(TEXT("GenesisMenu"), &AGenesisSlicePlayerController::MenuToggle);
 	BindMenu(TEXT("GenesisAccept"), &AGenesisSlicePlayerController::MenuAccept);
 	BindMenu(TEXT("GenesisBack"), &AGenesisSlicePlayerController::MenuBack);
@@ -135,6 +141,14 @@ bool AGenesisSlicePlayerController::IsMenuOpen() const
 	const UGameInstance* GameInstance = GetGameInstance();
 	const UGenesisFrontendSubsystem* Frontend = GameInstance ? GameInstance->GetSubsystem<UGenesisFrontendSubsystem>() : nullptr;
 	return Frontend && Frontend->GetPage() != EGenesisMenuPage::Keine;
+}
+
+void AGenesisSlicePlayerController::AnyKeyPressed()
+{
+	if (UGenesisFrontendSubsystem* Frontend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>() : nullptr)
+	{
+		Frontend->PressAnyKey();
+	}
 }
 
 void AGenesisSlicePlayerController::MenuToggle()

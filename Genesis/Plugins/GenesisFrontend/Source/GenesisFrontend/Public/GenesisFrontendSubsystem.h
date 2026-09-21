@@ -4,30 +4,45 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Tickable.h"
 #include "GenesisFrontendTypes.h"
+#include "GenesisBootFlow.h"
 #include "GenesisFrontendSubsystem.generated.h"
 
+class UAudioComponent;
+class USoundBase;
+
 DECLARE_MULTICAST_DELEGATE(FGenesisOnStartRequested);
-DECLARE_MULTICAST_DELEGATE(FGenesisOnRestartRequested);
+DECLARE_MULTICAST_DELEGATE(FGenesisOnReturnToMenuRequested);
 
 /**
- * Menü und Einstellungen an einer Stelle.
+ * Der Rahmen des Spiels an einer Stelle: Startablauf, Menü, Einstellungen, Menümusik.
  *
  * Das Menü ist kein eigener Level und kein Widget-Asset, sondern ein Zustand: Wer ihn öffnet,
  * hält die Welt an und bekommt eine Liste. Gezeichnet wird er vom HUD, bedient von der
  * Steuerung – beides weiß nichts über den Inhalt, es fragt hier nach.
  *
+ * Der Zustand lebt in der GameInstance und überdauert damit jeden Levelwechsel. Das ist wichtig:
+ * Wenn ein Leben beginnt, wird der Eileiter frisch geladen, und danach darf nicht wieder das
+ * Studiologo erscheinen.
+ *
  * Warum kein UMG: Der gesamte Aufbau dieses Projekts entsteht kopflos aus Skripten. Ein
  * Widget-Blueprint wäre der einzige Bestandteil, der nur im Editor von Hand entstehen kann.
  */
 UCLASS()
-class GENESISFRONTEND_API UGenesisFrontendSubsystem : public UGameInstanceSubsystem
+class GENESISFRONTEND_API UGenesisFrontendSubsystem : public UGameInstanceSubsystem, public FTickableGameObject
 {
 	GENERATED_BODY()
 
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+
+	// FTickableGameObject – läuft auch in der Pause, sonst stünde die Menümusik still
+	virtual void Tick(float DeltaTime) override;
+	virtual ETickableTickType GetTickableTickType() const override { return ETickableTickType::Always; }
+	virtual bool IsTickableWhenPaused() const override { return true; }
+	virtual TStatId GetStatId() const override;
 
 	// --- Einstellungen -------------------------------------------------------------------------
 
@@ -41,6 +56,23 @@ public:
 
 	/** In die GameUserSettings.ini schreiben. */
 	void SaveSettings();
+
+	// --- Startablauf ---------------------------------------------------------------------------
+
+	/** Den Ablauf vom Studiologo an beginnen (spielbare Fassung). */
+	void StartBoot();
+
+	/** Irgendeine Taste wurde gedrückt – überspringt Karten, öffnet vom Titel das Menü. */
+	void PressAnyKey();
+
+	/** Der spielbare Abschnitt ist zu Ende: Abspann, dann zurück ins Menü. */
+	void EndLife();
+
+	const FGenesisBootState& GetBootState() const { return Boot; }
+	EGenesisBootStage GetBootStage() const { return Boot.Stage; }
+
+	/** Soll die Steuerung gerade Tastendrücke als „weiter" werten statt als Menübedienung? */
+	bool WantsAnyKey() const;
 
 	// --- Menü ----------------------------------------------------------------------------------
 
@@ -69,18 +101,39 @@ public:
 	bool IsRunActive() const { return bRunActive; }
 	void SetRunActive(bool bActive) { bRunActive = bActive; }
 
-	/** Der Durchlauf soll starten. Die Regie hängt sich hier ein. */
+	/** Ein Leben soll beginnen – das Bild ist schwarz, der Level darf frisch geladen werden. */
 	FGenesisOnStartRequested OnStartRequested;
-	/** Der Durchlauf soll von vorn beginnen. */
-	FGenesisOnRestartRequested OnRestartRequested;
+	/** Zurück zum Menü: Der Hintergrund des Menüs soll wieder der unberührte Eileiter sein. */
+	FGenesisOnReturnToMenuRequested OnReturnToMenuRequested;
 
 private:
 	void ApplyWindowMode();
 	void ApplyVolumes();
 	void SetGamePaused(bool bPaused);
+	void HandleBootEvents(const TArray<FGenesisBootEvent>& Events);
+	bool MenuTakesInput() const;
+
+	/** Ein 2D-Ton, der auch in der Pause und über einen Levelwechsel hinweg spielt. */
+	UAudioComponent* CreateSound(const TCHAR* AssetName, bool bPersist);
+	void PlayUiSound(const TCHAR* AssetName);
+	void StartMusic();
+	float MusicVolume() const;
+	float VoiceVolume() const;
 
 	UPROPERTY()
 	FGenesisPlayerSettings Settings;
+
+	UPROPERTY()
+	FGenesisBootState Boot;
+
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> Music;
+
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> Voice;
+
+	/** Wie weit die Musik gerade für die Stimme zurückgenommen ist (1 = gar nicht). */
+	float MusicDuck = 1.0f;
 
 	EGenesisMenuPage Page = EGenesisMenuPage::Keine;
 	int32 Selection = 0;

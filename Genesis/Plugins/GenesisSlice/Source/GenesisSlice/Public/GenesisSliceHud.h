@@ -30,6 +30,11 @@ public:
 private:
 	void DrawLine(const FString& Text, float LineIndex, float Alpha);
 
+	/** Startablauf: Karten, Prolog mit Untertiteln, Titel, Kapitelkarte, Abspann. Gibt zurück, ob er das Bild für sich hat. */
+	bool DrawBoot();
+	void DrawBlack(float Alpha);
+	void DrawCentered(const FString& Text, float Y, float Scale, float Alpha, bool bLarge);
+
 	/** Startbildschirm und Pausenmenü. Gibt zurück, ob gezeichnet wurde. */
 	bool DrawMenu();
 	void DrawMenuTitle(const FString& Text, float Y, float Scale);

@@ -1,6 +1,7 @@
 // GENESIS: Der Kreislauf des Lebens
 
 #include "GenesisSliceDirector.h"
+#include "GenesisFrontendSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
@@ -68,8 +69,34 @@ void UGenesisSliceDirector::Initialize(FSubsystemCollectionBase& Collection)
 		Registry->RegisterSystem(this);
 	}
 
+	// Der Rahmen (Startbildschirm, Kapitelkarte) sagt, wann ein Leben beginnt und wann es zurück ins
+	// Menü geht. Die Regie hängt sich hier ein und nicht im Spielmodus: Der Spielmodus wird bei jedem
+	// Ortswechsel neu gebaut, die Regie nicht – so gibt es jede Verbindung genau einmal.
+	if (UGenesisFrontendSubsystem* Frontend = Collection.InitializeDependency<UGenesisFrontendSubsystem>())
+	{
+		Frontend->OnStartRequested.AddWeakLambda(this, [this]()
+		{
+			bForceTravel = true;
+			StartRun(0);
+		});
+		Frontend->OnReturnToMenuRequested.AddWeakLambda(this, [this]()
+		{
+			ReturnToMenu();
+		});
+	}
+
 	TickHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UGenesisSliceDirector::Tick));
 	RegisterDebugPage();
+}
+
+void UGenesisSliceDirector::ReturnToMenu()
+{
+	State = FGenesisSliceState();
+	bCareGiven = false;
+	bEndReported = false;
+	EndedSeconds = 0.0f;
+	bForceTravel = true;
+	TravelTo(Tuning.ConceptionMap);
 }
 
 void UGenesisSliceDirector::Deinitialize()
@@ -112,6 +139,8 @@ void UGenesisSliceDirector::StartRun(uint64 Seed)
 	State.RunSeed = Seed != 0 ? Seed : GenesisHash::Mix64(static_cast<uint64>(FDateTime::UtcNow().GetTicks()));
 	State.StartTime = Clock ? Clock->GetNow() : FGenesisTimestamp();
 	bCareGiven = false;
+	bEndReported = false;
+	EndedSeconds = 0.0f;
 
 	UE_LOG(LogGenesis, Display, TEXT("Durchlauf: beginnt (Seed %llu)."), State.RunSeed);
 	EnterPhase(EGenesisSlicePhase::Conception, EGenesisSliceEnding::None);
@@ -187,6 +216,21 @@ bool UGenesisSliceDirector::Tick(float DeltaSeconds)
 	// `OnStartRequested` ein. Im Editor und in den Messläufen startet weiterhin `genesis.Slice.Start`.
 	if (!State.IsRunning())
 	{
+		// Ein Leben ist zu Ende: Nicht im selben Augenblick abblenden – der letzte Moment (das Kind
+		// schläft ein) soll noch ein paar Sekunden stehen dürfen. Dann Abspann, dann Menü.
+		const bool bOver = State.Phase == EGenesisSlicePhase::Complete || State.Phase == EGenesisSlicePhase::Ended;
+		if (bOver && !bEndReported)
+		{
+			EndedSeconds += DeltaSeconds;
+			if (EndedSeconds >= Tuning.EndingHoldSeconds)
+			{
+				bEndReported = true;
+				if (UGenesisFrontendSubsystem* Frontend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>() : nullptr)
+				{
+					Frontend->EndLife();
+				}
+			}
+		}
 		return true;
 	}
 
@@ -378,7 +422,10 @@ void UGenesisSliceDirector::TravelTo(FName MapName)
 	}
 
 	// Schon da? Dann ist nichts zu tun – ein unnötiger Ladevorgang würde die Simulation nur anhalten.
-	if (World->GetMapName().Contains(MapName.ToString()))
+	// Außer, ein frischer Ort ist ausdrücklich verlangt (Lebensbeginn aus dem Menü, Rückkehr ins Menü).
+	const bool bForce = bForceTravel;
+	bForceTravel = false;
+	if (!bForce && World->GetMapName().Contains(MapName.ToString()))
 	{
 		bTravelPending = false;
 		return;

@@ -1,0 +1,36 @@
+{
+  "music": {
+    "task": "4fe9fc5353698546ef8f927329f875f5",
+    "model": "V5",
+    "style": "cinematic ambient orchestral film score, intimate felt piano, warm legato string pads, soft celesta and harp, slow 62 bpm, tender, hopeful, a sense of wonder at the beginning of life, gentle low heartbeat-like pulse, slowly building, delicate, spacious reverb, no drums",
+    "negativeTags": "vocals, singing, choir lyrics, drums, trap, EDM, rock, electric guitar, dubstep",
+    "tracks": [
+      {
+        "asset": "MX_Frontend_Theme",
+        "title": "Genesis - Der Kreislauf des Lebens",
+        "duration": 173.2,
+        "suno_id": "ac06966c-e9d0-4274-98c0-9ee474a8767c",
+        "tags": "cinematic ambient orchestral film score, intimate felt piano, warm legato string pads, soft celesta and harp, slow 62 bpm, tender, hopeful, a sense of wonder at the beginning of life, gentle low heartbeat-like pulse, slowly building, delicate, spacious reverb, no drums",
+        "file": "ArtSource\\Generated\\Frontend\\Audio\\MX_Frontend_Theme.mp3"
+      },
+      {
+        "asset": "MX_Frontend_Theme_Alt1",
+        "title": "Genesis - Der Kreislauf des Lebens",
+        "duration": 179.6,
+        "suno_id": "0871f60d-68ea-4faf-9b00-4be5898005d5",
+        "tags": "cinematic ambient orchestral film score, intimate felt piano, warm legato string pads, soft celesta and harp, slow 62 bpm, tender, hopeful, a sense of wonder at the beginning of life, gentle low heartbeat-like pulse, slowly building, delicate, spacious reverb, no drums",
+        "file": "ArtSource\\Generated\\Frontend\\Audio\\MX_Frontend_Theme_Alt1.mp3"
+      }
+    ]
+  },
+  "runs": [
+    {
+      "time": "2026-09-21 16:42:03",
+      "args": [
+        "--music"
+      ],
+      "credits_before": 1840.38,
+      "credits_after": 1828.38
+    }
+  ]
+}

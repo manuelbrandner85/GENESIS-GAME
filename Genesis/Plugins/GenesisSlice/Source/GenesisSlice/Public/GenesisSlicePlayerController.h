@@ -58,6 +58,8 @@ public:
 private:
 	/** Menü-Eingaben. Sie laufen auch, während das Spiel pausiert ist. */
 	void MenuToggle();
+	/** Irgendeine Taste – im Startablauf heißt das „weiter". */
+	void AnyKeyPressed();
 	void MenuAccept();
 	void MenuBack();
 	void MenuUp();
