@@ -141,8 +141,8 @@ Bilder sind Zielbilder für Blender/Unreal, keine Spielgrafik.
 | Spermien am Eileiterepithel (DIC) | Licht, Randsaum, Tiefenschärfe | Köpfe und Mittelstück stimmig; Schleimhaut wirkt gerippt statt gefaltet, keine erkennbare Geißelwelle – nur für Licht und Look |
 | Keim mit 4 Zellen (Hoffman) | **Hauptvorlage für 038 Teil 3** | Sehr nah am echten Bild: grau-beige, körnig, Relieflicht, Kerne angedeutet, Polkörper, Fragmente. Zona etwas zu breit und zu hell gesäumt |
 | Schlüpfende Blastozyste | Vorlage Tag 5–6 | Trophektoderm, Embryoblast, Blastocoel, Durchbruch durch die Zona – stimmig |
-| Gebärmutterschleimhaut (Hysteroskopie) | Vorlage GENESIS-039 | Drüsenöffnungen, Gefäßnetz, feuchter Glanz – stimmig |
-| Embryo in der Fruchtblase | Vorlage GENESIS-041 | Eher 8–9 Wochen als die verlangten 7 (Finger schon frei); Look (warm, durchscheinend, Gefäße) sehr gut |
+| Gebärmutterschleimhaut (Hysteroskopie) | Vorlage GENESIS-040 | Drüsenöffnungen, Gefäßnetz, feuchter Glanz – stimmig |
+| Embryo in der Fruchtblase | Vorlage GENESIS-042 | Eher 8–9 Wochen als die verlangten 7 (Finger schon frei); Look (warm, durchscheinend, Gefäße) sehr gut |
 | Kreißsaal in der Dämmerung | Abgleich mit GENESIS-035 | Bett, CTG, Wärmebett, Tuch zum Hochziehen, Gymnastikball, Jalousie mit Abendlicht – sehr brauchbar |
 
 Nächste Schritte damit: das Material der Furchungszellen auf das Hoffman-Bild ziehen (Teil 3), die

@@ -1,0 +1,802 @@
+[
+ {
+  "name": "L_H_Atmen_01",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[calm, steady] Gut so. Tief in den Bauch atmen … und ganz lang wieder aus."
+    }
+   ]
+  }
+ },
+ {
+  "name": "L_H_Atmen_02",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[calm, soothing] Die Wehe ist gleich vorbei. Lassen Sie die Schultern locker."
+    }
+   ]
+  }
+ },
+ {
+  "name": "L_H_Lob_01",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[warmly] Das machen Sie richtig gut. Der Muttermund geht schön auf."
+    }
+   ]
+  }
+ },
+ {
+  "name": "L_M_Wehe_01",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[breathing heavily through a strong contraction, a low moan] Hhh … oh Gott … hhh …"
+    }
+   ]
+  }
+ },
+ {
+  "name": "L_M_Wehe_02",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[out of breath, exhausted, after a contraction] Die war heftig …"
+    }
+   ]
+  }
+ },
+ {
+  "name": "T_M_KannNicht",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[exhausted, desperate, close to tears] Ich kann nicht mehr … ich kann einfach nicht mehr."
+    }
+   ]
+  }
+ },
+ {
+  "name": "T_H_Doch",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[calm, firm, reassuring] Doch, Sie können. Das ist jetzt die schwerste Phase – das heißt, Ihr Kind ist bald da."
+    }
+   ]
+  }
+ },
+ {
+  "name": "P_H_Schieben_01",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[energetic, encouraging] Jetzt kommt die Wehe – Kinn auf die Brust und mitschieben! Weiter, weiter, weiter …"
+    }
+   ]
+  }
+ },
+ {
+  "name": "P_H_Schieben_02",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[encouraging] Und noch einmal tief Luft holen … und schieben!"
+    }
+   ]
+  }
+ },
+ {
+  "name": "P_H_Pause",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[softly] Und ausruhen. Ganz locker lassen. Jetzt haben Sie Pause."
+    }
+   ]
+  }
+ },
+ {
+  "name": "P_H_Kopf",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[focused, calm] Ich sehe das Köpfchen! Jetzt nicht mehr pressen – nur noch hecheln, ganz kurz, so wie ich."
+    }
+   ]
+  }
+ },
+ {
+  "name": "P_M_Pressen",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[pushing with all her strength, a long strained groan] Mmmmh … aaaah …"
+    }
+   ]
+  }
+ },
+ {
+  "name": "C_H_Herztoene",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[calm, attentive] Die Herztöne gehen bei den Wehen etwas runter. Drehen Sie sich bitte einmal auf die linke Seite – so ist es besser."
+    }
+   ]
+  }
+ },
+ {
+  "name": "C_H_Schulter",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[urgent but controlled] Die Schulter hängt. Beine ganz fest zu sich heranziehen – jetzt! Und nicht pressen."
+    }
+   ]
+  }
+ },
+ {
+  "name": "C_H_Steiss",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[calm, reassuring] Ihr Kind kommt mit dem Po zuerst. Das dauert etwas länger – wir haben Zeit, alles ist vorbereitet."
+    }
+   ]
+  }
+ },
+ {
+  "name": "D_H_Da_F",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[joyful, warm] Da ist sie! Herzlichen Glückwunsch – ein Mädchen."
+    }
+   ]
+  }
+ },
+ {
+  "name": "D_H_Da_M",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[joyful, warm] Da ist er! Herzlichen Glückwunsch – ein Junge."
+    }
+   ]
+  }
+ },
+ {
+  "name": "D_M_Hallo",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[crying and laughing at the same time, overwhelmed] Oh … oh mein Gott … hallo … hallo, du …"
+    }
+   ]
+  }
+ },
+ {
+  "name": "D_H_Brust_F",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[gently] Ich lege sie Ihnen direkt auf die Brust. Haut an Haut bleibt sie am besten warm."
+    }
+   ]
+  }
+ },
+ {
+  "name": "D_H_Brust_M",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[gently] Ich lege ihn Ihnen direkt auf die Brust. Haut an Haut bleibt er am besten warm."
+    }
+   ]
+  }
+ },
+ {
+  "name": "D_H_Atmung_F",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[calm, reassuring] Sie atmet gut. Und schauen Sie – sie wird schon ganz rosig."
+    }
+   ]
+  }
+ },
+ {
+  "name": "D_H_Atmung_M",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[calm, reassuring] Er atmet gut. Und schauen Sie – er wird schon ganz rosig."
+    }
+   ]
+  }
+ },
+ {
+  "name": "S_M_Warm",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[softly, tender, close to the baby] Schhh … ich bin da. Du bist ja ganz warm."
+    }
+   ]
+  }
+ },
+ {
+  "name": "S_M_Geschafft",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[whispering, tender, exhausted] Wir haben's geschafft, du und ich."
+    }
+   ]
+  }
+ },
+ {
+  "name": "S_M_Beruhigen",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[soothing, softly, in a gentle rocking rhythm] Schhh, schhh … alles gut. Mama ist da. Mama ist ja da."
+    }
+   ]
+  }
+ },
+ {
+  "name": "E_M_Blick_01",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[whispering, amazed] Hallo … du schaust mich ja an. Ich bin deine Mama."
+    }
+   ]
+  }
+ },
+ {
+  "name": "E_M_Blick_02",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[softly, moved, a small smile in her voice] Da bist du. Ich hab so lange auf dich gewartet."
+    }
+   ]
+  }
+ },
+ {
+  "name": "F_H_Suchen_F",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[softly] Schauen Sie – sie sucht schon die Brust. Lassen Sie sie ruhig selbst machen."
+    }
+   ]
+  }
+ },
+ {
+  "name": "F_H_Suchen_M",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The midwife. Calm authority, warmth, short clear sentences.",
+   "speakers": [
+    {
+     "voice_name": "Gacrux",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "An experienced German midwife in her fifties. Calm, grounded, warm and clear; she has attended thousands of births and knows exactly what to say.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[softly] Schauen Sie – er sucht schon die Brust. Lassen Sie ihn ruhig selbst machen."
+    }
+   ]
+  }
+ },
+ {
+  "name": "Z_M_Schlaf",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[whispering, very softly] Schlaf ruhig, mein Schatz."
+    }
+   ]
+  }
+ },
+ {
+  "name": "G_M_Bauch_01",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[softly, smiling] Hallo, du da drin. Na – bist du wach?"
+    }
+   ]
+  }
+ },
+ {
+  "name": "G_M_Bauch_02",
+  "model": "google/gemini-3-1-flash-tts",
+  "input": {
+   "temperature": 0.9,
+   "scene": "A quiet German hospital delivery room at night. Real, unscripted speech between a woman giving birth and an experienced midwife. Natural German pronunciation, no theatrical acting.",
+   "sample_context": "German. The mother. Every line is heartfelt, never performed.",
+   "speakers": [
+    {
+     "voice_name": "Sulafat",
+     "style": "Empathetic",
+     "pace": "Natural",
+     "audio_profile": "A German woman of about thirty giving birth to her first child. Warm, natural voice; exhausted, emotional and completely honest.",
+     "speaker_id": "Speaker 1",
+     "accent": "Neutral"
+    }
+   ],
+   "dialogue_turns": [
+    {
+     "speaker_id": "Speaker 1",
+     "text": "[tenderly, quietly] Nicht mehr lange, dann sehen wir uns."
+    }
+   ]
+  }
+ }
+]

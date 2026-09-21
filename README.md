@@ -44,6 +44,7 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 25. [Die Mutter und der erste Blick](Docs/25_Die_Mutter.md)
 26. [Recherche und Plan zur AAA-Qualität](Docs/26_Recherche_und_Plan_AAA.md)
 27. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
+28. [Ton und Sprache im ganzen Spiel](Docs/28_Ton_und_Sprache.md)
 
 ## Voraussetzungen
 

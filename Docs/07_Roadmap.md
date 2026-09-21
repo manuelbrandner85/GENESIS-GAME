@@ -50,11 +50,12 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-036 | Die Mutter und der erste Blick | MetaHuman-Mutter (4K-Gesicht, volles Mimik-Rig) im Bett; neues Plugin `GenesisPeople`: Haltung, Atem, Lidschlag, Blick, Hände per IK; Blick nach oben → sie holt das Kind vor ihr Gesicht (25 cm), Blickkontakt bindet | DONE (Kind ohne Körper, Hemd, Stimme beim Blickkontakt offen) |
 | GENESIS-037 | Das Wettrennen | Der Spieler lenkt eine Zelle aus 6000 und gibt beim Bohren die Kraft; Sieg = dieses Leben beginnt, Niederlage = neues Rennen. Ausgewogen gemessen (gut gelenkt 4/5, ohne Führung 0/5). Vier Modellfehler behoben (durchlässige Zona, Strom im Cumulus, fehlendes Progesteron, immer gleiches Feld), Coronazellen rund | DONE (Artefakt an Falte, Zilien-Zeitlupe offen) |
 | GENESIS-038 | Die erste Woche, Zelle für Zelle | Vorkerne und Syngamie (12–24 h), Teilungen 2→4→8 (bis Tag 3), Kompaktierung, Morula (Tag 4), Blastozyste mit Trophoblast und innerer Zellmasse (Tag 5), Schlüpfen aus der Zona (Tag 6), Anheften (Tag 7) – Carnegie-Stadien 1–4 in echten Maßen. Teil 1: Keim wieder sichtbar (war verloren), EmbryoScope-Zeitraffer 75 s, Laborbeschriftung, Zelltrümmer. Teil 2: echte Geißelwelle statt Wackeln, halbe Ich-Perspektive im Rennen, sechs kie.ai-Zielbilder. Teil 3: Uhr auf Klinik-Mediane (±2 h), Vorkerne und Kerne, Hoffman-Kontrast, optischer Schnitt durch die Blastozyste | DONE (Polkörper rosa, Glanzpunkt offen) |
-| GENESIS-039 | Einnistung und Keimscheibe | Synzytiotrophoblast wächst in die Schleimhaut, Lakunen mit mütterlichem Blut, zweiblättrige Keimscheibe (Epiblast/Hypoblast), Amnionhöhle, Dottersack, hCG – Woche 2, Carnegie 5–6 | PLAN |
-| GENESIS-040 | Gastrulation, Neuralrohr, erster Herzschlag | Primitivstreifen (Tag 15), drei Keimblätter, Chorda, Neuralplatte (Tag 18), Somiten, Neuralrohr schließt (Tag 22–28), der Herzschlauch schlägt (Tag 22) – Woche 3–4, Carnegie 7–12 | PLAN |
-| GENESIS-041 | Organogenese | Gliedmaßenknospen, Schlundbögen → Gesicht, Augenbecher und Linse, Herzscheidewände, Hirnbläschen, Finger und Zehen; Ende Woche 8: 3 cm, alle Organe angelegt – Carnegie 13–23 | PLAN |
-| GENESIS-042 | Die Verbindungen | Nervensystem: Neurone entstehen, wandern, bilden Axone; erste Synapsen im Rückenmark (~Woche 8), in der Hirnrinde ab ~Woche 23, Thalamus–Rinde ab Woche 24 (erste Wahrnehmung). Jede Verbindung gezählt nach Literaturkurven, sichtbar als wachsendes Netz; Reize (Herzschlag, Stimme der Mutter) hinterlassen Spuren im Gedächtnissystem | PLAN |
-| GENESIS-043 | Die Fetalzeit | Woche 9–40 nach Referenzkurven (Scheitel-Steiß-Länge, Gewicht): erste Bewegungen, Schlucken, Daumenlutschen, Kindsbewegungen spürbar (Woche 18–20), Hören (24–26), Augen öffnen (26–28), Lungenreife, Drehung in Schädellage (32–36). Der Spieler bewegt sich, hört, reagiert | PLAN |
+| GENESIS-039 | Ton und Sprache im ganzen Spiel | Szenenklang zur Laufzeit statt in den Karten (das Spiel war ab dem Menü stumm), Tonaufnahme zur Messung, 32 deutsche Sätze von Mutter und Hebamme (kie.ai Gemini TTS) mit Anlass aus der Simulation (Wehen, Erschwernisse, Geschlecht aus dem Genom, Haut an Haut, Blickkontakt), Geburtszeit dehnt sich zur Austreibung | DONE (Rennen ohne eigenen Bewegungsklang, Stimmwahl offen) |
+| GENESIS-040 | Einnistung und Keimscheibe | Synzytiotrophoblast wächst in die Schleimhaut, Lakunen mit mütterlichem Blut, zweiblättrige Keimscheibe (Epiblast/Hypoblast), Amnionhöhle, Dottersack, hCG – Woche 2, Carnegie 5–6 | PLAN |
+| GENESIS-041 | Gastrulation, Neuralrohr, erster Herzschlag | Primitivstreifen (Tag 15), drei Keimblätter, Chorda, Neuralplatte (Tag 18), Somiten, Neuralrohr schließt (Tag 22–28), der Herzschlauch schlägt (Tag 22) – Woche 3–4, Carnegie 7–12 | PLAN |
+| GENESIS-042 | Organogenese | Gliedmaßenknospen, Schlundbögen → Gesicht, Augenbecher und Linse, Herzscheidewände, Hirnbläschen, Finger und Zehen; Ende Woche 8: 3 cm, alle Organe angelegt – Carnegie 13–23 | PLAN |
+| GENESIS-043 | Die Verbindungen | Nervensystem: Neurone entstehen, wandern, bilden Axone; erste Synapsen im Rückenmark (~Woche 8), in der Hirnrinde ab ~Woche 23, Thalamus–Rinde ab Woche 24 (erste Wahrnehmung). Jede Verbindung gezählt nach Literaturkurven, sichtbar als wachsendes Netz; Reize (Herzschlag, Stimme der Mutter) hinterlassen Spuren im Gedächtnissystem | PLAN |
+| GENESIS-044 | Die Fetalzeit | Woche 9–40 nach Referenzkurven (Scheitel-Steiß-Länge, Gewicht): erste Bewegungen, Schlucken, Daumenlutschen, Kindsbewegungen spürbar (Woche 18–20), Hören (24–26), Augen öffnen (26–28), Lungenreife, Drehung in Schädellage (32–36). Der Spieler bewegt sich, hört, reagiert | PLAN |
 
 ## Protokoll
 
@@ -444,3 +445,13 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Blastozyste](Media/GENESIS-038_Blastozyste_118h.png)
+
+### GENESIS-039 – Ton und Sprache im ganzen Spiel
+- 2026-09-21: Game Director: „Sound, Sprache, Ton im gesamten Spiel, wo es Sinn macht; nutze kie.ai; alles realistisch und mit Logik."
+- 2026-09-21: **Befund:** Ab dem Menü war das Spiel still. Die Klang-Actors gingen bei jedem Neuaufbau einer Karte verloren. Jetzt legt der Spielmodus den Klang jeder Szene zur Laufzeit an.
+- 2026-09-21: Neu: `genesis.Audio.Record` nimmt den Mix auf, `Tools/Audio/measure_wav.py` misst ihn. Rennen −33 dBFS, Mutterleib −30 dBFS (dumpf).
+- 2026-09-21: 32 Sätze von Mutter und Hebamme über kie.ai (Gemini TTS, 31 Credits; ElevenLabs lieferte wieder nur „Internal Error"). Jeder Satz hat einen Anlass in der Simulation; Mädchen/Junge aus dem Genom; vor der Geburt gedämpft gehört. Automatisch geprüft (Tempo, Grundton, Pausen): zwei neu erzeugt.
+- 2026-09-21: Geburt: Die Zeit dehnt sich zur Austreibung (90 → 0,7 → 0,125 Simulationsminuten je Sekunde). Eine Presswehe alle 20 s, die Mutter presst, während die Hebamme spricht (eigener Kanal). Eigener Fehler unterwegs: Einheit verwechselt (erst 6 statt 0,125).
+- 2026-09-21: 128 von 128 Tests (neu: Speech.AfterBirth, Speech.Labor). Im Spiel aufgenommen und im Protokoll geprüft.
+- Offen: Rennen ohne eigenen Bewegungsklang, Kreißsaal-Geräusche nur synthetisch, Stimmwahl wartet aufs Ohr des Game Directors.
+- **Status: DONE.**

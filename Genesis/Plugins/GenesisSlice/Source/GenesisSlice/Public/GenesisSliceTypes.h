@@ -155,8 +155,19 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	/** Nach einer Niederlage: so lange bleibt das Bild stehen, bevor das Rennen neu beginnt (s). */
 	UPROPERTY(EditAnywhere, Category = "Slice") float RaceLostHoldSeconds = 7.0f;
 
-	/** Simulationsminuten je Sekunde in der Geburt. */
+	/** Simulationsminuten je Sekunde in der Geburt – für die Stunden der Eröffnungsphase. */
 	UPROPERTY(EditAnywhere, Category = "Slice") float BirthTimeScale = 90.0f;
+
+	/**
+	 * Übergangs- und Austreibungsphase laufen langsamer: Mit 90 Minuten je Sekunde war die Austreibung,
+	 * der Höhepunkt der Geburt, in weniger als einer Sekunde vorbei – keine Wehe zu spüren, kein Satz der
+	 * Hebamme passte hinein. Einheit: Simulationsminuten je Sekunde. Eine Presswehe kommt alle 2–3 Minuten:
+	 * Mit 0,125 (7,5 s je Sekunde) folgt sie alle 20 s und dauert 8–10 s, die Austreibung (~18 min) dauert
+	 * gut zwei Minuten – der Rhythmus, in dem im Kreißsaal gesprochen wird. Die Übergangsphase (~30 min)
+	 * mit 0,7: gut 45 s, drei bis vier Wehen (GENESIS-038, Ton; gemessen im Spiel).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Slice") float TransitionTimeScale = 0.7f;
+	UPROPERTY(EditAnywhere, Category = "Slice") float PushingTimeScale = 0.125f;
 
 	/** Simulationsminuten je Sekunde in der ersten Stunde. */
 	UPROPERTY(EditAnywhere, Category = "Slice") float FirstHourTimeScale = 2.0f;

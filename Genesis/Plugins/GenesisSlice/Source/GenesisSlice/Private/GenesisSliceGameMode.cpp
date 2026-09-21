@@ -10,6 +10,13 @@
 #include "GenesisEarlyLifeSubsystem.h"
 #include "GenesisEarlyLifeTypes.h"
 #include "GenesisMotherRig.h"
+#include "GenesisSpermSwarm.h"
+#include "GenesisWorldSoundActor.h"
+#include "GenesisWorldSoundExport.h"
+#include "GenesisBodySoundActor.h"
+#include "GenesisMusicActor.h"
+#include "GenesisVoiceActor.h"
+#include "GenesisSceneSpeech.h"
 #include "CineCameraComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
@@ -18,6 +25,10 @@
 #include "GenesisLog.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+#include "Misc/Paths.h"
+#include "TimerManager.h"
+#include "HAL/FileManager.h"
+#include "AudioMixerBlueprintLibrary.h"
 
 namespace
 {
@@ -26,6 +37,39 @@ namespace
 		TEXT("genesis.Mother.SeekFace"),
 		0,
 		TEXT("1 = das Kind sucht das Gesicht der Mutter, als hielte der Spieler den Blick oben."));
+
+#if !UE_BUILD_SHIPPING
+	/**
+	 * Hörprüfung ohne Ohren: nimmt den fertigen Mix des Spiels auf und legt ihn als WAV ab
+	 * (Saved/BouncedWavFiles/<Name>.wav). So lässt sich messen, ob und wie laut eine Szene klingt.
+	 */
+	FAutoConsoleCommandWithWorldAndArgs GenesisAudioRecordCommand(
+		TEXT("genesis.Audio.Record"),
+		TEXT("Nimmt den Spielton auf: <Sekunden> <Name>. Ergebnis in Saved/BouncedWavFiles."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			if (!World)
+			{
+				return;
+			}
+			const float Seconds = Args.Num() > 0 ? FCString::Atof(*Args[0]) : 10.0f;
+			const FString Name = Args.Num() > 1 ? Args[1] : TEXT("GENESIS_Aufnahme");
+			UAudioMixerBlueprintLibrary::StartRecordingOutput(World, Seconds);
+			FTimerHandle Handle;
+			TWeakObjectPtr<UWorld> WeakWorld(World);
+			World->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([WeakWorld, Name]()
+			{
+				if (UWorld* Current = WeakWorld.Get())
+				{
+					// Absoluter Pfad: Der relative Projektpfad wird beim Schreiben falsch zusammengesetzt (C:/Users/Users/…)
+					const FString Folder = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("BouncedWavFiles"));
+					IFileManager::Get().MakeDirectory(*Folder, true);
+					UAudioMixerBlueprintLibrary::StopRecordingOutput(Current, EAudioRecordingExportType::WavFile, Name, Folder);
+					UE_LOG(LogGenesis, Display, TEXT("Tonaufnahme gespeichert: %s"), *Name);
+				}
+			}), FMath::Max(0.5f, Seconds), false);
+		}));
+#endif
 }
 
 AGenesisSliceGameMode::AGenesisSliceGameMode()
@@ -60,6 +104,8 @@ void AGenesisSliceGameMode::BeginPlay()
 	// Die Einstellungen des Spielers gelten ab jetzt – vorher stand die Welt noch nicht.
 	Frontend->ApplySettings();
 
+	EnsureSceneSound();
+
 	// Nur die spielbare Fassung beginnt mit dem Startablauf. Im Editor und in den Messläufen wäre
 	// ein Studiologo vor jedem Bild im Weg; dort öffnet `genesis.Menu` das Menü bei Bedarf.
 	// Der Ablauf beginnt genau einmal: Nach einem Ortswechsel (Lebensbeginn, Rückkehr ins Menü)
@@ -78,6 +124,102 @@ void AGenesisSliceGameMode::BeginPlay()
 		{
 			Frontend->StartBoot();
 		}
+	}
+}
+
+void AGenesisSliceGameMode::EnsureSceneSound()
+{
+	// Der Klang einer Szene wird hier zur Laufzeit angelegt, nicht im Level gespeichert. Früher standen die
+	// Klang-Actors in den Karten – und jedes Skript, das eine Szene neu aufbaute und die Karte speicherte,
+	// verlor sie wieder. Ab dem Menü war das ganze Spiel still (Prüfung 2026-09-21). Jetzt entscheidet der
+	// Ort, was zu hören ist, und kein Neuaufbau einer Szene kann ihn stumm machen.
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	auto Has = [World](UClass* Class)
+	{
+		for (TActorIterator<AActor> It(World, Class); It; ++It)
+		{
+			return true;
+		}
+		return false;
+	};
+	auto Place = [World](const TCHAR* /*Label*/, EGenesisPlace Where, float Loudness, float Activity, float Digestion, bool bFollowBirth, const FVector& Location)
+	{
+		for (TActorIterator<AGenesisWorldSoundActor> It(World); It; ++It)
+		{
+			if (It->Params.Place == Where)
+			{
+				return;
+			}
+		}
+		if (AGenesisWorldSoundActor* Actor = World->SpawnActorDeferred<AGenesisWorldSoundActor>(AGenesisWorldSoundActor::StaticClass(), FTransform(Location)))
+		{
+			Actor->Params = GenesisWorldSoundExport::GetPresetParams(Where);
+			Actor->Params.Place = Where;
+			Actor->Params.Loudness = Loudness;
+			Actor->Params.Activity = Activity;
+			Actor->Params.Digestion = Digestion;
+			Actor->bFollowBirth = bFollowBirth;
+			Actor->FinishSpawning(FTransform(Location));
+			UE_LOG(LogGenesis, Display, TEXT("Klang der Szene: %s"), *GenesisWorldSoundExport::GetPlaceName(Where));
+		}
+	};
+
+	const bool bOviduct = Has(AGenesisSpermSwarm::StaticClass());
+	const bool bBirth = Has(AGenesisBirthCameraRig::StaticClass());
+
+	if (bOviduct)
+	{
+		// Im Eileiter: der Strom der Zilien, das ferne Pochen der mütterlichen Gefäße
+		Place(TEXT("OviductTone"), EGenesisPlace::OviductAmpulla, 0.9f, 0.1f, 0.5f, false, FVector::ZeroVector);
+	}
+	if (bBirth)
+	{
+		// Zwei Orte zugleich: der Mutterleib von innen und der Kreißsaal von außen – vor der Geburt durch
+		// Bauchdecke und Fruchtwasser gedämpft, nach dem ersten Atemzug klar
+		Place(TEXT("WombTone"), EGenesisPlace::Womb, 0.9f, 0.3f, 0.6f, true, FVector::ZeroVector);
+		Place(TEXT("DeliveryRoomTone"), EGenesisPlace::DeliveryRoom, 0.85f, 0.5f, 0.5f, true, FVector(420.0f, 0.0f, 200.0f));
+
+		// Der eigene Körper (Herzschlag, Atem) – ab der Geburt der des Kindes
+		if (!Has(AGenesisBodySoundActor::StaticClass()))
+		{
+			World->SpawnActor<AGenesisBodySoundActor>(FVector::ZeroVector, FRotator::ZeroRotator);
+		}
+		// Stimmen: das Kind (Schreien) und die Mutter
+		bool bChild = false;
+		bool bMother = false;
+		for (TActorIterator<AGenesisVoiceActor> It(World); It; ++It)
+		{
+			bChild |= It->VoiceRole == EGenesisVoiceRole::Newborn;
+			bMother |= It->VoiceRole == EGenesisVoiceRole::Mother;
+		}
+		auto SpawnVoice = [World](EGenesisVoiceRole VoiceRole, const FVector& Location)
+		{
+			if (AGenesisVoiceActor* Voice = World->SpawnActorDeferred<AGenesisVoiceActor>(AGenesisVoiceActor::StaticClass(), FTransform(Location)))
+			{
+				Voice->VoiceRole = VoiceRole;
+				Voice->FinishSpawning(FTransform(Location));
+			}
+		};
+		if (!bChild)
+		{
+			SpawnVoice(EGenesisVoiceRole::Newborn, FVector(160.0f, 0.0f, 0.0f));
+		}
+		// Die Mutter spricht jetzt echte Sätze (AGenesisSceneSpeech). Ihre bisherige Stimme aus Silben ohne Worte
+		// liefe sonst gleichzeitig darüber – zwei Mütter in einem Raum.
+		(void)bMother;
+		if (!Has(AGenesisSceneSpeech::StaticClass()))
+		{
+			World->SpawnActor<AGenesisSceneSpeech>(FVector::ZeroVector, FRotator::ZeroRotator);
+		}
+	}
+	if ((bOviduct || bBirth) && !Has(AGenesisMusicActor::StaticClass()))
+	{
+		// Die Seelenmusik des Lebens – sie folgt dem, was die Simulation erzählt
+		World->SpawnActor<AGenesisMusicActor>(FVector::ZeroVector, FRotator::ZeroRotator);
 	}
 }
 

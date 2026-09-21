@@ -24,6 +24,10 @@
 		{ "Name": "GenesisBirth", "Enabled": true },
 		{ "Name": "GenesisEarlyLife", "Enabled": true },
 		{ "Name": "GenesisFrontend", "Enabled": true },
-		{ "Name": "GenesisPeople", "Enabled": true }
+		{ "Name": "GenesisPeople", "Enabled": true },
+		{ "Name": "GenesisSound", "Enabled": true },
+		{ "Name": "GenesisVoice", "Enabled": true },
+		{ "Name": "GenesisWorldSound", "Enabled": true },
+		{ "Name": "GenesisGenetics", "Enabled": true }
 	]
 }

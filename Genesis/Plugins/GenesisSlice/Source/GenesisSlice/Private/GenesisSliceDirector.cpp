@@ -345,7 +345,10 @@ void UGenesisSliceDirector::DrivePhase(float DeltaSeconds)
 				UE_LOG(LogGenesis, Display, TEXT("Durchlauf: Die Wehen beginnen."));
 				Birth->BeginLabor(State.EntityId);
 			}
-			Birth->LaborTimeScale = Tuning.BirthTimeScale;
+			// Die Zeit dehnt sich zum Höhepunkt hin: Stunden der Eröffnung im Zeitraffer, die Presswehen fast in Echtzeit
+			const EGenesisLaborStage LaborStage = Birth->GetState().Stage;
+			Birth->LaborTimeScale = LaborStage == EGenesisLaborStage::Pushing ? Tuning.PushingTimeScale
+				: (LaborStage == EGenesisLaborStage::Transition ? Tuning.TransitionTimeScale : Tuning.BirthTimeScale);
 		}
 		break;
 	}

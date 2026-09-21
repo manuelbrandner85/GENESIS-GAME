@@ -23,6 +23,11 @@ public class GenesisSlice : ModuleRules
 			"GenesisEarlyLife",
 			"GenesisFrontend",
 			"GenesisPeople",
+			"GenesisSound",
+			"GenesisVoice",
+			"GenesisWorldSound",
+			"GenesisGenetics",
+			"AudioMixer",
 			"CinematicCamera"
 		});
 	}

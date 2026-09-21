@@ -29,4 +29,6 @@ public:
 
 private:
 	class UGenesisFrontendSubsystem* GetFrontend() const;
+	/** Legt den Klang der Szene an (Ort, Körper, Stimmen, Musik) – zur Laufzeit, damit kein Neuaufbau einer Karte ihn verliert. */
+	void EnsureSceneSound();
 };
