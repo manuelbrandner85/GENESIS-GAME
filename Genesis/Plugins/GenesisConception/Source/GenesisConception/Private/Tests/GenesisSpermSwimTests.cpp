@@ -280,17 +280,23 @@ bool FGenesisSpermVisualTest::RunTest(const FString& Parameters)
 	bool bHeadNear = true;
 	bool bAligned = true;
 	bool bDataValid = true;
+	bool bYawReal = true;
 	for (const FGenesisSpermCell& Cell : Cells)
 	{
 		const FTransform Visual = GenesisSpermSwimLogic::ComputeVisualTransform(Cell);
 		bHeadNear &= FVector::Dist(Visual.GetLocation(), Cell.Position) <= 0.5 * Cell.HeadAmplitudeUm + 1e-3;
-		bAligned &= FVector::DotProduct(Visual.GetUnitAxis(EAxis::X), Cell.Heading) > FMath::Cos(Cell.HeadAmplitudeUm / 12.0 + 0.25 * Cell.Asymmetry + 0.01);
+		bAligned &= FVector::DotProduct(Visual.GetUnitAxis(EAxis::X), Cell.Heading) > FMath::Cos(GenesisSpermSwimLogic::HeadYawAmplitude(Cell) + 0.1 * Cell.Asymmetry + 0.01);
+		// Gemessene Kopfdrehung (Docs/26): progressiv höchstens ±6°, hyperaktiviert höchstens ±40° –
+		// die ganze Zelle pendelt nicht, nur der Kopf gibt der Geißel nach
+		const double YawDegrees = FMath::RadiansToDegrees(GenesisSpermSwimLogic::HeadYawAmplitude(Cell));
+		bYawReal &= Cell.Motility == EGenesisSpermMotility::Hyperactivated ? YawDegrees <= 40.0 : YawDegrees <= 6.5;
 		float Data[4];
 		GenesisSpermSwimLogic::ComputeMaterialData(Cell, Data);
-		bDataValid &= Data[0] >= 0.0f && Data[0] < 1.0f && Data[1] > 0.0f && Data[2] >= 0.0f && Data[2] <= 1.0f && Data[3] > 0.0f;
+		bDataValid &= Data[0] >= 0.0f && Data[0] < 1.0f && Data[1] >= 0.5f && Data[1] <= 1.4f && Data[2] >= 0.0f && Data[2] <= 1.0f && Data[3] > 0.0f;
 	}
 	TestTrue(TEXT("Kopf pendelt höchstens um die halbe Auslenkung"), bHeadNear);
 	TestTrue(TEXT("Zelle zeigt in Schwimmrichtung"), bAligned);
+	TestTrue(TEXT("Kopfdrehung im gemessenen Bereich"), bYawReal);
 	TestTrue(TEXT("Materialdaten gültig"), bDataValid);
 
 	// Performance: 1000 Zellen, 1 s Simulationszeit (240 Schritte)

@@ -271,9 +271,11 @@ namespace GenesisSpermSwimLogic
 		const FVector Side = BeatSide(Cell);
 		const FVector Normal = SafeNormal(FVector::CrossProduct(Cell.Heading, Side), FVector::UpVector);
 
-		// Der Kopf pendelt im Schlagtakt um die Normale der Schlagebene; asymmetrischer Schlag zieht zu einer Seite
-		const double YawAmplitude = Cell.HeadAmplitudeUm / 12.0;
-		const double Yaw = YawAmplitude * FMath::Cos(2.0 * UE_DOUBLE_PI * Cell.BeatPhase) + 0.25 * Cell.Asymmetry;
+		// Der Kopf dreht sich nur als Gegenbewegung zur Geißel – er pendelt nicht selbst. Gemessen: progressiv
+		// ±3–6°, hyperaktiviert ±25–40° (Docs/26). Früher drehte sich hier die ganze Zelle um bis zu 55° im
+		// Schlagtakt; die Geißel schwang dadurch als starrer Stab mit, und genau das sah nach Wackeln aus.
+		const double YawAmplitude = HeadYawAmplitude(Cell);
+		const double Yaw = YawAmplitude * FMath::Cos(2.0 * UE_DOUBLE_PI * Cell.BeatPhase) + 0.1 * Cell.Asymmetry;
 		const FQuat YawRotation(Normal, Yaw);
 		const FVector Forward = YawRotation.RotateVector(Cell.Heading);
 		const FVector YawedSide = YawRotation.RotateVector(Side);
@@ -282,10 +284,22 @@ namespace GenesisSpermSwimLogic
 		return FTransform(Basis.ToQuat(), ComputeHeadPosition(Cell) * GenesisMicroScale::UnitsPerMicrometer);
 	}
 
+	double HeadYawAmplitude(const FGenesisSpermCell& Cell)
+	{
+		return Cell.HeadAmplitudeUm * (0.019 + 0.03 * FMath::Clamp(Cell.Asymmetry, 0.0f, 1.0f));
+	}
+
+	float FlagellumTipAngle(const FGenesisSpermCell& Cell)
+	{
+		// Auslenkungswinkel der Geißel an der Spitze (rad): progressiv ~0,8, hyperaktiviert bis 1,3
+		const float Asym = FMath::Clamp(Cell.Asymmetry, 0.0f, 1.0f);
+		return FMath::Clamp(0.55f + 0.08f * Cell.HeadAmplitudeUm * (0.5f + Asym), 0.6f, 1.35f);
+	}
+
 	void ComputeMaterialData(const FGenesisSpermCell& Cell, float OutData[4])
 	{
 		OutData[0] = static_cast<float>(Cell.BeatPhase);
-		OutData[1] = 2.2f * Cell.HeadAmplitudeUm;
+		OutData[1] = FlagellumTipAngle(Cell);
 		OutData[2] = Cell.Asymmetry;
 		OutData[3] = Cell.WavelengthUm;
 	}

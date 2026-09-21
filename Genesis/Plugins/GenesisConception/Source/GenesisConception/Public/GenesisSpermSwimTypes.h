@@ -148,8 +148,11 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	/** Schlagfrequenz (Hz). Gemessen liegt die Grundfrequenz bei 19–20 Hz, die Kopf-Kreuzfrequenz bei 23,6 ± 5,0. */
 	UPROPERTY(EditAnywhere, Category = "Progressive") FFloatInterval ProgressiveBeatHz = FFloatInterval(16.0f, 24.0f);
 	UPROPERTY(EditAnywhere, Category = "Progressive") FFloatInterval ProgressiveHeadAmplitudeUm = FFloatInterval(2.5f, 5.0f);
-	/** Bogenwellenlänge der Geißelwelle (µm). Gemessener Median: 31 µm. */
-	UPROPERTY(EditAnywhere, Category = "Progressive") float ProgressiveWavelengthUm = 31.0f;
+	/**
+	 * Bogenwellenlänge der Geißelwelle (µm), nur für die Darstellung. In dünnem Labormedium 31 µm, in der
+	 * zähen Eileiterflüssigkeit 17 µm – etwa drei Wellen auf der Geißel, scharfe Biegungen (Smith 2009, Docs/26).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Progressive") float ProgressiveWavelengthUm = 17.0f;
 	/**
 	 * Rotationsdiffusion (rad²/s). Eine progressive Zelle hält ihren Kurs über Sekunden –
 	 * gemessen liegt die Richtungsstreuung bei wenigen Hundertstel rad² je Sekunde. Mit einem zu
@@ -182,10 +185,11 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	/** Seitliche Kopfauslenkung hyperaktivierter Zellen (µm). Kriterium: ALH > 7; gemessen 5,7–11,4. */
 	UPROPERTY(EditAnywhere, Category = "Hyperactivated") FFloatInterval HyperHeadAmplitudeUm = FFloatInterval(7.5f, 11.5f);
 	/**
-	 * Bogenwellenlänge bei Hyperaktivierung (µm). Gemessener Median: **17 µm** – die Welle wird
-	 * kürzer, nicht länger. Der bisherige Wert von 45 µm war genau verkehrt herum gedacht.
+	 * Bogenwellenlänge bei Hyperaktivierung (µm), nur für die Darstellung. Im dünnen Medium wird die Welle
+	 * kürzer (Median 17 µm); in zäher Flüssigkeit – der Eileiter – schlägt die hyperaktivierte Geißel
+	 * dagegen in großen Bögen mit 1–1,5 Wellen auf der Länge, 35–45 µm (Docs/26). Die Szene zeigt den Eileiter.
 	 */
-	UPROPERTY(EditAnywhere, Category = "Hyperactivated") float HyperWavelengthUm = 17.0f;
+	UPROPERTY(EditAnywhere, Category = "Hyperactivated") float HyperWavelengthUm = 35.0f;
 	UPROPERTY(EditAnywhere, Category = "Hyperactivated") float HyperRotationalDiffusion = 0.6f;
 
 	UPROPERTY(EditAnywhere, Category = "Sluggish") FFloatInterval SluggishSpeedUm = FFloatInterval(3.0f, 12.0f);

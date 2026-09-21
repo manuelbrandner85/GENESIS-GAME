@@ -711,3 +711,62 @@ in die erste Woche. Und eine Niederlage: sieben Sekunden Standbild, dann „Vers
 - Ein schwarzes, flächiges Artefakt an einer Eileiterfalte, sichtbar erst mit der schärferen Optik.
 - Die Akrosomreaktion dauert zufällig 2–6 s und entscheidet manches Rennen; der Spieler hat darauf
   keinen Einfluss (biologisch richtig, spielerisch spürbar).
+
+## GENESIS-038 (Teil 2) – Die Geißel schlägt, die Zelle wackelt nicht; halbe Ich-Perspektive
+
+Game Director: „Die Spermien sind komisch, wackeln hin und her. Und selbst als Spermium halb aus
+Ego-Perspektive." Grundlage ist die Recherche in [Docs/26](26_Recherche_und_Plan_AAA.md).
+
+### Warum sie wackelten – zwei Fehler in der Darstellung, keiner in der Physik
+
+1. **Die ganze Zelle pendelte.** `ComputeVisualTransform` drehte die Zelle im Schlagtakt um
+   `HeadAmplitude / 12` rad: progressiv 12–24°, hyperaktiviert bis 55°. Die 60 µm lange Zelle schwang
+   dadurch wie ein starrer Stab. Gemessen dreht sich der Kopf aber nur als Gegenbewegung zur Geißel:
+   progressiv ±3–6°, hyperaktiviert ±25–40° (Smith 2009, Gallagher 2019). Jetzt:
+   `HeadYawAmplitude = ALH · (0,019 + 0,03 · Asymmetrie)`. Neuer Test: Kopfdrehung im gemessenen Bereich.
+2. **Die Geißel wurde verschoben, nicht gebogen.** Der Shader schob jeden Punkt seitlich um bis zu
+   25 µm. Bei kurzen Wellen wurde die Geißel dadurch um ein Vielfaches gedehnt und zappelte. Jetzt schwingt
+   der **Winkel** der Geißel, ψ(s,t) = ψ₀(s) + A(s)·[sin(ks − ωt) + ε·sin(2(ks − ωt) + φ₂)], und der Shader
+   integriert daraus die Mittellinie (24 Schritte je Vertex). Die Geißel bleibt 55 µm lang. Die Auslenkung
+   wächst vom Mittelstück (0,1 rad, hyperaktiviert 0,35–0,5) zur Spitze (0,6–0,8, hyperaktiviert bis 1,35).
+   Dazu kommen eine Oberwelle und eine einseitige Grundkrümmung bei Hyperaktivierung.
+
+Wellenlänge für den Eileiter (zähe Flüssigkeit): progressiv 17 µm (≈ 3 Wellen), hyperaktiviert 35 µm
+(große Peitschenbögen). **Bewusst unverändert:** Schlagfrequenz und Geschwindigkeit. Sie sind gegen
+CASA-Messungen in Labormedium geprüft (Tests), und das Rennen ist darauf ausbalanciert. Im zähen Eileiter
+wären 10 Hz realistischer – das bleibt ein benannter Kompromiss.
+
+**Eigener Fehler unterwegs:** Der erste Shader nahm die Lage des Vertex aus dem Positionsknoten. Bei
+Instanzen stimmt die dort nicht – die Geißeln flogen als weiße Balken durchs Bild. Jetzt wandert der
+Querschnitt als Ganzes auf die gebogene Mittellinie (Lage nur aus der UV).
+
+![Neue Geißelwelle](Media/GENESIS-038_Geisselwelle.png)
+
+### Halbe Ich-Perspektive
+
+Standard im Rennen. Die Kamera sitzt 26 µm hinter und 18° über der eigenen Kopfspitze, leicht seitlich
+(170°). Sie blickt 30 µm voraus. Der Kopf liegt im unteren Drittel, das Mittelstück läuft aus dem Bild,
+voraus liegt das Ziel.
+
+- **Ruhiger Horizont:** oben ist die Hochachse des Kanals, nicht die Schlagebene. Die Zelle rollt; eine
+  mitrollende Kamera drehte die Welt mehrmals pro Sekunde.
+- **Bezug ist die Zellmitte ohne Kopfauslenkung.** Der Kopf schlägt sichtbar im Takt, das Bild bleibt ruhig.
+- **Fast starre Nachführung** (0,04 s Lage, 0,25 s Blick). Mit dem Nachlauf der Verfolgeransicht fiele die
+  Kamera bei 50 µm/s um 17 µm zurück.
+- **Optik:** Bildwinkel wie 28 mm, Sensor ×0,4 (mehr Schärfentiefe), Schärfe 12 µm vor dem Kopf.
+- **Licht 36 µm hinter und 18 µm über der Linse.** Direkt an der Optik träfe es die eigene Geißel aus 4 µm
+  und ließe sie weiß ausbrennen (gesehen im ersten Test).
+- Die CASA-Markierung entfällt – man ist die Zelle selbst.
+- **V / rechter Stick drücken:** Wechsel zur Verfolgeransicht. Maus/Stick: umsehen (begrenzt).
+- Konsole: `genesis.Race.EgoView 1 <Abstand> <Höhe°> <Vorausblick> <Seite°> <Brennweite>` zum Einstellen.
+
+Bildreihe beim Einstellen: 14 µm → Kopf unter dem Bildrand; 30 µm → Kopf klar, aber zu tief; 26 µm / 18° /
+30 µm voraus → Kopf im unteren Drittel vor der Coronawand.
+
+![Halbe Ich-Perspektive](Media/GENESIS-038_Ich-Perspektive.png)
+
+### Offen
+
+- Coronazellen wirken aus der Nähe wie glatte Eier: Kerne, Zellgrenzen und Hoffman-artiger Rand fehlen.
+  Das Zielbild dafür liegt jetzt vor (Docs/26, Abschnitt 4).
+- Schlagfrequenz im zähen Eileiter (10 Hz) – siehe oben.

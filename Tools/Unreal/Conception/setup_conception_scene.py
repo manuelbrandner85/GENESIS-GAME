@@ -132,15 +132,40 @@ def custom(material, x, y, description, code, inputs, output_type):
 
 
 WPO_CODE = """
-// Geißelschlag: laufende Welle vom Hals zur Spitze, Amplitude wächst zur Spitze, Hyperaktivierung zieht einseitig (Peitschenschlag).
-// Die Position entlang der Zelle kommt aus dem Farbattribut (Kanal A, 0 an der Kopfspitze … 1 am Geißelende).
-// Positionsknoten liefern bei Instanzen die Lage im ganzen Kanal – damit würde die Zelle nur verschoben statt gebogen.
-float s = UV.y * 60.6;                       // µm ab Kopfspitze (UV-Kanal 0, V-Achse)
-float t = saturate((s - 5.6) / 55.0);
-float envelope = pow(t, 1.3) * Amp;
-float wave = sin(6.2831853 * (Phase - (s - 5.6) / max(Lambda, 1.0)));
-float bias = Asym * Amp * 0.6 * t * t;
-return float3(0.0, envelope * wave + bias, 0.0);
+// Geißelschlag als Winkelwelle (GENESIS-038, Docs/26): Nicht die Lage, sondern der Tangentenwinkel ψ der Geißel
+// schwingt – ψ(s,t) = ψ0(s) + A(s)·[sin(k·s − ωt) + ε·sin(2(k·s − ωt) + φ2)], A wächst vom Mittelstück zur Spitze.
+// Die Mittellinie ist das Integral des Winkels, dadurch bleibt die Geißel exakt 55 µm lang. Die frühere seitliche
+// Verschiebung dehnte die Geißel bei kurzen Wellen um ein Vielfaches und ließ sie zappeln statt schlagen.
+// Lage entlang der Zelle aus der UV (V: 0 Kopfspitze … 1 Geißelende), lokale Achsen: X vorn, Y Schlagseite.
+float s = UV.y * 60.6;                       // µm ab Kopfspitze
+const float s0 = 5.6;                        // Hals: davor starr (Kopf)
+const float L = 55.0;
+if (s <= s0) return float3(0.0, 0.0, 0.0);
+
+float asym = saturate(Asym);
+float k = 6.2831853 / max(Lambda, 1.0);
+float w = 6.2831853 * Phase;
+float A0 = 0.10 + 0.40 * asym;               // Auslenkung am Mittelstück (rad)
+float eps = 0.05 + 0.25 * asym;              // Oberwelle – hyperaktiviert peitschenartig
+float bias = 0.45 * asym;                    // einseitige Grundkrümmung
+
+// Mittellinie numerisch integrieren (Mittelpunktregel)
+const int N = 24;
+float ds = (s - s0) / N;
+float2 p = float2(-s0, 0.0);
+for (int i = 0; i < N; ++i)
+{
+    float sm = (i + 0.5) * ds;
+    float tt = sm / L;
+    float ramp = saturate(sm / 1.5);         // weicher Übergang am Hals, kein Knick
+    float x = k * sm - w;
+    float a = bias * tt + ramp * lerp(A0, Amp, tt) * (sin(x) + eps * sin(2.0 * x + 1.3));
+    p += float2(-cos(a), sin(a)) * ds;
+}
+// Der ganze Ring des Querschnitts wandert auf die gebogene Mittellinie. Die Drehung des Querschnitts
+// selbst (Dicke unter 1 µm) sieht man nicht. Positionsknoten liefern bei Instanzen keine verlässliche
+// Lage im Mesh – ein erster Versuch damit schleuderte die Geißeln quer durch den Kanal.
+return float3(p.x + s, p.y, 0.0);
 """
 
 PHASE_CODE = """
@@ -180,9 +205,13 @@ return lerp(base, float3(0.34, 0.335, 0.32), core * 0.7);
 
 def create_sperm_material(mpc):
     path = MATERIALS + "/M_GEN_SpermCell"
+    # Neu aufbauen statt löschen: Andere Level (Trailer) verweisen direkt auf das Material, ein Löschen
+    # ließe dort leere Verweise zurück
     if eal.does_asset_exist(path):
-        eal.delete_asset(path)
-    material = asset_tools.create_asset("M_GEN_SpermCell", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+        material = eal.load_asset(path)
+        mel.delete_all_material_expressions(material)
+    else:
+        material = asset_tools.create_asset("M_GEN_SpermCell", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
     # Vor der Schaerfentiefe zeichnen. Unreal legt durchscheinende Flaechen sonst in einen Pass
     # NACH der Schaerfentiefe - dann bleibt eine Zelle direkt vor der Linse gestochen scharf,
@@ -219,9 +248,10 @@ def create_sperm_material(mpc):
         connect(default_node, "", node, ["DefaultValue", "Default Value"])
         return node
 
-    tip_amp = expression(material, unreal.MaterialExpressionScalarParameter, -1500, -300, parameter_name="TipAmplitudeUm", default_value=8.0)
+    # Standardwerte für Einzelobjekte ohne Instanzdaten: progressive Zelle in zäher Eileiterflüssigkeit
+    tip_amp = expression(material, unreal.MaterialExpressionScalarParameter, -1500, -300, parameter_name="TipAngleRad", default_value=0.75)
     asym = expression(material, unreal.MaterialExpressionScalarParameter, -1500, -200, parameter_name="Asymmetry", default_value=0.05)
-    wavelength = expression(material, unreal.MaterialExpressionScalarParameter, -1500, -100, parameter_name="WavelengthUm", default_value=30.0)
+    wavelength = expression(material, unreal.MaterialExpressionScalarParameter, -1500, -100, parameter_name="WavelengthUm", default_value=17.0)
     phase = instance_data(0, fallback_phase, -600)
     amplitude = instance_data(1, tip_amp, -300)
     asymmetry = instance_data(2, asym, -200)

@@ -1,4 +1,4 @@
-// GENESIS: Der Kreislauf des Lebens
+﻿// GENESIS: Der Kreislauf des Lebens
 
 #pragma once
 
@@ -164,6 +164,58 @@ public:
 	/** Blickpunkt hinter der Kopfspitze im Rennen (µm): die Mitte der Zelle, nicht der Kopf allein. */
 	UPROPERTY(EditAnywhere, Category = "Race")
 	float RaceLookBehindHeadUm = 22.0f;
+
+	/**
+	 * Halbe Ich-Perspektive (GENESIS-038, Wunsch des Game Directors): Die Kamera sitzt knapp hinter und über
+	 * dem eigenen Kopf und blickt in Schwimmrichtung. Kopf und Mittelstück liegen unten im Bild, die Geißel
+	 * schlägt unter der Linse nach hinten weg, voraus liegt der Weg. Umschalten auf die Verfolgeransicht mit V
+	 * (Gamepad: rechter Stick drücken).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Race")
+	bool bRaceEgoView = true;
+
+	/**
+	 * Abstand hinter der Kopfspitze (µm). Bei 14 µm lag der Kopf unter dem Bildrand und die eigene Geißel direkt
+	 * vor der Linse; bei 26 µm sitzt der Kopf im unteren Drittel, das Mittelstück läuft nach unten aus dem Bild.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Race|Ego", meta = (ClampMin = "4"))
+	float RaceEgoDistanceUm = 26.0f;
+
+	/** Leicht seitlich versetzt (180° = genau dahinter): „über die Schulter", damit der Kopf den Weg nicht verdeckt. */
+	UPROPERTY(EditAnywhere, Category = "Race|Ego")
+	float RaceEgoAzimuthDegrees = 170.0f;
+
+	/** Blick von oben auf die Schlagebene: nur so ist die Geißelwelle als Welle zu sehen. */
+	UPROPERTY(EditAnywhere, Category = "Race|Ego")
+	float RaceEgoElevationDegrees = 18.0f;
+
+	/** Blickpunkt vor der Kopfspitze (µm) – dorthin, wohin gelenkt wird. */
+	UPROPERTY(EditAnywhere, Category = "Race|Ego")
+	float RaceEgoLookAheadUm = 30.0f;
+
+	/** Schärfe liegt knapp vor dem Kopf: der eigene Kopf und der Weg voraus bleiben lesbar (µm ab Kopfspitze). */
+	UPROPERTY(EditAnywhere, Category = "Race|Ego")
+	float RaceEgoFocusAheadUm = 12.0f;
+
+	/** Weitwinkliger als beim Zuschauen (Kleinbild-Brennweite, mm): Aus der Nähe braucht man Überblick. */
+	UPROPERTY(EditAnywhere, Category = "Race|Ego", meta = (ClampMin = "10", ClampMax = "100"))
+	float RaceEgoFocalLengthMm = 28.0f;
+
+	/**
+	 * Sensor und Brennweite gemeinsam verkleinert: gleicher Bildwinkel, mehr Schärfentiefe. Aus 16 µm
+	 * Abstand wäre mit Kleinbild-Schärfentiefe nur ein Bruchteil eines Mikrometers scharf.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Race|Ego", meta = (ClampMin = "0.1", ClampMax = "40"))
+	float RaceEgoMacroScale = 0.4f;
+
+	/** Abstand des Lichts hinter der Linse in der Ich-Perspektive (µm); es sitzt halb so hoch darüber. */
+	UPROPERTY(EditAnywhere, Category = "Race|Ego", meta = (ClampMin = "0"))
+	float RaceEgoLightBackUm = 36.0f;
+
+	void ToggleRaceView() { bRaceEgoView = !bRaceEgoView; bInitialized = false; }
+	bool IsRaceEgoView() const { return bRaceEgoView; }
+	/** Zeigt die Kamera gerade die Ich-Perspektive (im Rennen, hinter der eigenen Zelle)? */
+	bool IsShowingEgoView() const;
 
 	/** Ab diesem Abstand der eigenen Zelle zur Zona (µm) geht die Kamera auf die ganze Eizelle – am Rand des Cumulus. */
 	UPROPERTY(EditAnywhere, Category = "Race")

@@ -35,7 +35,7 @@ namespace GenesisSpermSwimLogic
 	GENESISCONCEPTION_API int32 Advance(FGenesisSpermCell& Cell, const FGenesisOviductChannel& Channel, const FGenesisSpermSwimTuning& Tuning, float DeltaSeconds);
 
 	/**
-	 * Darstellung: Kopfspitze mit seitlicher Kopfauslenkung (ALH), Gier-Pendeln im Schlagtakt, Rollen um die Längsachse.
+	 * Darstellung: Kopfspitze mit seitlicher Kopfauslenkung (ALH), kleine Gegendrehung zur Geißel, Rollen um die Längsachse.
 	 * Lokale X-Achse = Schwimmrichtung (Kopf vorn), Z = Normale der flachen Kopfseite. Einheit µm (= Unreal-Einheiten).
 	 */
 	GENESISCONCEPTION_API FTransform ComputeVisualTransform(const FGenesisSpermCell& Cell);
@@ -49,6 +49,18 @@ namespace GenesisSpermSwimLogic
 	 */
 	GENESISCONCEPTION_API void ComputeBeatFrame(const FGenesisSpermCell& Cell, FVector& OutSide, FVector& OutNormal);
 
-	/** Per-Instance-Daten für das Material: [0] Schlagphase (Zyklen), [1] Amplitude an der Geißelspitze (µm), [2] Asymmetrie, [3] Wellenlänge (µm). */
+	/**
+	 * Gier-Amplitude des Kopfes (rad). Der Kopf dreht sich nur als Gegenbewegung zur Geißel:
+	 * progressiv ±3–6°, hyperaktiviert ±25–40° (Smith 2009, Gallagher 2019).
+	 */
+	GENESISCONCEPTION_API double HeadYawAmplitude(const FGenesisSpermCell& Cell);
+
+	/** Biegewinkel der Geißel an der Spitze (rad): progressiv ~0,8, hyperaktiviert bis 1,3. */
+	GENESISCONCEPTION_API float FlagellumTipAngle(const FGenesisSpermCell& Cell);
+
+	/**
+	 * Per-Instance-Daten für das Material: [0] Schlagphase (Zyklen), [1] Biegewinkel an der Geißelspitze (rad),
+	 * [2] Asymmetrie, [3] Bogenwellenlänge (µm). Der Shader integriert daraus eine längentreue Mittellinie.
+	 */
 	GENESISCONCEPTION_API void ComputeMaterialData(const FGenesisSpermCell& Cell, float OutData[4]);
 }

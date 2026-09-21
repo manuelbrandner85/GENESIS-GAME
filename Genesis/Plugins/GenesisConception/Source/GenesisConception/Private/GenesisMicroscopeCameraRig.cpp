@@ -34,6 +34,26 @@ namespace
 			}
 		}));
 
+	FAutoConsoleCommandWithWorldAndArgs GenesisEgoViewCommand(
+		TEXT("genesis.Race.EgoView"),
+		TEXT("Rennen: halbe Ich-Perspektive (1) oder Verfolgeransicht (0). Optional: <Abstand µm> <Höhe °> <Vorausblick µm> <Seite °> <Brennweite mm>."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			for (TActorIterator<AGenesisMicroscopeCameraRig> It(World); It; ++It)
+			{
+				const bool bEgo = Args.Num() == 0 || Args[0] != TEXT("0");
+				if (It->IsRaceEgoView() != bEgo)
+				{
+					It->ToggleRaceView();
+				}
+				float* Targets[] = { &It->RaceEgoDistanceUm, &It->RaceEgoElevationDegrees, &It->RaceEgoLookAheadUm, &It->RaceEgoAzimuthDegrees, &It->RaceEgoFocalLengthMm };
+				for (int32 Index = 1; Index < Args.Num() && Index <= UE_ARRAY_COUNT(Targets); ++Index)
+				{
+					*Targets[Index - 1] = FCString::Atof(*Args[Index]);
+				}
+			}
+		}));
+
 	FAutoConsoleCommandWithWorldAndArgs GenesisCameraCommand(
 		TEXT("genesis.Conception.Cam"),
 		TEXT("Kamera einstellen: <Abstand µm> [Brennweite mm] [Blende] [Makro-Faktor]. Für Bildmessreihen."),
@@ -223,19 +243,37 @@ void AGenesisMicroscopeCameraRig::ApplyOptics()
 	const float EffectiveAperture = bFollowingPlayer ? RaceAperture : (bWatchingEmbryo ? EmbryoAperture : Aperture);
 
 	// Sensor und Brennweite gemeinsam vergrößern: gleicher Bildwinkel, aber die Schärfentiefe einer Makro-Optik
-	const float Scale = FMath::Max(1.0f, bFollowingPlayer ? RaceMacroScale : (bWatchingEmbryo ? EmbryoMacroScale : MacroScale));
-	Camera->LensSettings.MaxFocalLength = FMath::Max(Camera->LensSettings.MaxFocalLength, NominalFocalLengthMm * Scale + 1.0f);
+	const bool bEgo = bFollowingPlayer && bRaceEgoView;
+	const float Scale = bEgo ? FMath::Max(0.1f, RaceEgoMacroScale)
+		: FMath::Max(1.0f, bFollowingPlayer ? RaceMacroScale : (bWatchingEmbryo ? EmbryoMacroScale : MacroScale));
+	const float Focal = (bEgo ? RaceEgoFocalLengthMm : NominalFocalLengthMm) * Scale;
+	Camera->LensSettings.MinFocalLength = FMath::Min(Camera->LensSettings.MinFocalLength, Focal - 0.1f);
+	Camera->LensSettings.MaxFocalLength = FMath::Max(Camera->LensSettings.MaxFocalLength, Focal + 1.0f);
 	Camera->Filmback.SensorWidth = 36.0f * Scale;
 	Camera->Filmback.SensorHeight = 20.25f * Scale;
-	Camera->SetCurrentFocalLength(NominalFocalLengthMm * Scale);
+	Camera->SetCurrentFocalLength(Focal);
 	Camera->SetCurrentAperture(EffectiveAperture);
 	// Nahe Zellen sollen ausblenden, nicht aufgeschnitten werden: Die Nahgrenze liegt bei einem halben Mikrometer
 	Camera->bOverride_CustomNearClippingPlane = true;
 	Camera->CustomNearClippingPlane = 0.5f;
 }
 
+bool AGenesisMicroscopeCameraRig::IsShowingEgoView() const
+{
+	return bRaceEgoView && Swarm && Swarm->IsRacing() && !bWatchOocyte && FollowCellIndex == Swarm->GetPlayerCellIndex();
+}
+
 void AGenesisMicroscopeCameraRig::UpdateLight()
 {
+	// Ich-Perspektive: Das Licht sitzt nicht in der Linse, sondern ein Stück dahinter und darüber. Direkt
+	// an der Optik träfe es die eigene Geißel aus 4 µm, den Kopf aus 14 – die Geißel wäre 13-mal heller
+	// und brennt weiß aus (gesehen im ersten Test). Aus 40 µm Abstand sind beide fast gleich hell.
+	const bool bEgo = IsShowingEgoView();
+	if (EndoscopeLight)
+	{
+		EndoscopeLight->SetRelativeLocation(bEgo ? FVector(-RaceEgoLightBackUm, 1.5, RaceEgoLightBackUm * 0.5) : FVector(0.0, 1.5, -1.0));
+	}
+
 	if (FillLight)
 	{
 		// Das Streulicht hängt nicht am Arbeitsabstand: Die Wand des Eileiters bleibt gleich weit weg.
@@ -253,7 +291,7 @@ void AGenesisMicroscopeCameraRig::UpdateLight()
 	// jede weite Einstellung fällt ins Dunkle (gemessen bei 1.100 µm: praktisch schwarz).
 	// Die Spanne ist deshalb weit: vom Zwanzigstel bis zum Zwanzigfachen der Bezugsstärke.
 	const float Reference = FMath::Max(1.0f, LightReferenceDistanceUm) * GenesisMicroScale::UnitsPerMicrometer;
-	const float Working = FMath::Max(1.0f, CurrentFocusDistance);
+	const float Working = FMath::Max(1.0f, bEgo ? CurrentFocusDistance + RaceEgoLightBackUm * GenesisMicroScale::UnitsPerMicrometer : CurrentFocusDistance);
 	// Zwei Bereiche, weil zwei Dinge im Bild sind:
 	// Unterhalb des Bezugsabstands füllt das Motiv den Ausschnitt – dort gilt das Abstandsquadrat exakt,
 	// und ohne es brennt jede Nahaufnahme aus (gemessen bei 110 µm mit linearer Regelung: Median 0,63).
@@ -369,6 +407,36 @@ bool AGenesisMicroscopeCameraRig::ComputeDesired(FVector& OutLocation, FQuat& Ou
 	// Der Spieler kann das Mikroskop um die Zelle schwenken. Im Rennen steht die Kamera hinter der
 	// eigenen Zelle – wer lenkt, muss sehen, wohin.
 	const bool bRacing = Swarm->IsRacing() && FollowCellIndex == Swarm->GetPlayerCellIndex();
+
+	if (bRacing && bRaceEgoView)
+	{
+		// Halbe Ich-Perspektive: Bezug ist die Zellmitte ohne die seitliche Kopfauslenkung – die Kamera sitzt
+		// „auf" der Zelle wie ein Beobachter, der mitschwimmt, nicht am zitternden Kopf. Der Kopf schlägt
+		// dadurch sichtbar im Takt vor der Linse hin und her, der Horizont bleibt ruhig.
+		const FVector Body = SwarmTransform.TransformPosition(Cell->Position * GenesisMicroScale::UnitsPerMicrometer);
+		// Ruhiger Horizont: „oben" ist die Hochachse des Kanals, nicht die Schlagebene. Die Zelle rollt
+		// um ihre Längsachse; eine Kamera, die mitrollte, drehte die ganze Welt mehrmals pro Sekunde.
+		// So sieht man stattdessen die Geißel sich unter einem wegdrehen – wie es wirklich ist.
+		const FVector ChannelUp = SwarmTransform.GetUnitAxis(EAxis::Z);
+		FVector EgoUp = (ChannelUp - Forward * FVector::DotProduct(ChannelUp, Forward)).GetSafeNormal();
+		if (EgoUp.IsNearlyZero())
+		{
+			EgoUp = OrbitUp;
+		}
+		const FVector EgoSide = FVector::CrossProduct(EgoUp, Forward).GetSafeNormal();
+		// Umschauen nur begrenzt: Wer über die Schulter blickt, dreht nicht die Kamera vor den eigenen Kopf
+		const float EgoAzimuth = FMath::DegreesToRadians(RaceEgoAzimuthDegrees + 0.5f * FMath::Clamp(FRotator::NormalizeAxis(PlayerOrbitDegrees.X), -60.0f, 60.0f));
+		const float EgoElevation = FMath::DegreesToRadians(RaceEgoElevationDegrees
+			+ 0.35f * FMath::Clamp(PlayerOrbitDegrees.Y, -MaxPlayerPitchDegrees, MaxPlayerPitchDegrees));
+		const float EgoDistance = RaceEgoDistanceUm * GenesisMicroScale::UnitsPerMicrometer;
+		OutLocation = Body + (Forward * FMath::Cos(EgoAzimuth) * FMath::Cos(EgoElevation) + EgoSide * FMath::Sin(EgoAzimuth) * FMath::Cos(EgoElevation)
+			+ EgoUp * FMath::Sin(EgoElevation)) * EgoDistance;
+		const FVector Ahead = Body + Forward * RaceEgoLookAheadUm * GenesisMicroScale::UnitsPerMicrometer;
+		OutRotation = FRotationMatrix::MakeFromXZ(Ahead - OutLocation, EgoUp).ToQuat();
+		OutFocusDistance = static_cast<float>(FVector::Dist(OutLocation, Body + Forward * RaceEgoFocusAheadUm * GenesisMicroScale::UnitsPerMicrometer));
+		return true;
+	}
+
 	const float Azimuth = FMath::DegreesToRadians((bRacing ? RaceAzimuthDegrees : OrbitAzimuthDegrees) + PlayerOrbitDegrees.X);
 	const float Elevation = FMath::DegreesToRadians((bRacing ? RaceElevationDegrees : OrbitElevationDegrees)
 		+ FMath::Clamp(PlayerOrbitDegrees.Y, -MaxPlayerPitchDegrees, MaxPlayerPitchDegrees));
@@ -522,8 +590,14 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 	{
 		// Im Rennen folgt die Kamera enger: Mit 0,9 s Nachlauf lief die eigene Zelle aus dem Bild
 		const bool bTight = Swarm && Swarm->IsRacing() && !bWatchOocyte;
-		const float PositionAlpha = 1.0f - FMath::Exp(-DeltaSeconds / (bTight ? RacePositionSmoothingSeconds : PositionSmoothingSeconds));
-		const float RotationAlpha = 1.0f - FMath::Exp(-DeltaSeconds / (bTight ? RacePositionSmoothingSeconds : RotationSmoothingSeconds));
+		// Ich-Perspektive: Die Kamera schwimmt mit. Jeder Nachlauf wäre bei 16 µm Abstand sofort sichtbar
+		// (0,35 s bei 50 µm/s = 17 µm – die Kamera fiele auf doppelten Abstand zurück). Die Lage folgt
+		// deshalb fast starr, nur die Blickrichtung wird geglättet, damit Lenken weich wirkt.
+		const bool bEgo = bTight && bRaceEgoView && FollowCellIndex == Swarm->GetPlayerCellIndex();
+		const float PositionSeconds = bEgo ? 0.04f : (bTight ? RacePositionSmoothingSeconds : PositionSmoothingSeconds);
+		const float RotationSeconds = bEgo ? 0.25f : (bTight ? RacePositionSmoothingSeconds : RotationSmoothingSeconds);
+		const float PositionAlpha = 1.0f - FMath::Exp(-DeltaSeconds / PositionSeconds);
+		const float RotationAlpha = 1.0f - FMath::Exp(-DeltaSeconds / RotationSeconds);
 		const float FocusAlpha = 1.0f - FMath::Exp(-DeltaSeconds / FocusSmoothingSeconds);
 		SetActorLocationAndRotation(FMath::Lerp(GetActorLocation(), DesiredLocation, PositionAlpha), FQuat::Slerp(GetActorQuat(), DesiredRotation, RotationAlpha));
 		// Fokus auf den tatsächlichen Abstand der geglätteten Kamera zum Motiv (Zellkopf oder Eizelle)
@@ -535,6 +609,11 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 		if (Egg)
 		{
 			ActualDistance += DesiredFocus - static_cast<float>(FVector::Dist(DesiredLocation, FocusTarget));
+		}
+		else if (bEgo)
+		{
+			// Schärfe knapp vor dem Kopf, nicht auf dem im Takt pendelnden Kopf selbst
+			ActualDistance = DesiredFocus;
 		}
 		CurrentFocusDistance = FMath::Lerp(CurrentFocusDistance, FMath::Max(1.0f, ActualDistance), FocusAlpha);
 	}

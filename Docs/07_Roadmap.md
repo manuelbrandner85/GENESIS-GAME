@@ -49,7 +49,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-035 | Der Kreißsaal | Echter Raum in echten Maßen statt Kästen und Kugel, Licht nur aus sichtbaren Quellen (Dämmerung), Kamera hebt das Kind auf die Brust der Mutter; Nanite-Materialfehler projektweit behoben | DONE (Gesicht der Mutter in 036) |
 | GENESIS-036 | Die Mutter und der erste Blick | MetaHuman-Mutter (4K-Gesicht, volles Mimik-Rig) im Bett; neues Plugin `GenesisPeople`: Haltung, Atem, Lidschlag, Blick, Hände per IK; Blick nach oben → sie holt das Kind vor ihr Gesicht (25 cm), Blickkontakt bindet | DONE (Kind ohne Körper, Hemd, Stimme beim Blickkontakt offen) |
 | GENESIS-037 | Das Wettrennen | Der Spieler lenkt eine Zelle aus 6000 und gibt beim Bohren die Kraft; Sieg = dieses Leben beginnt, Niederlage = neues Rennen. Ausgewogen gemessen (gut gelenkt 4/5, ohne Führung 0/5). Vier Modellfehler behoben (durchlässige Zona, Strom im Cumulus, fehlendes Progesteron, immer gleiches Feld), Coronazellen rund | DONE (Artefakt an Falte, Zilien-Zeitlupe offen) |
-| GENESIS-038 | Die erste Woche, Zelle für Zelle | Vorkerne und Syngamie (12–24 h), Teilungen 2→4→8 (bis Tag 3), Kompaktierung, Morula (Tag 4), Blastozyste mit Trophoblast und innerer Zellmasse (Tag 5), Schlüpfen aus der Zona (Tag 6), Anheften (Tag 7) – Carnegie-Stadien 1–4 in echten Maßen. Teil 1: Keim wieder sichtbar (war verloren), EmbryoScope-Zeitraffer 75 s, Laborbeschriftung, Zelltrümmer | IN ARBEIT (Teil 2: Hoffman-Look, Kerne, Klinikzeiten) |
+| GENESIS-038 | Die erste Woche, Zelle für Zelle | Vorkerne und Syngamie (12–24 h), Teilungen 2→4→8 (bis Tag 3), Kompaktierung, Morula (Tag 4), Blastozyste mit Trophoblast und innerer Zellmasse (Tag 5), Schlüpfen aus der Zona (Tag 6), Anheften (Tag 7) – Carnegie-Stadien 1–4 in echten Maßen. Teil 1: Keim wieder sichtbar (war verloren), EmbryoScope-Zeitraffer 75 s, Laborbeschriftung, Zelltrümmer. Teil 2: echte Geißelwelle statt Wackeln, halbe Ich-Perspektive im Rennen, sechs kie.ai-Zielbilder | IN ARBEIT (Teil 3: Hoffman-Look, Kerne, Klinikzeiten) |
 | GENESIS-039 | Einnistung und Keimscheibe | Synzytiotrophoblast wächst in die Schleimhaut, Lakunen mit mütterlichem Blut, zweiblättrige Keimscheibe (Epiblast/Hypoblast), Amnionhöhle, Dottersack, hCG – Woche 2, Carnegie 5–6 | PLAN |
 | GENESIS-040 | Gastrulation, Neuralrohr, erster Herzschlag | Primitivstreifen (Tag 15), drei Keimblätter, Chorda, Neuralplatte (Tag 18), Somiten, Neuralrohr schließt (Tag 22–28), der Herzschlauch schlägt (Tag 22) – Woche 3–4, Carnegie 7–12 | PLAN |
 | GENESIS-041 | Organogenese | Gliedmaßenknospen, Schlundbögen → Gesicht, Augenbecher und Linse, Herzscheidewände, Hirnbläschen, Finger und Zehen; Ende Woche 8: 3 cm, alle Organe angelegt – Carnegie 13–23 | PLAN |
@@ -419,3 +419,15 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Das Rennen](Media/GENESIS-037_Rennen.png)
+
+### GENESIS-038 (Teil 2) – Die Geißel schlägt, die Zelle wackelt nicht; halbe Ich-Perspektive
+- 2026-09-21: Game Director: „Die Spermien wackeln komisch hin und her. Selbst als Spermium halb aus Ego-Perspektive. Schau, wo kie.ai Bilder und Videos liefern kann. Vorher alles recherchieren." Recherche (Bewegung, Embryologie, kie.ai) in Docs/26.
+- 2026-09-21: **Ursache des Wackelns:** Die ganze Zelle pendelte im Schlagtakt um bis zu 55°, und die Geißel wurde seitlich verschoben statt gebogen (dadurch gedehnt). Jetzt dreht sich nur der Kopf, im gemessenen Bereich (progressiv ≤ 6°, hyperaktiviert ≤ 40°). Die Geißel ist eine längentreue Winkelwelle mit zur Spitze wachsender Auslenkung. Wellenlänge für zähe Eileiterflüssigkeit: 17 µm (progressiv), 35 µm (hyperaktiviert).
+- 2026-09-21: **Halbe Ich-Perspektive** als Standard im Rennen (26 µm hinter/18° über dem Kopf, ruhiger Horizont, Licht hinter der Linse). Umschalten mit V / rechtem Stick; CASA-Markierung dort ausgeblendet. Die Werte stammen aus einer Bildreihe (14 → 30 → 26 µm).
+- 2026-09-21: Eigener Fehler unterwegs: Der Shader las die Vertexlage aus dem Positionsknoten. Bei Instanzen stimmt die nicht, die Geißeln flogen als weiße Balken durchs Bild. Behoben.
+- 2026-09-21: Sechs Zielbilder mit kie.ai (Nano Banana Pro 4K, 0,72 $), fachlich geprüft (Docs/26, Abschnitt 4). Sie liegen nur lokal, weil die Nutzungsrechte offen sind und das Repository öffentlich ist.
+- 2026-09-21: 124 von 124 Tests (Sichttest erweitert: Kopfdrehung im Messbereich). Beide Ansichten im Spiel geprüft.
+- Offen: Schlagfrequenz im zähen Eileiter wäre 10 Hz (bewusst nicht geändert, weil das Rennen auf den CASA-Werten balanciert ist). Coronazellen aus der Nähe glatt wie Eier. Hoffman-Look des Keims (Teil 3).
+- **Status: DONE.**
+
+![Halbe Ich-Perspektive](Media/GENESIS-038_Ich-Perspektive.png)

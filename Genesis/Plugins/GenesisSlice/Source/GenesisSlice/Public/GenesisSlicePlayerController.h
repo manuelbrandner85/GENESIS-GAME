@@ -92,6 +92,8 @@ private:
 	void ReleaseRoot() { bRootHeld = false; }
 	void LookRight(float Value) { LookInput.X = Value; }
 	void LookUp(float Value) { LookInput.Y = Value; }
+	/** Im Rennen: halbe Ich-Perspektive ↔ Verfolgeransicht. */
+	void ToggleView();
 
 	bool bCryHeld = false;
 	bool bRootHeld = false;
@@ -112,4 +114,8 @@ public:
 	/** Für die Hinweise im Bild: Hat der Spieler schon gelenkt / geschlagen? */
 	bool HasSteered() const { return bSteerUsed; }
 	bool HasStroked() const { return bStrokeUsed; }
+	bool HasToggledView() const { return bViewToggled; }
+
+private:
+	bool bViewToggled = false;
 };

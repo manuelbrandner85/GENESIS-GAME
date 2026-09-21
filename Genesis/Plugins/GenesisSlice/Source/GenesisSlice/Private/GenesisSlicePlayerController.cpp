@@ -24,6 +24,16 @@ AGenesisSlicePlayerController::AGenesisSlicePlayerController()
 	bShouldPerformFullTickWhenPaused = true;
 }
 
+void AGenesisSlicePlayerController::ToggleView()
+{
+	for (TActorIterator<AGenesisMicroscopeCameraRig> It(GetWorld()); It; ++It)
+	{
+		It->ToggleRaceView();
+		It->PlayerOrbitDegrees = FVector2D::ZeroVector;
+		bViewToggled = true;
+	}
+}
+
 void AGenesisSlicePlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -40,6 +50,7 @@ void AGenesisSlicePlayerController::SetupInputComponent()
 	InputComponent->BindAxis(TEXT("GenesisLookUp"), this, &AGenesisSlicePlayerController::LookUp);
 	InputComponent->BindAxis(TEXT("GenesisSteerRight"), this, &AGenesisSlicePlayerController::SteerRight);
 	InputComponent->BindAxis(TEXT("GenesisSteerUp"), this, &AGenesisSlicePlayerController::SteerUp);
+	InputComponent->BindAction(TEXT("GenesisToggleView"), IE_Pressed, this, &AGenesisSlicePlayerController::ToggleView);
 
 	// Das Menü muss auch dann reagieren, wenn die Welt steht – sonst kommt man aus der Pause
 	// nicht mehr heraus. `bExecuteWhenPaused` ist genau dafür da.
@@ -107,7 +118,8 @@ FString AGenesisSlicePlayerController::DescribeAction(FName Action)
 		{ TEXT("Gamepad_FaceButton_Left"), TEXT("X") },
 		{ TEXT("Gamepad_FaceButton_Top"), TEXT("Y") },
 		{ TEXT("Gamepad_Special_Right"), TEXT("Start") },
-		{ TEXT("Gamepad_Special_Left"), TEXT("Zurück") }
+		{ TEXT("Gamepad_Special_Left"), TEXT("Zurück") },
+		{ TEXT("Gamepad_RightThumbstick"), TEXT("rechter Stick drücken") }
 	};
 	auto Pretty = [](const FKey& Key)
 	{

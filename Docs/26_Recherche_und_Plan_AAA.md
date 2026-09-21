@@ -128,3 +128,22 @@ Mikroskop-Motive meist erlaubt. Kommerzielle Nutzungsrechte vor Veröffentlichun
 Jeder bezahlte Aufruf wird vorher angekündigt, Guthaben geprüft, Kosten genannt.
 
 Quellen: docs.kie.ai (llms.txt, market/quickstart, common-api/get-account-credits, Modellseiten).
+
+## 4. Erste Zielbilder (kie.ai, Nano Banana Pro 4K) – erzeugt am 2026-09-21
+
+Sechs Bilder, 5504 × 3072, 144 Credits (≈ 0,72 $). Erzeugt mit `Tools/Reference/kie_reference_images.py`
+(Schlüssel nur aus der Umgebungsvariable `KIE_API_KEY`). Sie liegen **nur lokal** in
+`ArtSource/Reference/kie/`: Die Nutzungsrechte sind nicht geklärt, das Repository ist öffentlich, und die
+Bilder sind Zielbilder für Blender/Unreal, keine Spielgrafik.
+
+| Bild | Brauchbar für | Fachliche Prüfung |
+|---|---|---|
+| Spermien am Eileiterepithel (DIC) | Licht, Randsaum, Tiefenschärfe | Köpfe und Mittelstück stimmig; Schleimhaut wirkt gerippt statt gefaltet, keine erkennbare Geißelwelle – nur für Licht und Look |
+| Keim mit 4 Zellen (Hoffman) | **Hauptvorlage für 038 Teil 3** | Sehr nah am echten Bild: grau-beige, körnig, Relieflicht, Kerne angedeutet, Polkörper, Fragmente. Zona etwas zu breit und zu hell gesäumt |
+| Schlüpfende Blastozyste | Vorlage Tag 5–6 | Trophektoderm, Embryoblast, Blastocoel, Durchbruch durch die Zona – stimmig |
+| Gebärmutterschleimhaut (Hysteroskopie) | Vorlage GENESIS-039 | Drüsenöffnungen, Gefäßnetz, feuchter Glanz – stimmig |
+| Embryo in der Fruchtblase | Vorlage GENESIS-041 | Eher 8–9 Wochen als die verlangten 7 (Finger schon frei); Look (warm, durchscheinend, Gefäße) sehr gut |
+| Kreißsaal in der Dämmerung | Abgleich mit GENESIS-035 | Bett, CTG, Wärmebett, Tuch zum Hochziehen, Gymnastikball, Jalousie mit Abendlicht – sehr brauchbar |
+
+Nächste Schritte damit: das Material der Furchungszellen auf das Hoffman-Bild ziehen (Teil 3), die
+Coronazellen ebenso (Kerne, Zellgrenzen, Randsaum statt glatter Eier).

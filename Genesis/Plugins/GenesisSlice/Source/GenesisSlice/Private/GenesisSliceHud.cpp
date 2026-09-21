@@ -13,6 +13,7 @@
 #include "GenesisBootFlow.h"
 #include "GenesisSlicePlayerController.h"
 #include "GenesisSpermSwarm.h"
+#include "GenesisMicroscopeCameraRig.h"
 #include "GenesisEmbryoSubsystem.h"
 #include "GenesisSliceLogic.h"
 #include "CanvasItem.h"
@@ -415,6 +416,13 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 
 	// Markierung wie in einer CASA-Software: ein feiner Kreis um den Kopf der verfolgten Zelle und ihre
 	// Bahn der letzten zwei Sekunden. So zeigen Messgeräte für Spermienbewegung die Zelle, die sie verfolgen.
+	// Nicht in der Ich-Perspektive: Dort ist man die Zelle selbst, und die Bahn läge hinter der Linse.
+	bool bEgoView = false;
+	for (TActorIterator<AGenesisMicroscopeCameraRig> It(GetWorld()); It; ++It)
+	{
+		bEgoView |= It->IsShowingEgoView();
+	}
+	if (!bEgoView)
 	{
 		const FVector Head = Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex());
 		if (TrackSampleSeconds <= Now)
@@ -512,7 +520,8 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 	}
 	else
 	{
-		DrawLine(TEXT("Maus / rechter Stick: Mikroskop schwenken"), 1.0f, Controller->HasMovedMicroscope() ? 0.0f : 0.7f);
+		DrawLine(TEXT("Maus / rechter Stick: umsehen"), 1.0f, Controller->HasMovedMicroscope() ? 0.0f : 0.7f);
+		DrawLine(AGenesisSlicePlayerController::DescribeAction(TEXT("GenesisToggleView")) + TEXT(": Ansicht wechseln"), -1.0f, Controller->HasToggledView() ? 0.0f : 0.6f);
 	}
 	return true;
 }

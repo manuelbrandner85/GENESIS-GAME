@@ -62,3 +62,6 @@ ArtSource/Generated/
 # und sie sind gross (Mutter: ~1 GB). Im gebauten Spiel sind sie enthalten. Neu erzeugen:
 # Docs/25_Die_Mutter.md, Abschnitt "Die Figur".
 Genesis/Content/Genesis/Characters/
+
+# KI-Referenzbilder (kie.ai): nur lokale Zielbilder fuer Look-Dev, Nutzungsrechte ungeklaert – nicht veroeffentlichen
+ArtSource/Reference/kie/
