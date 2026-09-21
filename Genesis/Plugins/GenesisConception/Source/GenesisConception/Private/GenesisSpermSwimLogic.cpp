@@ -180,6 +180,21 @@ namespace GenesisSpermSwimLogic
 			}
 		}
 
+		// 3b. Lenken (Spieler): Drehung auf die gewünschte Richtung zu, höchstens mit der Drehrate, die ein
+		// asymmetrischer Geißelschlag hergibt. Zufall, Strömung und Wand wirken weiter.
+		if (!Cell.SteerDirection.IsNearlyZero())
+		{
+			const FVector Desired = SafeNormal(Cell.SteerDirection, Cell.Heading);
+			const double Rate = Tuning.SteerTurnRate * (bHyper ? Tuning.SteerTurnRateHyperFactor : 1.0f)
+				* (Cell.Motility == EGenesisSpermMotility::Sluggish ? 0.5f : 1.0f);
+			const double Between = FMath::Acos(FMath::Clamp(FVector::DotProduct(Cell.Heading, Desired), -1.0, 1.0));
+			if (Between > UE_KINDA_SMALL_NUMBER)
+			{
+				const FQuat Full = FQuat::FindBetweenNormals(Cell.Heading, Desired);
+				Cell.Heading = FQuat::Slerp(FQuat::Identity, Full, FMath::Min(1.0, Rate * Dt / Between)).RotateVector(Cell.Heading);
+			}
+		}
+
 		// 4. Wandbindung: zur Wand hin ausrichten lassen, Ablösen erschweren (hyperaktivierte lösen sich leichter)
 		const float Proximity = WallProximity(Cell.Position, Channel, Tuning);
 		const FVector Radial = RadialDirection(Cell.Position);

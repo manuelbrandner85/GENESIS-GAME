@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "GenesisFertilizationTypes.h"
 #include "GenesisSpermSwimTypes.h"
+#include "GenesisSpermRace.h"
 #include "GenesisSpermSwarm.generated.h"
 
 class UInstancedStaticMeshComponent;
@@ -60,6 +61,34 @@ public:
 	/** Index der Zelle, die an der Zona hängt oder sich hindurchbohrt (INDEX_NONE = keine). Für die Nahaufnahme. */
 	int32 FindAttachedCell() const;
 
+	// --- Das Wettrennen (GENESIS-037) ---
+
+	/**
+	 * Beginnt das Rennen: Das Feld wird als geschlossener Pulk aufgestellt, eine Zelle in der ersten Reihe
+	 * gehört dem Spieler. Wird von der Regie aufgerufen, sobald ein Leben beginnt – im Vorspann und im
+	 * Menü schwimmt der Schwarm ohne Spieler.
+	 */
+	void StartRace(uint64 RunSeed = 0);
+
+	bool IsRacing() const { return PlayerCellIndex != INDEX_NONE; }
+	int32 GetPlayerCellIndex() const { return PlayerCellIndex; }
+	EGenesisRaceOutcome GetRaceOutcome() const { return RaceOutcome; }
+
+	/** Eingabe des Spielers in diesem Bild: Lenken (−1..1 je Achse) und Tastendrücke zum Schlagen. */
+	void SetPlayerInput(const FVector2D& Steer, int32 StrokePresses);
+
+	/** Für die Anzeige: Platz im Feld (1 = vorn), Abstand zur Zona (µm), Kraft (0..1), Bohrtiefe (µm). */
+	int32 GetPlayerPlace() const { return PlayerPlace; }
+	float GetPlayerDistanceToZonaUm() const;
+	float GetPlayerVigor() const { return PlayerVigor; }
+	float GetPlayerPenetrationUm() const;
+	float GetZonaThicknessUm() const;
+	EGenesisSpermPhase GetPlayerPhase() const;
+	bool IsPlayerHyperactivated() const;
+
+	UPROPERTY(EditAnywhere, Category = "Race")
+	FGenesisRaceTuning RaceTuning;
+
 	FGenesisOnFertilized OnFertilized;
 
 	/** Aus der Verschmelzung entsteht sofort ein Mensch (Genom, Körper, Inkarnation). */
@@ -99,6 +128,24 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0", ClampMax = "4"))
 	float TimeScale = 0.25f;
 
+	/**
+	 * Zeitlupe, solange Zellen an der Zona hängen und bohren (GENESIS-037).
+	 *
+	 * Die Zeitlupe ist nötig, damit der Geißelschlag als Welle sichtbar bleibt (GENESIS-030). An der Zona
+	 * hängen aber nur hyperaktivierte Zellen, und die schlagen langsamer (9–15 Hz statt 16–24 Hz). Die
+	 * Szene darf dort deshalb schneller laufen, ohne dass ein Schlag unter fünf Bilder fällt – und die
+	 * Minute, in der sich außer dem Bohren nichts ändert, wird eine halbe.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0", ClampMax = "4"))
+	float PenetrationTimeScale = 0.5f;
+
+	/** Übergang zwischen den beiden Zeitlupen (s Echtzeit) – kein Sprung, ein Anziehen wie beim Filmschnitt mit Rampe. */
+	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0.1"))
+	float TimeScaleRampSeconds = 3.0f;
+
+	/** Zeitlupe, die gerade tatsächlich gilt. */
+	float GetEffectiveTimeScale() const { return EffectiveTimeScale >= 0.0f ? EffectiveTimeScale : TimeScale; }
+
 	/** Im Editor-Viewport ohne Play weiterlaufen lassen. */
 	UPROPERTY(EditAnywhere, Category = "Swarm")
 	bool bSimulateInEditor = false;
@@ -113,6 +160,22 @@ public:
 	TObjectPtr<UInstancedStaticMeshComponent> Instances;
 
 private:
+	float EffectiveTimeScale = -1.0f;
+
+	bool bRaceLayout = false;
+	int32 PlayerCellIndex = INDEX_NONE;
+	FVector2D PlayerSteer = FVector2D::ZeroVector;
+	int32 PendingStrokes = 0;
+	float PlayerVigor = 0.0f;
+	EGenesisRaceOutcome RaceOutcome = EGenesisRaceOutcome::None;
+	int32 PlayerPlace = 0;
+	float PlaceTimer = 0.0f;
+	/** Protokoll der Stationen der eigenen Zelle – für die Abstimmung des Rennens im Spiel. */
+	uint8 LastReportedPhase = 255;
+	bool bReportedCumulus = false;
+	bool bReportedHyper = false;
+	void ReportPlayerProgress();
+
 	void SimulateFor(float SimulationDelta);
 	void PushInstances(bool bTeleport);
 	void RegisterDebugPage();

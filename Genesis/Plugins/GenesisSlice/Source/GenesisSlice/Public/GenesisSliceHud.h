@@ -44,4 +44,11 @@ private:
 	float CryUsedSeconds = -1.0f;
 	float RootUsedSeconds = -1.0f;
 	float SeekFaceUsedSeconds = -1.0f;
+
+	/** Das Wettrennen: Messwerte der eigenen Zelle und Hinweise. Gibt zurück, ob gezeichnet wurde. */
+	bool DrawRace(const class UGenesisSliceDirector& Director);
+	float SteerHintUsedSeconds = -1.0f;
+	/** Bahn der eigenen Zelle (Weltpositionen des Kopfes, alle 0,1 s). */
+	TArray<FVector> PlayerTrack;
+	float TrackSampleSeconds = 0.0f;
 };

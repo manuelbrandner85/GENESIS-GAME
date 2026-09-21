@@ -216,13 +216,17 @@ void AGenesisMicroscopeCameraRig::ApplyOptics()
 		return;
 	}
 
+	// Im Rennen, solange die Kamera der eigenen Zelle folgt: mehr Schärfentiefe
+	const bool bFollowingPlayer = Swarm && Swarm->IsRacing() && !bWatchOocyte && FollowCellIndex == Swarm->GetPlayerCellIndex();
+	const float EffectiveAperture = bFollowingPlayer ? RaceAperture : Aperture;
+
 	// Sensor und Brennweite gemeinsam vergrößern: gleicher Bildwinkel, aber die Schärfentiefe einer Makro-Optik
-	const float Scale = FMath::Max(1.0f, MacroScale);
+	const float Scale = FMath::Max(1.0f, bFollowingPlayer ? RaceMacroScale : MacroScale);
 	Camera->LensSettings.MaxFocalLength = FMath::Max(Camera->LensSettings.MaxFocalLength, NominalFocalLengthMm * Scale + 1.0f);
 	Camera->Filmback.SensorWidth = 36.0f * Scale;
 	Camera->Filmback.SensorHeight = 20.25f * Scale;
 	Camera->SetCurrentFocalLength(NominalFocalLengthMm * Scale);
-	Camera->SetCurrentAperture(Aperture);
+	Camera->SetCurrentAperture(EffectiveAperture);
 	// Nahe Zellen sollen ausblenden, nicht aufgeschnitten werden: Die Nahgrenze liegt bei einem halben Mikrometer
 	Camera->bOverride_CustomNearClippingPlane = true;
 	Camera->CustomNearClippingPlane = 0.5f;
@@ -276,9 +280,29 @@ bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat&
 
 	// Leicht gegen die Schwimmrichtung: Die ankommenden Zellen kommen der Kamera entgegen, statt ihr davonzulaufen
 	// Überwiegend entlang der Kanalachse, denn quer ist im Lumen (Radius 450 µm) kein Platz für Abstand
-	const FVector Direction = (-Axis * 1.15 + Side * FMath::Cos(OocyteOrbitPhase) * 0.45 + Up * FMath::Sin(OocyteOrbitPhase) * 0.30).GetSafeNormal();
+	FVector Direction = (-Axis * 1.15 + Side * FMath::Cos(OocyteOrbitPhase) * 0.45 + Up * FMath::Sin(OocyteOrbitPhase) * 0.30).GetSafeNormal();
 
-	float Distance = OocyteDistanceUm * GenesisMicroScale::UnitsPerMicrometer;
+	// Während gebohrt wird: Blick auf die Eintrittsstelle der führenden Zelle, langsam heran
+	const float PushIn = SecondsSinceBinding >= 0.0f ? FMath::SmoothStep(0.0f, 1.0f, SecondsSinceBinding / FMath::Max(1.0f, PushInSeconds)) : 0.0f;
+	const float PullBack = SecondsSinceFusion >= 0.0f ? FMath::SmoothStep(0.0f, 1.0f, SecondsSinceFusion / FMath::Max(0.5f, PullBackSeconds)) : 0.0f;
+	const float Approach = PushIn * (1.0f - PullBack);
+	if (!SmoothedLeaderDirection.IsNearlyZero())
+	{
+		// Nicht ganz frontal: etwas gegen die Kanalachse versetzt, damit die Kamera im Lumen bleibt
+		const FVector Toward = (SmoothedLeaderDirection - Axis * 0.35).GetSafeNormal();
+		Direction = FMath::Lerp(Direction, Toward, 0.85f * Approach).GetSafeNormal();
+	}
+
+	// Der Spieler führt das Mikroskop: um die Hochachse und auf und ab
+	const float PlayerPitch = FMath::Clamp(PlayerOrbitDegrees.Y, -MaxPlayerPitchDegrees, MaxPlayerPitchDegrees);
+	Direction = FQuat(Up, FMath::DegreesToRadians(PlayerOrbitDegrees.X)).RotateVector(Direction);
+	const FVector PitchAxis = FVector::CrossProduct(Up, Direction).GetSafeNormal();
+	if (!PitchAxis.IsNearlyZero())
+	{
+		Direction = FQuat(PitchAxis, FMath::DegreesToRadians(-PlayerPitch)).RotateVector(Direction);
+	}
+
+	float Distance = FMath::Lerp(OocyteDistanceUm, PushInDistanceUm, Approach) * GenesisMicroScale::UnitsPerMicrometer;
 	FVector Candidate = Center + Direction * Distance;
 	// Die Kamera darf nicht in der Schleimhaut stehen: notfalls näher an die Eizelle heran
 	const float Limit = (Swarm->GetChannel().LumenRadiusUm - 25.0f) * GenesisMicroScale::UnitsPerMicrometer;
@@ -294,8 +318,17 @@ bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat&
 	}
 
 	OutLocation = Candidate;
-	OutRotation = FRotationMatrix::MakeFromXZ(Center - OutLocation, Up).ToQuat();
-	OutFocusDistance = static_cast<float>(FVector::Dist(OutLocation, Center));
+	// Blickpunkt: die Eizellmitte – beim Heranfahren wandert er zur Oberfläche des Cumulus, wo die führende
+	// Zelle steckt. Dorthin geht auch die Schärfe: Die schlagenden Schwänze sind das Motiv, nicht die Mitte.
+	FVector LookAt = Center;
+	if (!SmoothedLeaderDirection.IsNearlyZero())
+	{
+		const FVector Surface = Center + SmoothedLeaderDirection * Egg->GetState().CumulusRadiusUm * GenesisMicroScale::UnitsPerMicrometer;
+		LookAt = FMath::Lerp(Center, Surface, 0.6f * Approach);
+	}
+	OutRotation = FRotationMatrix::MakeFromXZ(LookAt - OutLocation, Up).ToQuat();
+	const float SurfaceDistance = static_cast<float>(FVector::Dist(OutLocation, Center)) - Egg->GetState().CumulusRadiusUm * GenesisMicroScale::UnitsPerMicrometer;
+	OutFocusDistance = FMath::Lerp(static_cast<float>(FVector::Dist(OutLocation, Center)), FMath::Max(10.0f, SurfaceDistance), Approach);
 	return true;
 }
 
@@ -328,9 +361,13 @@ bool AGenesisMicroscopeCameraRig::ComputeDesired(FVector& OutLocation, FQuat& Ou
 	}
 	const FVector OrbitUp = FVector::CrossProduct(Forward, Side).GetSafeNormal();
 
-	const float Azimuth = FMath::DegreesToRadians(OrbitAzimuthDegrees);
-	const float Elevation = FMath::DegreesToRadians(OrbitElevationDegrees);
-	const float Distance = OrbitDistanceUm * GenesisMicroScale::UnitsPerMicrometer;
+	// Der Spieler kann das Mikroskop um die Zelle schwenken. Im Rennen steht die Kamera hinter der
+	// eigenen Zelle – wer lenkt, muss sehen, wohin.
+	const bool bRacing = Swarm->IsRacing() && FollowCellIndex == Swarm->GetPlayerCellIndex();
+	const float Azimuth = FMath::DegreesToRadians((bRacing ? RaceAzimuthDegrees : OrbitAzimuthDegrees) + PlayerOrbitDegrees.X);
+	const float Elevation = FMath::DegreesToRadians((bRacing ? RaceElevationDegrees : OrbitElevationDegrees)
+		+ FMath::Clamp(PlayerOrbitDegrees.Y, -MaxPlayerPitchDegrees, MaxPlayerPitchDegrees));
+	const float Distance = (bRacing ? RaceDistanceUm : OrbitDistanceUm) * GenesisMicroScale::UnitsPerMicrometer;
 	const FVector Offset = (Forward * FMath::Cos(Azimuth) * FMath::Cos(Elevation) + Side * FMath::Sin(Azimuth) * FMath::Cos(Elevation) + OrbitUp * FMath::Sin(Elevation)) * Distance;
 
 	// Die Kamera darf nicht im Gewebe landen: notfalls auf die andere Seite der Zelle und näher heran
@@ -349,9 +386,9 @@ bool AGenesisMicroscopeCameraRig::ComputeDesired(FVector& OutLocation, FQuat& Ou
 	}
 
 	OutLocation = Candidate;
-	const FVector LookAt = Head - Forward * LookBehindHeadUm * GenesisMicroScale::UnitsPerMicrometer;
+	const FVector LookAt = Head - Forward * (bRacing ? RaceLookBehindHeadUm : LookBehindHeadUm) * GenesisMicroScale::UnitsPerMicrometer;
 	OutRotation = FRotationMatrix::MakeFromXZ(LookAt - OutLocation, OrbitUp).ToQuat();
-	OutFocusDistance = static_cast<float>(FVector::Dist(OutLocation, Head));
+	OutFocusDistance = static_cast<float>(FVector::Dist(OutLocation, bRacing ? LookAt : Head));
 	return true;
 }
 
@@ -379,10 +416,35 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 	UpdateBeatNormal(DeltaSeconds);
 	OocyteOrbitPhase += DeltaSeconds * OocyteOrbitSpeed;
 
+	// Im Rennen gehört das Bild der eigenen Zelle: hinter ihr, bis sie am Cumulus ankommt – dann die
+	// weite Einstellung auf die Eizelle, wo gebohrt wird. Andere Zellen, die sich binden, sind kein Grund
+	// wegzuschneiden: Der Spieler soll sehen, wohin er lenkt.
+	const bool bRacing = Swarm && Swarm->IsRacing() && Swarm->GetOocyte();
+	if (bRacing)
+	{
+		const int32 Player = Swarm->GetPlayerCellIndex();
+		const bool bDecided = Swarm->GetRaceOutcome() == EGenesisRaceOutcome::Won || Swarm->GetRaceOutcome() == EGenesisRaceOutcome::Lost;
+		const bool bAtEgg = Swarm->GetPlayerDistanceToZonaUm() < RaceEggViewDistanceUm || Swarm->GetPlayerPhase() != EGenesisSpermPhase::Swimming;
+		if (FollowCellIndex != Player && !bWatchOocyte)
+		{
+			FollowCellIndex = Player;
+			bInitialized = false;
+		}
+		if ((bAtEgg || bDecided) && !bWatchOocyte)
+		{
+			bWatchOocyte = true;
+		}
+		else if (!bAtEgg && !bDecided && bWatchOocyte)
+		{
+			// Abgetrieben oder steckengeblieben und wieder frei: zurück hinter die Zelle
+			bWatchOocyte = false;
+			SecondsSinceBinding = -1.0f;
+		}
+	}
 	// Sobald eine Zelle an der Zona hängt, gehört das Bild ihr: Die Kamera wechselt auf die Zelle,
 	// die es geschafft hat, und begleitet sie beim Bohren durch die Zona. Von außen wäre davon nichts zu sehen –
 	// gebundene Zellen stecken unter dem Zellkranz.
-	if (bCloseUpOnBinding && Swarm && Swarm->GetOocyte())
+	else if (bCloseUpOnBinding && Swarm && Swarm->GetOocyte())
 	{
 		const FGenesisOocyteState& Egg = Swarm->GetOocyte()->GetState();
 		const int32 Attached = Swarm->FindAttachedCell();
@@ -412,6 +474,29 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 		}
 	}
 
+	// Dramaturgie der weiten Einstellung: ab der ersten Bindung heranfahren, ab der Verschmelzung zurück
+	if (const AGenesisOocyte* Egg = Swarm ? Swarm->GetOocyte() : nullptr)
+	{
+		const FGenesisOocyteState& EggState = Egg->GetState();
+		if (EggState.IsFertilized())
+		{
+			SecondsSinceFusion = SecondsSinceFusion < 0.0f ? 0.0f : SecondsSinceFusion + DeltaSeconds;
+		}
+		else if (bRacing ? bWatchOocyte : EggState.BoundCells > 0)
+		{
+			SecondsSinceBinding = SecondsSinceBinding < 0.0f ? 0.0f : SecondsSinceBinding + DeltaSeconds;
+		}
+		// Im Rennen fährt die Kamera an die eigene Zelle heran – bis eine andere verschmolzen ist
+		const int32 Leader = bRacing && !EggState.IsFertilized() ? Swarm->GetPlayerCellIndex() : Swarm->FindAttachedCell();
+		if (Leader != INDEX_NONE)
+		{
+			const FVector ToLeader = (Swarm->GetCellHeadWorldPosition(Leader) - Egg->GetActorLocation()).GetSafeNormal();
+			// Wechselt die Führung, schwenkt die Kamera ruhig hinüber – kein Schnitt mitten im Wettlauf
+			const float Alpha = SmoothedLeaderDirection.IsNearlyZero() ? 1.0f : 1.0f - FMath::Exp(-DeltaSeconds / 2.5f);
+			SmoothedLeaderDirection = FMath::Lerp(SmoothedLeaderDirection, ToLeader, Alpha).GetSafeNormal();
+		}
+	}
+
 	FVector DesiredLocation;
 	FQuat DesiredRotation;
 	float DesiredFocus = 0.0f;
@@ -430,15 +515,23 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 	}
 	else
 	{
-		const float PositionAlpha = 1.0f - FMath::Exp(-DeltaSeconds / PositionSmoothingSeconds);
-		const float RotationAlpha = 1.0f - FMath::Exp(-DeltaSeconds / RotationSmoothingSeconds);
+		// Im Rennen folgt die Kamera enger: Mit 0,9 s Nachlauf lief die eigene Zelle aus dem Bild
+		const bool bTight = Swarm && Swarm->IsRacing() && !bWatchOocyte;
+		const float PositionAlpha = 1.0f - FMath::Exp(-DeltaSeconds / (bTight ? RacePositionSmoothingSeconds : PositionSmoothingSeconds));
+		const float RotationAlpha = 1.0f - FMath::Exp(-DeltaSeconds / (bTight ? RacePositionSmoothingSeconds : RotationSmoothingSeconds));
 		const float FocusAlpha = 1.0f - FMath::Exp(-DeltaSeconds / FocusSmoothingSeconds);
 		SetActorLocationAndRotation(FMath::Lerp(GetActorLocation(), DesiredLocation, PositionAlpha), FQuat::Slerp(GetActorQuat(), DesiredRotation, RotationAlpha));
 		// Fokus auf den tatsächlichen Abstand der geglätteten Kamera zum Motiv (Zellkopf oder Eizelle)
 		const AGenesisOocyte* Egg = bWatchOocyte && Swarm ? Swarm->GetOocyte() : nullptr;
+		// Auf die Eizelle: Die Einstellung bestimmt, wohin die Schärfe gehört (Mitte oder Cumulusrand),
+		// korrigiert um den Weg, den die gedämpfte Kamera noch vor sich hat
 		const FVector FocusTarget = Egg ? Egg->GetActorLocation() : Swarm->GetCellHeadWorldPosition(FollowCellIndex);
-		const float ActualDistance = static_cast<float>(FVector::Dist(GetActorLocation(), FocusTarget));
-		CurrentFocusDistance = FMath::Lerp(CurrentFocusDistance, ActualDistance, FocusAlpha);
+		float ActualDistance = static_cast<float>(FVector::Dist(GetActorLocation(), FocusTarget));
+		if (Egg)
+		{
+			ActualDistance += DesiredFocus - static_cast<float>(FVector::Dist(DesiredLocation, FocusTarget));
+		}
+		CurrentFocusDistance = FMath::Lerp(CurrentFocusDistance, FMath::Max(1.0f, ActualDistance), FocusAlpha);
 	}
 
 	FCameraFocusSettings Focus = Camera->FocusSettings;
@@ -454,7 +547,9 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 	Camera->PostProcessSettings.bOverride_AutoExposureApplyPhysicalCameraExposure = true;
 	Camera->PostProcessSettings.AutoExposureApplyPhysicalCameraExposure = true;
 	Camera->PostProcessSettings.bOverride_AutoExposureBias = true;
-	Camera->PostProcessSettings.AutoExposureBias = ExposureBias;
+	// Abgeblendet im Rennen: gleiche Helligkeit wie beim Zuschauen – je Blendenstufe ein EV zurück
+	const float ApertureCompensation = 2.0f * FMath::Log2(FMath::Max(1.0f, Camera->CurrentAperture) / FMath::Max(1.0f, Aperture));
+	Camera->PostProcessSettings.AutoExposureBias = ExposureBias + ApertureCompensation;
 
 #if !UE_BUILD_SHIPPING
 	if (!bDebugPageRegistered)

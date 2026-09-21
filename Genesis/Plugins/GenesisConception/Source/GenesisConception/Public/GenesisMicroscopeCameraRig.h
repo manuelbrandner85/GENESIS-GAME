@@ -81,9 +81,82 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Oocyte")
 	float OocyteOrbitSpeed = 0.06f;
 
-	/** Nahaufnahme: Sobald eine Zelle an der Zona hängt, geht die Kamera zwischen die Coronazellen an die Eintrittsstelle. */
+	/**
+	 * Nahaufnahme: Sobald eine Zelle an der Zona hängt, geht die Kamera zwischen die Coronazellen an die Eintrittsstelle.
+	 *
+	 * Seit GENESIS-037 aus: Dort stand die Kamera eine Minute lang zwischen unscharfen Coronazellen, die
+	 * bohrende Zelle darunter verborgen – gemessen bei 15, 40 und 65 s eines Durchlaufs, dreimal dasselbe
+	 * Bild. Stattdessen zeigt die Kamera von außen, was wirklich geschieht: Dutzende Schwänze schlagen
+	 * rund um den Cumulus, die Köpfe stecken darin, und sie fährt langsam an die führende Zelle heran.
+	 */
 	UPROPERTY(EditAnywhere, Category = "Oocyte")
-	bool bCloseUpOnBinding = true;
+	bool bCloseUpOnBinding = false;
+
+	/** Heranfahrt an die führende Zelle, während gebohrt wird: Endabstand zur Eizellmitte (µm) und Dauer (s Echtzeit). */
+	UPROPERTY(EditAnywhere, Category = "Oocyte", meta = (ClampMin = "150"))
+	float PushInDistanceUm = 250.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Oocyte", meta = (ClampMin = "1"))
+	float PushInSeconds = 22.0f;
+
+	/** Nach der Verschmelzung zurück auf die ganze Eizelle – die Cortikalreaktion läuft über ihre ganze Oberfläche (s). */
+	UPROPERTY(EditAnywhere, Category = "Oocyte", meta = (ClampMin = "0.5"))
+	float PullBackSeconds = 6.0f;
+
+	/**
+	 * Schwenk des Spielers (Grad, X = um die Hochachse, Y = auf und ab). Gesetzt von der Steuerung:
+	 * Der Spieler führt das Mikroskop. Es bleibt stehen, wo er es hinschwenkt – ein Mikroskop federt nicht zurück.
+	 */
+	FVector2D PlayerOrbitDegrees = FVector2D::ZeroVector;
+
+	/** Im Rennen: Kamera hinter der eigenen Zelle (Grad um sie herum, Höhe, Abstand in µm). */
+	/**
+	 * Schräg hinter und über der Zelle: Direkt dahinter (165°, 14°, 90 µm) zeigte die Geißel als
+	 * unscharfer Fleck vor der Linse, und der Kopf ging im Dunkel unter. Von hier sind Kopf, Mittelstück
+	 * und Geißel gleichzeitig zu sehen – und dahinter die Richtung, in die man lenkt.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Race")
+	float RaceAzimuthDegrees = 145.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Race")
+	float RaceElevationDegrees = 28.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "20"))
+	float RaceDistanceUm = 75.0f;
+
+	/**
+	 * Optik beim Folgen im Rennen: mehr Schärfentiefe als beim Zuschauen. Mit Makro ×18 bei f/11 war die
+	 * eigene Zelle aus 130 µm ein unscharfer Strich von 9 µm Länge – gemessen am Bild, Geißel unsichtbar.
+	 * Wer lenkt, braucht Kopf, Geißel und Richtung gleichzeitig scharf; ein Mikroskopiker würde dafür
+	 * ebenfalls abblenden.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "1.2", ClampMax = "32"))
+	float RaceAperture = 22.0f;
+
+	/**
+	 * Schärfentiefe wächst umgekehrt mit dem Makro-Faktor. Bei ×10 und f/22 bleiben aus 75 µm nur etwa
+	 * 3 µm scharf – die Zelle ist 60 µm lang. Mit ×1,2 sind es rund 20 µm: Kopf und Geißel scharf,
+	 * Wand und Cumulus dahinter weich. (Ein echtes Mikroskop hat bei dieser Vergrößerung auch nur
+	 * wenige Mikrometer – deshalb legt man Spermien zum Beobachten in eine flache Kammer.)
+	 */
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "1", ClampMax = "40"))
+	float RaceMacroScale = 1.2f;
+
+	/** Nachführung im Rennen (s): enger als beim Zuschauen, sonst läuft die eigene Zelle aus dem Bild. */
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "0.05"))
+	float RacePositionSmoothingSeconds = 0.35f;
+
+	/** Blickpunkt hinter der Kopfspitze im Rennen (µm): die Mitte der Zelle, nicht der Kopf allein. */
+	UPROPERTY(EditAnywhere, Category = "Race")
+	float RaceLookBehindHeadUm = 22.0f;
+
+	/** Ab diesem Abstand der eigenen Zelle zur Zona (µm) geht die Kamera auf die ganze Eizelle – am Rand des Cumulus. */
+	UPROPERTY(EditAnywhere, Category = "Race")
+	float RaceEggViewDistanceUm = 60.0f;
+
+	/** Grenze für den Schwenk auf und ab (Grad) – darüber stünde die Kamera in der Schleimhaut. */
+	UPROPERTY(EditAnywhere, Category = "Follow")
+	float MaxPlayerPitchDegrees = 35.0f;
 
 	/**
 	 * Automatische Lichtregelung wie am Endoskop: kurzer Arbeitsabstand → weniger Licht.
@@ -170,6 +243,11 @@ private:
 
 	FVector SmoothedBeatNormal = FVector::UpVector;
 	float OocyteOrbitPhase = 0.0f;
+	/** Echtzeit seit die erste Zelle gebunden hat bzw. seit der Verschmelzung (negativ = noch nicht). */
+	float SecondsSinceBinding = -1.0f;
+	float SecondsSinceFusion = -1.0f;
+	/** Richtung (von der Eizellmitte) zur führenden Zelle, geglättet – sie wechselt, wenn eine andere Zelle vorn liegt. */
+	FVector SmoothedLeaderDirection = FVector::ZeroVector;
 	bool bInitialized = false;
 	bool bDebugPageRegistered = false;
 	float CurrentFocusDistance = 0.0f;

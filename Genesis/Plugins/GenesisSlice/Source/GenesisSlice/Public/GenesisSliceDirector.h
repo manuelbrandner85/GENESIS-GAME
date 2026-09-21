@@ -82,6 +82,13 @@ private:
 	/** Wie lange der Durchlauf schon zu Ende ist – der Abspann kommt nicht im selben Augenblick. */
 	float EndedSeconds = 0.0f;
 	bool bEndReported = false;
+	/** Das Wettrennen: Zeit seit der Niederlage und Zahl der verlorenen Rennen in dieser Sitzung. */
+	float RaceLostSeconds = 0.0f;
+	int32 RaceAttempts = 0;
+
+public:
+	/** Wie viele Rennen schon verloren gingen (für die Anzeige: „Versuch 3"). */
+	int32 GetRaceAttempts() const { return RaceAttempts; }
 
 	/** Zurück in den Zustand vor dem ersten Leben, mit frischem Eileiter als Menühintergrund. */
 	void ReturnToMenu();

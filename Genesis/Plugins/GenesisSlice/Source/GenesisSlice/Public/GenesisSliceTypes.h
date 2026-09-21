@@ -140,6 +140,12 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	/** Wie lange der letzte Moment eines Lebens stehen bleibt, bevor der Abspann beginnt (s). */
 	UPROPERTY(EditAnywhere, Category = "Slice") float EndingHoldSeconds = 6.0f;
 
+	/** Die Befruchtung als Wettrennen: Der Spieler führt eine Zelle (GENESIS-037). */
+	UPROPERTY(EditAnywhere, Category = "Slice") bool bConceptionRace = true;
+
+	/** Nach einer Niederlage: so lange bleibt das Bild stehen, bevor das Rennen neu beginnt (s). */
+	UPROPERTY(EditAnywhere, Category = "Slice") float RaceLostHoldSeconds = 7.0f;
+
 	/** Simulationsminuten je Sekunde in der Geburt. */
 	UPROPERTY(EditAnywhere, Category = "Slice") float BirthTimeScale = 90.0f;
 

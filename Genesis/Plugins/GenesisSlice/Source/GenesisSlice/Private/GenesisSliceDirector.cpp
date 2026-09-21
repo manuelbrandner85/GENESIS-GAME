@@ -76,6 +76,8 @@ void UGenesisSliceDirector::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		Frontend->OnStartRequested.AddWeakLambda(this, [this]()
 		{
+			RaceAttempts = 0;
+			RaceLostSeconds = 0.0f;
 			bForceTravel = true;
 			StartRun(0);
 		});
@@ -269,6 +271,29 @@ void UGenesisSliceDirector::DrivePhase(float DeltaSeconds)
 		for (TActorIterator<AGenesisSpermSwarm> It(GameInstance->GetWorld()); It; ++It)
 		{
 			It->TimeScale = Tuning.ConceptionTimeScale;
+
+			// Das Wettrennen: Der Spieler führt eine Zelle (GENESIS-037). Erst jetzt, nicht im Vorspann –
+			// und erst, wenn der Ortswechsel durch ist und der Schwarm im frischen Level steht.
+			if (Tuning.bConceptionRace && !bTravelPending && !It->IsRacing() && It->GetRaceOutcome() == EGenesisRaceOutcome::None)
+			{
+				It->StartRace(State.RunSeed);
+			}
+
+			// Eine andere war schneller: Dieses Leben beginnt nicht. Einen Moment stehen lassen – man soll
+			// sehen, wie sie verschmilzt –, dann ein neues Rennen mit einem neuen Feld.
+			if (It->GetRaceOutcome() == EGenesisRaceOutcome::Lost)
+			{
+				RaceLostSeconds += DeltaSeconds;
+				if (RaceLostSeconds >= Tuning.RaceLostHoldSeconds && !bTravelPending)
+				{
+					RaceLostSeconds = 0.0f;
+					++RaceAttempts;
+					UE_LOG(LogGenesis, Display, TEXT("Durchlauf: Das Rennen beginnt neu (Versuch %d)."), RaceAttempts + 1);
+					bForceTravel = true;
+					StartRun(0);
+					return;
+				}
+			}
 		}
 		break;
 	}

@@ -8,6 +8,9 @@
 #include "GenesisFrontendSubsystem.h"
 #include "GenesisEarlyLifeTypes.h"
 #include "GenesisBirthCameraRig.h"
+#include "GenesisBootFlow.h"
+#include "GenesisMicroscopeCameraRig.h"
+#include "GenesisSpermSwarm.h"
 #include "EngineUtils.h"
 #include "GameFramework/InputSettings.h"
 #include "GenesisLog.h"
@@ -35,6 +38,8 @@ void AGenesisSlicePlayerController::SetupInputComponent()
 	InputComponent->BindAction(TEXT("GenesisRoot"), IE_Released, this, &AGenesisSlicePlayerController::ReleaseRoot);
 	InputComponent->BindAxis(TEXT("GenesisLookRight"), this, &AGenesisSlicePlayerController::LookRight);
 	InputComponent->BindAxis(TEXT("GenesisLookUp"), this, &AGenesisSlicePlayerController::LookUp);
+	InputComponent->BindAxis(TEXT("GenesisSteerRight"), this, &AGenesisSlicePlayerController::SteerRight);
+	InputComponent->BindAxis(TEXT("GenesisSteerUp"), this, &AGenesisSlicePlayerController::SteerUp);
 
 	// Das Menü muss auch dann reagieren, wenn die Welt steht – sonst kommt man aus der Pause
 	// nicht mehr heraus. `bExecuteWhenPaused` ist genau dafür da.
@@ -241,6 +246,43 @@ void AGenesisSlicePlayerController::PlayerTick(float DeltaTime)
 	CryInput = FMath::FInterpConstantTo(CryInput, CryTarget, DeltaTime, CryRampPerSecond);
 	const float RootTarget = bRootHeld ? 1.0f : 0.0f;
 	RootInput = FMath::FInterpConstantTo(RootInput, RootTarget, DeltaTime, RootRampPerSecond);
+
+	// Das Wettrennen: Lenken und Schlagen gehen an die eigene Zelle
+	if (IsMenuOpen())
+	{
+		SteerInput = FVector2D::ZeroVector;
+		StrokePresses = 0;
+	}
+	if (!SteerInput.IsNearlyZero(0.2))
+	{
+		bSteerUsed = true;
+	}
+	for (TActorIterator<AGenesisSpermSwarm> It(GetWorld()); It; ++It)
+	{
+		if (It->IsRacing())
+		{
+			It->SetPlayerInput(SteerInput, StrokePresses);
+		}
+	}
+	StrokePresses = 0;
+
+	// In der Mikrowelt führt der Spieler das Mikroskop: Es schwenkt um das Motiv und bleibt stehen,
+	// wo man es hinstellt. Nicht im Vorspann – dort gehört die Kamerafahrt dem Prolog.
+	const UGenesisFrontendSubsystem* FrontendForLook = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>() : nullptr;
+	const EGenesisBootStage Stage = FrontendForLook ? FrontendForLook->GetBootStage() : EGenesisBootStage::Aus;
+	if (Stage == EGenesisBootStage::Aus || Stage == EGenesisBootStage::Spiel)
+	{
+		for (TActorIterator<AGenesisMicroscopeCameraRig> It(GetWorld()); It; ++It)
+		{
+			It->PlayerOrbitDegrees.X = FMath::Fmod(It->PlayerOrbitDegrees.X + LookInput.X * 50.0f * DeltaTime, 360.0f);
+			It->PlayerOrbitDegrees.Y = FMath::Clamp(It->PlayerOrbitDegrees.Y + LookInput.Y * 35.0f * DeltaTime,
+				-It->MaxPlayerPitchDegrees, It->MaxPlayerPitchDegrees);
+			if (!LookInput.IsNearlyZero())
+			{
+				bMicroscopeMoved = true;
+			}
+		}
+	}
 
 	// Der Kopf dreht sich langsam und kommt von selbst wieder zur Ruhe: Die Nackenmuskeln
 	// eines Neugeborenen halten den Kopf noch nicht.

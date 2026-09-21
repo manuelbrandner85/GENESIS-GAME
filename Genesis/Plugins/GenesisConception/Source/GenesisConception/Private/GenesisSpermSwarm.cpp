@@ -26,6 +26,11 @@ namespace
 
 namespace
 {
+	TAutoConsoleVariable<int32> CVarRaceAutoPilot(
+		TEXT("genesis.Race.AutoPilot"),
+		0,
+		TEXT("1 = die eigene Zelle lenkt und schlägt von selbst wie ein guter Spieler (Prüfhilfe)."));
+
 	FAutoConsoleCommandWithWorldAndArgs GenesisTimeScaleCommand(
 		TEXT("genesis.Conception.TimeScale"),
 		TEXT("Zeitraffer des Schwarms: Simulationssekunden je Echtzeitsekunde (Standard 0,25)."),
@@ -119,14 +124,17 @@ void AGenesisSpermSwarm::RebuildSwarm()
 		// Die Zellen kommen nicht gleichmäßig über den ganzen Eileiter verteilt an, sondern als Pulk
 		// von der Gebärmutter her: Der Zug, der es bis in die Ampulle geschafft hat, zieht gemeinsam
 		// flussaufwärts. Gleichverteilung über drei Millimeter sieht dagegen nach Einzelgängern aus.
-		if (StartBandSpreadUm > 0.0f)
+		// Im Rennen rückt das Feld als geschlossener Pulk an (siehe FGenesisRaceTuning)
+		const float BandDistance = bRaceLayout ? RaceTuning.FieldDistanceUm : StartBandDistanceUm;
+		const float BandSpread = bRaceLayout ? RaceTuning.FieldSpreadUm : StartBandSpreadUm;
+		if (BandSpread > 0.0f)
 		{
 			const float BandCenter = Oocyte
 				? static_cast<float>(GetActorTransform().InverseTransformPosition(Oocyte->GetActorLocation()).X
-					/ GenesisMicroScale::UnitsPerMicrometer) - StartBandDistanceUm
-				: 0.5f * Channel.LengthUm - StartBandDistanceUm;
+					/ GenesisMicroScale::UnitsPerMicrometer) - BandDistance
+				: 0.5f * Channel.LengthUm - BandDistance;
 
-			const float Offset = VitalityRandom.Gaussian(0.0f, StartBandSpreadUm);
+			const float Offset = VitalityRandom.Gaussian(0.0f, BandSpread);
 			Cell.Position.X = FMath::Fmod(BandCenter + Offset + Channel.LengthUm, Channel.LengthUm);
 			if (Cell.Position.X < 0.0)
 			{
@@ -135,6 +143,24 @@ void AGenesisSpermSwarm::RebuildSwarm()
 		}
 
 		Cells.Add(MoveTemp(Cell));
+	}
+
+	// Die Zelle des Spielers: in der ersten Reihe, eine der stärksten, progressiv, Richtung Eizelle
+	PlayerCellIndex = INDEX_NONE;
+	RaceOutcome = EGenesisRaceOutcome::None;
+	PlayerVigor = 0.0f;
+	PlayerPlace = 0;
+	if (bRaceLayout && Oocyte && Cells.Num() > 0)
+	{
+		const FVector EggLocal = GetActorTransform().InverseTransformPosition(Oocyte->GetActorLocation()) / GenesisMicroScale::UnitsPerMicrometer;
+		const uint64 PlayerSeed = GenesisHash::Combine(static_cast<uint64>(Seed), 0x91A7E5ull);
+		FGenesisSpermCell Mine = GenesisSpermSwimLogic::CreateCell(PlayerSeed, RaceTuning.Vitality, Channel, Tuning);
+		GenesisSpermSwimLogic::ApplyMotility(Mine, EGenesisSpermMotility::Progressive, Tuning);
+		Mine.Position = FVector(EggLocal.X - RaceTuning.StartDistanceUm, EggLocal.Y + 60.0, EggLocal.Z - 40.0);
+		Mine.Heading = FVector::ForwardVector;
+		PlayerCellIndex = 0;
+		Cells[PlayerCellIndex] = MoveTemp(Mine);
+		RaceOutcome = EGenesisRaceOutcome::Running;
 	}
 
 	SimulationSeconds = 0.0;
@@ -151,9 +177,113 @@ void AGenesisSpermSwarm::RebuildSwarm()
 	PushInstances(true);
 }
 
+void AGenesisSpermSwarm::StartRace(uint64 RunSeed)
+{
+	if (!Oocyte)
+	{
+		return;
+	}
+	bRaceLayout = true;
+	// Jedes Rennen ein eigenes Feld – vorher stand in jedem Durchlauf dieselbe Siegerin am Start
+	if (RunSeed != 0)
+	{
+		Seed = static_cast<int32>(RunSeed & 0x7FFFFFFF);
+	}
+	LastReportedPhase = 255;
+	bReportedCumulus = false;
+	bReportedHyper = false;
+	// Die Eizelle unberührt: Vor dem Start darf nichts geschehen sein, was das Rennen vorwegnimmt
+	FGenesisOocyteState& Egg = Oocyte->GetMutableState();
+	Egg.FertilizedByCell = INDEX_NONE;
+	Egg.bZonaHardened = false;
+	Egg.CorticalReaction = 0.0f;
+	Egg.SecondsSinceFusion = 0.0f;
+	Egg.BoundCells = 0;
+	FertilizationResult = FGenesisFertilizationResult();
+	EffectiveTimeScale = -1.0f;
+	RebuildSwarm();
+	const FVector EggLocal = GetActorTransform().InverseTransformPosition(Oocyte->GetActorLocation()) / GenesisMicroScale::UnitsPerMicrometer;
+	UE_LOG(LogGenesis, Display, TEXT("Conception: Das Rennen beginnt – %d Zellen (Seed %d), die eigene %.0f µm vor der Eizelle. Kanal: Lumen %.0f µm, Wandstrom %.0f µm/s (Mitte %.0f %%), Eizelle bei (%.0f, %.0f, %.0f), Cumulus %.0f µm, Schritt %.4f s."),
+		Cells.Num(), Seed, RaceTuning.StartDistanceUm, Channel.LumenRadiusUm, Channel.WallFlowSpeedUm, 100.0f * Channel.CoreFlowFraction,
+		EggLocal.X, EggLocal.Y, EggLocal.Z, Oocyte->GetState().CumulusRadiusUm, Tuning.FixedStepSeconds);
+}
+
+void AGenesisSpermSwarm::ReportPlayerProgress()
+{
+	if (!Cells.IsValidIndex(PlayerCellIndex) || !Oocyte)
+	{
+		return;
+	}
+	const FGenesisSpermCell& Mine = Cells[PlayerCellIndex];
+	const double Distance = FVector::Dist(Mine.Position, Oocyte->GetState().Position);
+	if (!bReportedCumulus && Distance < Oocyte->GetState().CumulusRadiusUm)
+	{
+		bReportedCumulus = true;
+		UE_LOG(LogGenesis, Display, TEXT("Rennen: eigene Zelle im Cumulus nach %.1f s (Platz %d)."), SimulationSeconds, PlayerPlace);
+	}
+	if (!bReportedHyper && Mine.Motility == EGenesisSpermMotility::Hyperactivated)
+	{
+		bReportedHyper = true;
+		UE_LOG(LogGenesis, Display, TEXT("Rennen: eigene Zelle hyperaktiviert nach %.1f s."), SimulationSeconds);
+	}
+	if (Mine.Phase != LastReportedPhase)
+	{
+		LastReportedPhase = Mine.Phase;
+		UE_LOG(LogGenesis, Display, TEXT("Rennen: eigene Zelle %s nach %.1f s (Tiefe %.1f µm, Kraft %.2f)."),
+			*StaticEnum<EGenesisSpermPhase>()->GetNameStringByValue(Mine.Phase), SimulationSeconds, Mine.PenetrationDepthUm, PlayerVigor);
+	}
+}
+
+void AGenesisSpermSwarm::SetPlayerInput(const FVector2D& Steer, int32 StrokePresses)
+{
+	PlayerSteer = Steer;
+	PendingStrokes += FMath::Max(0, StrokePresses);
+}
+
+EGenesisSpermPhase AGenesisSpermSwarm::GetPlayerPhase() const
+{
+	return Cells.IsValidIndex(PlayerCellIndex) ? GenesisFertilizationLogic::GetPhase(Cells[PlayerCellIndex]) : EGenesisSpermPhase::Swimming;
+}
+
+bool AGenesisSpermSwarm::IsPlayerHyperactivated() const
+{
+	return Cells.IsValidIndex(PlayerCellIndex) && Cells[PlayerCellIndex].Motility == EGenesisSpermMotility::Hyperactivated;
+}
+
+float AGenesisSpermSwarm::GetPlayerDistanceToZonaUm() const
+{
+	return Cells.IsValidIndex(PlayerCellIndex) && Oocyte
+		? FMath::Max(0.0f, GenesisFertilizationLogic::DistanceToZona(Cells[PlayerCellIndex], Oocyte->GetState()))
+		: 0.0f;
+}
+
+float AGenesisSpermSwarm::GetPlayerPenetrationUm() const
+{
+	return Cells.IsValidIndex(PlayerCellIndex) ? Cells[PlayerCellIndex].PenetrationDepthUm : 0.0f;
+}
+
+float AGenesisSpermSwarm::GetZonaThicknessUm() const
+{
+	return Oocyte ? Oocyte->GetState().ZonaOuterRadiusUm - Oocyte->GetState().ZonaInnerRadiusUm : 14.0f;
+}
+
 void AGenesisSpermSwarm::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	// Kraft des Spielers: Tastendrücke heben sie, sie fällt in Echtzeit ab
+	if (IsRacing())
+	{
+		PlayerVigor = GenesisSpermRace::UpdateVigor(PlayerVigor, PendingStrokes, DeltaSeconds, RaceTuning);
+		PendingStrokes = 0;
+		PlaceTimer -= DeltaSeconds;
+		if (PlaceTimer <= 0.0f && Oocyte)
+		{
+			PlaceTimer = 0.25f;
+			PlayerPlace = GenesisSpermRace::CountCellsAhead(Cells, PlayerCellIndex, Oocyte->GetState()) + 1;
+		}
+		ReportPlayerProgress();
+	}
 	TRACE_CPUPROFILER_EVENT_SCOPE(GenesisSpermSwarm_Tick);
 	const double Start = FPlatformTime::Seconds();
 
@@ -162,7 +292,17 @@ void AGenesisSpermSwarm::Tick(float DeltaSeconds)
 		RebuildSwarm();
 	}
 
-	SimulateFor(DeltaSeconds * TimeScale);
+	// Solange gebohrt wird (Zellen an der Zona, noch keine Verschmelzung), darf die Zeitlupe nachlassen
+	const FGenesisOocyteState* Egg = Oocyte ? &Oocyte->GetState() : nullptr;
+	const bool bPenetrating = Egg && Egg->BoundCells > 0 && !Egg->IsFertilized();
+	const float Target = bPenetrating ? PenetrationTimeScale : TimeScale;
+	if (EffectiveTimeScale < 0.0f)
+	{
+		EffectiveTimeScale = Target;
+	}
+	const float RampRate = FMath::Abs(PenetrationTimeScale - TimeScale) / FMath::Max(0.1f, TimeScaleRampSeconds);
+	EffectiveTimeScale = FMath::FInterpConstantTo(EffectiveTimeScale, Target, DeltaSeconds, FMath::Max(RampRate, 0.01f));
+	SimulateFor(DeltaSeconds * EffectiveTimeScale);
 	PushInstances(false);
 
 	LastTickMs = static_cast<float>((FPlatformTime::Seconds() - Start) * 1000.0);
@@ -192,6 +332,24 @@ void AGenesisSpermSwarm::SimulateFor(float SimulationDelta)
 
 	for (int32 StepIndex = 0; StepIndex < Steps; ++StepIndex)
 	{
+		// Die Hand des Spielers an seiner Zelle: Lenken beim Schwimmen, Kraft beim Bohren
+		if (Cells.IsValidIndex(PlayerCellIndex))
+		{
+			FGenesisSpermCell& Mine = Cells[PlayerCellIndex];
+			const bool bSwimming = GenesisFertilizationLogic::GetPhase(Mine) == EGenesisSpermPhase::Swimming;
+			Mine.SteerDirection = bSwimming ? GenesisSpermRace::SteerFromInput(Mine.Heading, PlayerSteer, RaceTuning) : FVector::ZeroVector;
+			Mine.Vigor = PlayerVigor;
+#if !UE_BUILD_SHIPPING
+			// Prüfhilfe: lenkt und schlägt wie ein guter Spieler (wie der Testfahrer in Genesis.Conception.Race.SkillDecides)
+			if (CVarRaceAutoPilot.GetValueOnGameThread() > 0 && Oocyte)
+			{
+				Mine.SteerDirection = bSwimming ? (Oocyte->GetState().Position - Mine.Position).GetSafeNormal() : FVector::ZeroVector;
+				Mine.Vigor = 1.0f;
+				PlayerVigor = 1.0f;
+			}
+#endif
+		}
+
 		if (Oocyte)
 		{
 			if (GenesisFertilizationLogic::Step(Cells, Oocyte->GetMutableState(), Channel, Tuning, Oocyte->Tuning, StepSeconds, FertilizationResult))
@@ -200,8 +358,17 @@ void AGenesisSpermSwarm::SimulateFor(float SimulationDelta)
 					FertilizationResult.CellIndex, FertilizationResult.SecondsToFusion, FertilizationResult.Vitality, FertilizationResult.CompetingCells);
 				OnFertilized.Broadcast(FertilizationResult);
 
-				// Aus dem Mikrokosmos wird ein Mensch: Genom, erster Körper, Inkarnation, Leitmotiv
-				if (bCreateLifeOnFertilization)
+				if (IsRacing())
+				{
+					RaceOutcome = GenesisSpermRace::OutcomeAfterFusion(PlayerCellIndex, FertilizationResult.CellIndex);
+					UE_LOG(LogGenesis, Display, TEXT("Conception: %s"), RaceOutcome == EGenesisRaceOutcome::Won
+						? TEXT("Die eigene Zelle ist verschmolzen – dieses Leben beginnt.")
+						: TEXT("Eine andere Zelle war schneller."));
+				}
+
+				// Aus dem Mikrokosmos wird ein Mensch: Genom, erster Körper, Inkarnation, Leitmotiv.
+				// Im Rennen nur, wenn es die eigene Zelle war – sonst beginnt dieses Leben nicht.
+				if (bCreateLifeOnFertilization && RaceOutcome != EGenesisRaceOutcome::Lost)
 				{
 					UGameInstance* GameInstance = GetGameInstance();
 					if (UGenesisConceptionSubsystem* Conception = GameInstance ? GameInstance->GetSubsystem<UGenesisConceptionSubsystem>() : nullptr)
@@ -259,25 +426,28 @@ void AGenesisSpermSwarm::PushInstances(bool bTeleport)
 
 int32 AGenesisSpermSwarm::FindAttachedCell() const
 {
-	// Die verschmolzene Zelle zuerst – sie ist der Moment, um den es geht
-	int32 Bound = INDEX_NONE;
+	// Die verschmolzene Zelle zuerst – sie ist der Moment, um den es geht. Sonst die führende:
+	// die am tiefsten in der Zona steckt; bei Gleichstand (alle noch gebunden, keine bohrt) die erste.
+	int32 Leader = INDEX_NONE;
+	float LeaderDepth = -1.0f;
 	for (int32 Index = 0; Index < Cells.Num(); ++Index)
 	{
-		switch (GenesisFertilizationLogic::GetPhase(Cells[Index]))
+		const EGenesisSpermPhase Phase = GenesisFertilizationLogic::GetPhase(Cells[Index]);
+		if (Phase == EGenesisSpermPhase::Fused)
 		{
-		case EGenesisSpermPhase::Fused:
 			return Index;
-		case EGenesisSpermPhase::Penetrating:
-			Bound = Index;
-			break;
-		case EGenesisSpermPhase::Bound:
-			Bound = Bound == INDEX_NONE ? Index : Bound;
-			break;
-		default:
-			break;
+		}
+		if (Phase == EGenesisSpermPhase::Bound || Phase == EGenesisSpermPhase::Penetrating)
+		{
+			const float Depth = Phase == EGenesisSpermPhase::Penetrating ? Cells[Index].PenetrationDepthUm : 0.0f;
+			if (Depth > LeaderDepth)
+			{
+				LeaderDepth = Depth;
+				Leader = Index;
+			}
 		}
 	}
-	return Bound;
+	return Leader;
 }
 
 FTransform AGenesisSpermSwarm::GetCellWorldTransform(int32 Index) const

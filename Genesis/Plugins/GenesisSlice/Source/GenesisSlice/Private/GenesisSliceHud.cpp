@@ -12,6 +12,9 @@
 #include "GenesisFrontendSubsystem.h"
 #include "GenesisBootFlow.h"
 #include "GenesisSlicePlayerController.h"
+#include "GenesisSpermSwarm.h"
+#include "CanvasItem.h"
+#include "EngineUtils.h"
 
 AGenesisSliceHud::AGenesisSliceHud()
 {
@@ -378,6 +381,140 @@ bool AGenesisSliceHud::DrawMenu()
 	return true;
 }
 
+bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
+{
+	const AGenesisSpermSwarm* Swarm = nullptr;
+	for (TActorIterator<AGenesisSpermSwarm> It(GetWorld()); It; ++It)
+	{
+		Swarm = *It;
+		break;
+	}
+	const AGenesisSlicePlayerController* Controller = Cast<AGenesisSlicePlayerController>(GetOwningPlayerController());
+	const UGenesisFrontendSubsystem* Frontend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisFrontendSubsystem>() : nullptr;
+	if (!Swarm || !Swarm->IsRacing() || !Controller || !Frontend || !Canvas)
+	{
+		return false;
+	}
+	const float Scale = (Canvas->SizeY / 900.0f) * (Frontend->GetSettings().TextScalePercent / 100.0f);
+	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+
+	// Niederlage: groß, ruhig, ohne Häme
+	if (Swarm->GetRaceOutcome() == EGenesisRaceOutcome::Lost)
+	{
+		DrawCentered(TEXT("Eine andere Zelle war schneller."), 0.40f * Canvas->SizeY, Scale * 2.0f, 0.95f, true);
+		DrawCentered(TEXT("Dieses Leben beginnt nicht. Noch einmal."), 0.40f * Canvas->SizeY + 70.0f * Scale, Scale * 1.3f, 0.8f, false);
+		return true;
+	}
+	if (Swarm->GetRaceOutcome() == EGenesisRaceOutcome::Won)
+	{
+		DrawCentered(TEXT("Verschmolzen."), 0.40f * Canvas->SizeY, Scale * 2.0f, 0.95f, true);
+		return true;
+	}
+
+	// Markierung wie in einer CASA-Software: ein feiner Kreis um den Kopf der verfolgten Zelle und ihre
+	// Bahn der letzten zwei Sekunden. So zeigen Messgeräte für Spermienbewegung die Zelle, die sie verfolgen.
+	{
+		const FVector Head = Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex());
+		if (TrackSampleSeconds <= Now)
+		{
+			TrackSampleSeconds = Now + 0.1f;
+			PlayerTrack.Add(Head);
+			if (PlayerTrack.Num() > 20)
+			{
+				PlayerTrack.RemoveAt(0);
+			}
+		}
+		const FLinearColor TrackColor(0.55f, 0.95f, 0.75f, 0.55f);
+		for (int32 Index = 1; Index < PlayerTrack.Num(); ++Index)
+		{
+			// Am Ende des Kanalabschnitts springt die Zelle um (1 µm = 1 Einheit) – dort keine Linie quer durchs Bild
+			if (FVector::Dist(PlayerTrack[Index - 1], PlayerTrack[Index]) > 40.0)
+			{
+				continue;
+			}
+			const FVector A = Project(PlayerTrack[Index - 1]);
+			const FVector B = Project(PlayerTrack[Index]);
+			if (A.Z > 0.0 && B.Z > 0.0)
+			{
+				FCanvasLineItem Line(FVector2D(A.X, A.Y), FVector2D(B.X, B.Y));
+				Line.SetColor(TrackColor * FLinearColor(1.0f, 1.0f, 1.0f, static_cast<float>(Index) / PlayerTrack.Num()));
+				Line.LineThickness = 1.0f;
+				Canvas->DrawItem(Line);
+			}
+		}
+		const FVector Center = Project(Head);
+		if (Center.Z > 0.0)
+		{
+			const float Radius = 14.0f * Scale;
+			constexpr int32 Segments = 24;
+			for (int32 Segment = 0; Segment < Segments; ++Segment)
+			{
+				const float A0 = 2.0f * PI * Segment / Segments;
+				const float A1 = 2.0f * PI * (Segment + 1) / Segments;
+				FCanvasLineItem Arc(FVector2D(Center.X + Radius * FMath::Cos(A0), Center.Y + Radius * FMath::Sin(A0)),
+					FVector2D(Center.X + Radius * FMath::Cos(A1), Center.Y + Radius * FMath::Sin(A1)));
+				Arc.SetColor(TrackColor);
+				Arc.LineThickness = 1.0f;
+				Canvas->DrawItem(Arc);
+			}
+		}
+	}
+
+	// Zustand der eigenen Zelle – in der Sprache, in der ein Labor es notieren würde
+	FString Status;
+	switch (Swarm->GetPlayerPhase())
+	{
+	case EGenesisSpermPhase::Bound:
+		Status = TEXT("An der Zona gebunden – Akrosomreaktion");
+		break;
+	case EGenesisSpermPhase::Penetrating:
+		Status = FString::Printf(TEXT("Durch die Zona: %.1f von %.0f µm"), Swarm->GetPlayerPenetrationUm(), Swarm->GetZonaThicknessUm());
+		break;
+	default:
+		Status = FString::Printf(TEXT("Abstand zur Eizelle %.0f µm · Platz %d von %d · %s"),
+			Swarm->GetPlayerDistanceToZonaUm(), FMath::Max(1, Swarm->GetPlayerPlace()), Swarm->GetCellCount(),
+			Swarm->IsPlayerHyperactivated() ? TEXT("hyperaktiviert") : TEXT("progressiv"));
+		break;
+	}
+	if (Director.GetRaceAttempts() > 0)
+	{
+		Status += FString::Printf(TEXT(" · Versuch %d"), Director.GetRaceAttempts() + 1);
+	}
+	DrawCentered(Status, Canvas->SizeY - 110.0f * Scale, Scale * 1.15f, 0.85f, false);
+
+	// Kraft beim Bohren: ein schlichter Balken, nur solange sie zählt
+	if (Swarm->GetPlayerPhase() == EGenesisSpermPhase::Penetrating || Swarm->GetPlayerPhase() == EGenesisSpermPhase::Bound)
+	{
+		const float Width = 260.0f * Scale;
+		const float Height = 6.0f * Scale;
+		const float X = 0.5f * (Canvas->SizeX - Width);
+		const float Y = Canvas->SizeY - 80.0f * Scale;
+		FCanvasTileItem Back(FVector2D(X, Y), FVector2D(Width, Height), FLinearColor(1.0f, 1.0f, 1.0f, 0.15f));
+		Back.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Back);
+		FCanvasTileItem Fill(FVector2D(X, Y), FVector2D(Width * Swarm->GetPlayerVigor(), Height), FLinearColor(1.0f, 0.93f, 0.85f, 0.8f));
+		Fill.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Fill);
+	}
+
+	// Hinweise zur Steuerung – sie gehen, sobald man sie benutzt hat
+	const float SteerAlpha = Controller->HasSteered() ? FMath::Clamp(1.0f - (Now - SteerHintUsedSeconds) / 4.0f, 0.0f, 1.0f) : 1.0f;
+	if (Controller->HasSteered() && SteerHintUsedSeconds < 0.0f)
+	{
+		SteerHintUsedSeconds = Now;
+	}
+	DrawLine(TEXT("W A S D / linker Stick: lenken"), 0.0f, SteerAlpha);
+	if (Swarm->GetPlayerPhase() != EGenesisSpermPhase::Swimming)
+	{
+		DrawLine(AGenesisSlicePlayerController::DescribeAction(TEXT("GenesisCry")) + TEXT(" schnell drücken: schlagen – die Kraft bringt dich durch die Zona"), 1.0f, 1.0f);
+	}
+	else
+	{
+		DrawLine(TEXT("Maus / rechter Stick: Mikroskop schwenken"), 1.0f, Controller->HasMovedMicroscope() ? 0.0f : 0.7f);
+	}
+	return true;
+}
+
 void AGenesisSliceHud::DrawHUD()
 {
 	Super::DrawHUD();
@@ -401,6 +538,13 @@ void AGenesisSliceHud::DrawHUD()
 	}
 
 	const UGenesisSliceDirector* Director = GameInstance->GetSubsystem<UGenesisSliceDirector>();
+
+	// Das Wettrennen (GENESIS-037): nüchterne Messwerte wie am Mikroskop, keine Spielgrafik
+	if (Director && Director->GetState().Phase == EGenesisSlicePhase::Conception && DrawRace(*Director))
+	{
+		return;
+	}
+
 	const UGenesisEarlyLifeSubsystem* EarlyLife = GameInstance->GetSubsystem<UGenesisEarlyLifeSubsystem>();
 	const AGenesisSlicePlayerController* Controller = Cast<AGenesisSlicePlayerController>(GetOwningPlayerController());
 	if (!EarlyLife || !EarlyLife->HasNewborn() || !Controller)

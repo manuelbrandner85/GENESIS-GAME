@@ -104,16 +104,54 @@ namespace GenesisFertilizationLogic
 						const FQuat Full = FQuat::FindBetweenNormals(Cell.Heading, Inward);
 						Cell.Heading = FQuat::Slerp(FQuat::Identity, Full, FMath::Min(1.0, MaxTurn / Between)).RotateVector(Cell.Heading);
 					}
+
+					// Progesteron aus dem Cumulus öffnet den Calciumkanal CatSper und löst die Hyperaktivierung
+					// aus – aber nur bei kapazitierten Zellen (im Modell: Zellen, die überhaupt hyperaktivieren können)
+					if (Cell.Motility == EGenesisSpermMotility::Progressive && SwimTuning.HyperactivationRate > 0.0f
+						&& Cell.Random.Bernoulli(Tuning.ProgesteroneHyperactivationPerSecond * (1.0 - Distance / Tuning.ChemotaxisRangeUm) * Dt))
+					{
+						GenesisSpermSwimLogic::ApplyMotility(Cell, EGenesisSpermMotility::Hyperactivated, SwimTuning);
+					}
 				}
 
 				// 2. Cumulus: Die Gallerte bremst – die Zelle muss sich hindurcharbeiten
 				const float OriginalSpeed = Cell.Speed;
-				if (Distance < Oocyte.CumulusRadiusUm)
+				const bool bInCumulus = Distance < Oocyte.CumulusRadiusUm;
+				if (bInCumulus)
 				{
 					Cell.Speed *= Tuning.CumulusSpeedFactor;
 				}
-				GenesisSpermSwimLogic::Step(Cell, Channel, SwimTuning, Dt);
+				// Der Cumulus ist eine Gallertmasse: Die Eileiterflüssigkeit strömt um ihn herum, nicht
+				// durch ihn hindurch. Vorher wirkte der Strom auch darin – eine hyperaktivierte Zelle, von
+				// der Gallerte gebremst, wurde von ihm auf der Stelle gehalten und erreichte die Zona nie.
+				if (bInCumulus)
+				{
+					FGenesisOviductChannel StillWater = Channel;
+					StillWater.WallFlowSpeedUm = 0.0f;
+					GenesisSpermSwimLogic::Step(Cell, StillWater, SwimTuning, Dt);
+				}
+				else
+				{
+					GenesisSpermSwimLogic::Step(Cell, Channel, SwimTuning, Dt);
+				}
 				Cell.Speed = OriginalSpeed;
+
+				// 2b. Die Zona ist ohne Bindung undurchdringlich: Eine Zelle, die auf sie trifft, bleibt auf
+				// ihr liegen und gleitet an ihr entlang. Vorher schwammen ungebundene Zellen durch die Hülle
+				// hindurch ins Innere der Eizelle – aufgefallen, als die eigene Zelle im Rennen nie band.
+				{
+					double NewDistance = 0.0;
+					const FVector NewInward = DirectionToOocyte(Cell, Oocyte, NewDistance);
+					if (NewDistance < Oocyte.ZonaOuterRadiusUm)
+					{
+						Cell.Position = Oocyte.Position - NewInward * Oocyte.ZonaOuterRadiusUm;
+						const double IntoZona = FVector::DotProduct(Cell.Heading, NewInward);
+						if (IntoZona > 0.0)
+						{
+							Cell.Heading = (Cell.Heading - NewInward * IntoZona).GetSafeNormal(UE_SMALL_NUMBER, Cell.Heading);
+						}
+					}
+				}
 
 				// 3. Bindung an die Zona
 				const float ZonaDistance = DistanceToZona(Cell, Oocyte);
@@ -169,11 +207,15 @@ namespace GenesisFertilizationLogic
 
 			// 5. Durchdringung der Zona
 			++BoundCount;
-			const float Speed = Pick(Tuning.PenetrationSpeedUm, Cell.Individuality) * (0.6f + 0.4f * Cell.Vitality);
+			// Wie kräftig die Zelle bohrt: aus ihrer Veranlagung – oder, beim Spieler, aus seiner Anstrengung
+			const float Drive = Cell.Vigor >= 0.0f ? Cell.Vigor : Cell.Individuality;
+			const float Speed = Pick(Tuning.PenetrationSpeedUm, Drive) * (0.6f + 0.4f * Cell.Vitality);
 			Cell.PenetrationDepthUm += Speed * Dt;
 			Cell.Position = Oocyte.Position - Inward * FMath::Max(Oocyte.ZonaInnerRadiusUm, Oocyte.ZonaOuterRadiusUm - Cell.PenetrationDepthUm);
 
-			if (Cell.Random.Bernoulli(Tuning.PenetrationFailureRate * Dt))
+			// Steckenbleiben: Wer schwach schlägt, bleibt eher hängen – ein kräftiger hyperaktivierter
+			// Schlag ist genau das, was eine Zelle durch die Zona bringt
+			if (Cell.Random.Bernoulli(Tuning.PenetrationFailureRate * (1.0f - 0.7f * FMath::Clamp(Drive, 0.0f, 1.0f)) * Dt))
 			{
 				// Steckengeblieben: Die Zelle löst sich wieder und schwimmt weiter
 				SetPhase(Cell, EGenesisSpermPhase::Swimming);

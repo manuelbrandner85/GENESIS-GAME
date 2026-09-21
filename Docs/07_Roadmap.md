@@ -48,6 +48,13 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-034 | Spielstart wie ein echtes Spiel | Studio-, Engine- und Hinweiskarte, Echtzeit-Prolog mit Erzähler und Untertiteln, Titel, „Beliebige Taste", Menümusik (Suno), Kapitelkarte mit frischem Level, Abspann → Menü | DONE (Mischung von Ohr zu bestätigen) |
 | GENESIS-035 | Der Kreißsaal | Echter Raum in echten Maßen statt Kästen und Kugel, Licht nur aus sichtbaren Quellen (Dämmerung), Kamera hebt das Kind auf die Brust der Mutter; Nanite-Materialfehler projektweit behoben | DONE (Gesicht der Mutter in 036) |
 | GENESIS-036 | Die Mutter und der erste Blick | MetaHuman-Mutter (4K-Gesicht, volles Mimik-Rig) im Bett; neues Plugin `GenesisPeople`: Haltung, Atem, Lidschlag, Blick, Hände per IK; Blick nach oben → sie holt das Kind vor ihr Gesicht (25 cm), Blickkontakt bindet | DONE (Kind ohne Körper, Hemd, Stimme beim Blickkontakt offen) |
+| GENESIS-037 | Das Wettrennen | Der Spieler lenkt eine Zelle aus 6000 und gibt beim Bohren die Kraft; Sieg = dieses Leben beginnt, Niederlage = neues Rennen. Ausgewogen gemessen (gut gelenkt 4/5, ohne Führung 0/5). Vier Modellfehler behoben (durchlässige Zona, Strom im Cumulus, fehlendes Progesteron, immer gleiches Feld), Coronazellen rund | DONE (Artefakt an Falte, Zilien-Zeitlupe offen) |
+| GENESIS-038 | Die erste Woche, Zelle für Zelle | Vorkerne und Syngamie (12–24 h), Teilungen 2→4→8 (bis Tag 3), Kompaktierung, Morula (Tag 4), Blastozyste mit Trophoblast und innerer Zellmasse (Tag 5), Schlüpfen aus der Zona (Tag 6), Anheften (Tag 7) – Carnegie-Stadien 1–4 in echten Maßen | PLAN |
+| GENESIS-039 | Einnistung und Keimscheibe | Synzytiotrophoblast wächst in die Schleimhaut, Lakunen mit mütterlichem Blut, zweiblättrige Keimscheibe (Epiblast/Hypoblast), Amnionhöhle, Dottersack, hCG – Woche 2, Carnegie 5–6 | PLAN |
+| GENESIS-040 | Gastrulation, Neuralrohr, erster Herzschlag | Primitivstreifen (Tag 15), drei Keimblätter, Chorda, Neuralplatte (Tag 18), Somiten, Neuralrohr schließt (Tag 22–28), der Herzschlauch schlägt (Tag 22) – Woche 3–4, Carnegie 7–12 | PLAN |
+| GENESIS-041 | Organogenese | Gliedmaßenknospen, Schlundbögen → Gesicht, Augenbecher und Linse, Herzscheidewände, Hirnbläschen, Finger und Zehen; Ende Woche 8: 3 cm, alle Organe angelegt – Carnegie 13–23 | PLAN |
+| GENESIS-042 | Die Verbindungen | Nervensystem: Neurone entstehen, wandern, bilden Axone; erste Synapsen im Rückenmark (~Woche 8), in der Hirnrinde ab ~Woche 23, Thalamus–Rinde ab Woche 24 (erste Wahrnehmung). Jede Verbindung gezählt nach Literaturkurven, sichtbar als wachsendes Netz; Reize (Herzschlag, Stimme der Mutter) hinterlassen Spuren im Gedächtnissystem | PLAN |
+| GENESIS-043 | Die Fetalzeit | Woche 9–40 nach Referenzkurven (Scheitel-Steiß-Länge, Gewicht): erste Bewegungen, Schlucken, Daumenlutschen, Kindsbewegungen spürbar (Woche 18–20), Hören (24–26), Augen öffnen (26–28), Lungenreife, Drehung in Schädellage (32–36). Der Spieler bewegt sich, hört, reagiert | PLAN |
 
 ## Protokoll
 
@@ -401,3 +408,14 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Blickkontakt](Media/GENESIS-036_Blickkontakt.png)
+
+### GENESIS-037 – Das Wettrennen
+- 2026-09-21: Game Director: „Man sollte das Spermium steuern können und eine Art Wettrennen, bis man eindringt." Vorher: über eine Minute Coronawand ohne Handlung (gemessen 75,6 s bis zur Verschmelzung).
+- 2026-09-21: Neu in `GenesisConception`: `GenesisSpermRace` (Anstrengung, Lenkung, Platz, Ergebnis), Lenken als physikalisch begrenzte Drehrate im Schwimmmodell, Kraft beim Bohren innerhalb der gemessenen Bohrgeschwindigkeit, Rennaufstellung im Schwarm, Kamera hinter der eigenen Zelle (tiefere Schärfe, engere Nachführung), weite Einstellung an der Zona. Regie: Rennen startet mit dem Leben, Niederlage → 7 s Standbild → neues Rennen. Anzeige: Abstand, Platz, Bewegungsart, Bohrtiefe, Kraft, CASA-Markierung mit Bahn.
+- 2026-09-21: **Modellfehler gefunden:** durchlässige Zona, Strom im Cumulus, fehlende Progesteron-Hyperaktivierung, gleiches Feld in jedem Rennen. **Grafik:** eckige Coronazellen (grobes Raytracing-Ersatzmodell, Toleranz 1,0 → 0,05).
+- 2026-09-21: Ausgewogenheit gemessen gegen 6000 Zellen: gut gelenkt 4/5 Siege, ohne Führung 0/5. Im Spiel gewonnen (Verschmelzung nach 25,7 s gegen 95 Mitbewerberinnen) und verloren (Neustart „Versuch 2"). 123 von 123 Tests.
+- 2026-09-21: Nächster Auftrag des Game Directors festgehalten: die neun Monate Schritt für Schritt und realistisch, „jede einzelne Verbindung" – als Blöcke 038–043 geplant.
+- Offen: Artefakt an einer Eileiterfalte, Zilien laufen beim Bohren in alter Zeitlupe.
+- **Status: DONE.**
+
+![Das Rennen](Media/GENESIS-037_Rennen.png)

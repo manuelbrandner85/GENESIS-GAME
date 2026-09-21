@@ -50,6 +50,9 @@ public:
 	 */
 	bool IsSeekingFace() const { return bSeekingFace; }
 
+	/** Hat der Spieler das Mikroskop schon einmal geschwenkt? Für den Hinweis im Bild. */
+	bool HasMovedMicroscope() const { return bMicroscopeMoved; }
+
 	/** Wie lange der Blick oben bleiben muss, bis er als Suchen gilt (s). */
 	UPROPERTY(EditAnywhere, Category = "Genesis|Input")
 	float SeekFaceSeconds = 0.6f;
@@ -81,7 +84,9 @@ private:
 	/** Ist gerade ein Menü offen? Dann bekommt das Kind keine Eingabe. */
 	bool IsMenuOpen() const;
 
-	void PressCry() { bCryHeld = true; }
+	void PressCry() { bCryHeld = true; ++StrokePresses; bStrokeUsed = true; }
+	void SteerRight(float Value) { SteerInput.X = Value; }
+	void SteerUp(float Value) { SteerInput.Y = Value; }
 	void ReleaseCry() { bCryHeld = false; }
 	void PressRoot() { bRootHeld = true; }
 	void ReleaseRoot() { bRootHeld = false; }
@@ -96,4 +101,15 @@ private:
 	FVector2D LookOffset = FVector2D::ZeroVector;
 	float SeekUpSeconds = 0.0f;
 	bool bSeekingFace = false;
+	bool bMicroscopeMoved = false;
+	/** Das Wettrennen: Lenken und Schlagen (GENESIS-037). */
+	FVector2D SteerInput = FVector2D::ZeroVector;
+	int32 StrokePresses = 0;
+	bool bSteerUsed = false;
+	bool bStrokeUsed = false;
+
+public:
+	/** Für die Hinweise im Bild: Hat der Spieler schon gelenkt / geschlagen? */
+	bool HasSteered() const { return bSteerUsed; }
+	bool HasStroked() const { return bStrokeUsed; }
 };

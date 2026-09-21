@@ -94,6 +94,19 @@ struct GENESISCONCEPTION_API FGenesisSpermCell
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
 	float PenetrationDepthUm = 0.0f;
 
+	/**
+	 * Gewünschte Schwimmrichtung des Spielers (Einheitsvektor im Kanalraum; null = keine Eingabe).
+	 * Sie wirkt wie jede andere Richtungskraft im Modell – mit einer Obergrenze der Drehrate: Eine Zelle
+	 * lenkt über einen asymmetrischen Geißelschlag und fährt dabei Bögen, sie kann nicht auf der Stelle wenden.
+	 */
+	FVector SteerDirection = FVector::ZeroVector;
+
+	/**
+	 * Anstrengung beim Bohren durch die Zona (0..1), negativ = aus der eigenen Veranlagung (Individuality).
+	 * Wählt innerhalb der gemessenen Bohrgeschwindigkeit – schneller als die Physiologie erlaubt geht es nicht.
+	 */
+	float Vigor = -1.0f;
+
 	/** Eigener Zufallsstrom – Zellen bleiben unabhängig von Reihenfolge und Anzahl. */
 	FGenesisRandomStream Random;
 };
@@ -143,6 +156,14 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	 * hohen Wert taumelt der ganze Schwarm, und aus gerichtetem Schwimmen wird ein Gewimmel.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Progressive") float ProgressiveRotationalDiffusion = 0.035f;
+
+	/**
+	 * Höchste Drehrate beim Lenken (rad/s). Spermien lenken, indem sie den Geißelschlag asymmetrisch
+	 * machen; bei chemotaktischen Wendungen liegen die Bahnradien bei 20–40 µm. Bei 30–55 µm/s
+	 * Vortrieb sind das 1–2,5 rad/s. Hyperaktivierte Zellen schlagen asymmetrischer und wenden enger.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Steering") float SteerTurnRate = 1.6f;
+	UPROPERTY(EditAnywhere, Category = "Steering") float SteerTurnRateHyperFactor = 1.5f;
 
 	/**
 	 * Hyperaktivierte Zellen peitschen, aber sie stehen nicht: Gemessen liegt ihre Bahngeschwindigkeit

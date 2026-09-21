@@ -83,6 +83,13 @@ struct GENESISCONCEPTION_API FGenesisFertilizationTuning
 	UPROPERTY(EditAnywhere, Category = "Chemotaxis") float ChemotaxisRangeUm = 220.0f;
 	UPROPERTY(EditAnywhere, Category = "Chemotaxis") float ChemotaxisTurnRate = 0.9f;
 
+	/**
+	 * Hyperaktivierung durch Progesteron (je Sekunde, am Rand des Cumulus voll wirksam): Progesteron aus
+	 * den Cumuluszellen öffnet in kapazitierten Spermien den Calciumkanal CatSper – der Schlag wird
+	 * asymmetrisch und kräftig. Erst so kann eine Zelle an der Zona binden und durchdringen.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Chemotaxis", meta = (ClampMin = "0")) float ProgesteroneHyperactivationPerSecond = 0.5f;
+
 	/** Im Cumulus bremst die Gallerte; die Zellen müssen sich hindurcharbeiten. */
 	UPROPERTY(EditAnywhere, Category = "Cumulus", meta = (ClampMin = "0.05", ClampMax = "1")) float CumulusSpeedFactor = 0.55f;
 

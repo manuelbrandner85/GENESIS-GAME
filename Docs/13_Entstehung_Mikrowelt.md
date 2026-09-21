@@ -626,3 +626,88 @@ glaubt, gerade überhaupt neu geschrieben wurde. Ein Zeitstempel hätte drei Dur
   Änderung daran kostet das Projektarchiv diesen Betrag. Falls das stört, ist Unterteilung 3 mit
   dem neuen Umschließen eine Option – sie wäre gröber, aber nicht mehr kantig.
 - Die Fäden sind weiterhin starr, die Gallerte weiterhin kein Volumen.
+
+## GENESIS-037 – Das Wettrennen
+
+Rückmeldung des Game Directors: „Man sollte das Spermium steuern können und eine Art Wettrennen, bis
+man eindringt." Vorher sah der Spieler über eine Minute lang eine unscharfe Wand aus Coronazellen
+(gemessen bei 15, 40 und 65 s eines Durchlaufs: dreimal dasselbe Bild), während sich darunter 60
+Zellen um die Zona stritten.
+
+![Vorher: eine Minute Coronawand](Media/GENESIS-037_Vorher.png)
+
+![Das Rennen: die eigene Zelle mit ihrer Bahn, wie eine CASA-Messsoftware sie zeichnet](Media/GENESIS-037_Rennen.png)
+
+![An der Zona: Coronazellen, dazwischen die Schwänze der Konkurrentinnen](Media/GENESIS-037_Cumulus.png)
+
+### Was der Spieler tut
+
+| Taste | Wirkung | Grenze aus der Biologie |
+|---|---|---|
+| W A S D / linker Stick | lenken | höchstens 1,6 rad/s (hyperaktiviert ×1,5): Spermien lenken über einen asymmetrischen Geißelschlag und fahren Bögen von 20–40 µm Radius, sie wenden nicht auf der Stelle |
+| Leertaste / A, schnell gedrückt | Kraft beim Bohren durch die Zona | wählt innerhalb der gemessenen Bohrgeschwindigkeit (0,35–1,2 µm/s); schneller geht es nicht. Wer kräftig schlägt, bleibt seltener stecken |
+| Maus / rechter Stick | Mikroskop schwenken | – |
+
+Alles andere entscheidet dieselbe Physik, die für alle 6000 Zellen gilt: Zufallsdrehung, Strömung,
+Wand, Lockstoff. **Nur eine Zelle verschmilzt.** Ist es eine andere, bleibt das Bild sieben Sekunden
+stehen („Eine andere Zelle war schneller. Dieses Leben beginnt nicht."), dann beginnt ein neues
+Rennen mit einem neuen Feld.
+
+Im Bild: Abstand zur Eizelle, Platz im Feld, Bewegungsart; an der Zona die Bohrtiefe und ein
+schlichter Kraftbalken. Die eigene Zelle trägt einen feinen Kreis und ihre Bahn der letzten zwei
+Sekunden – so zeichnen CASA-Messgeräte die Zelle, die sie verfolgen.
+
+### Ausgewogen, gemessen
+
+`Genesis.Conception.Race.SkillDecides` spielt fünf Rennen gegen ein Feld wie im Spiel (6000 Zellen),
+einmal mit einem Testfahrer, der auf die Eizelle zuhält und beim Bohren alles gibt, einmal mit
+derselben Zelle ohne Führung:
+
+| Aufstellung | gelenkt | ohne Führung |
+|---|---|---|
+| wie beim Zuschauen (Pulk 320 ± 220 µm) | 0 von 5 | 0 von 5 |
+| geschlossenes Feld, eigene Zelle 260 µm vor der Eizelle, 2000 Zellen | 4 von 5 | 0 von 5 |
+| dasselbe mit 6000 Zellen | 2 von 5 | 0 von 5 |
+| **eigene Zelle an der Spitze der ersten Reihe (235 µm), 6000 Zellen** | **4 von 5** | **0 von 5** |
+
+Die Zeile mit 2000 Zellen ist eine Lehre: Der Test maß ein leichteres Rennen als das gespielte, und
+im Spiel verlor der Autopilot. Er läuft jetzt mit genauso vielen Zellen wie das Spiel.
+
+Im Spiel geprüft (Autopilot `genesis.Race.AutoPilot 1`): Cumulus nach 3,9 s, hyperaktiviert 6,1 s,
+gebunden 8,1 s, bohrt ab 13,9 s, verschmolzen nach 25,7 s gegen 95 Mitbewerberinnen – danach weiter
+in die erste Woche. Und eine Niederlage: sieben Sekunden Standbild, dann „Versuch 2" mit neuem Feld.
+
+### Vier Fehler im Modell, die erst das Rennen gezeigt hat
+
+1. **Die Zona war durchlässig.** Ungebundene Zellen schwammen durch die Hülle ins Innere der Eizelle
+   und banden nur, wenn sie zufällig im 2-µm-Kontaktstreifen hängenblieben. Jetzt ist die Zona ohne
+   Bindung undurchdringlich; Zellen gleiten an ihr entlang.
+2. **Im Cumulus floss der Eileiterstrom.** Eine hyperaktivierte Zelle, von der Gallerte auf
+   11–19 µm/s gebremst, wurde vom Strom (in der Mitte 11 µm/s) auf der Stelle gehalten und erreichte
+   die Zona nie. Der Cumulus ist eine Gallertmasse: Die Flüssigkeit strömt um ihn herum.
+3. **Progesteron fehlte.** Im Cumulus löst Progesteron über den Calciumkanal CatSper die
+   Hyperaktivierung aus – nur bei kapazitierten Zellen. Ohne das hingen progressive Zellen an der Zona
+   und konnten nicht binden.
+4. **Jedes Rennen hatte dasselbe Feld** (fester Seed im Level – immer dieselbe Siegerin). Jetzt
+   kommt das Feld aus dem Seed des Durchlaufs.
+
+### Bild und Tempo
+
+- **Zeitlupe beim Bohren 0,5 statt 0,3.** An der Zona hängen nur hyperaktivierte Zellen (9–15 Hz);
+  bei 0,5 fällt kein Schlag unter acht Bilder, die Geißelwelle bleibt eine Welle (vgl. GENESIS-030).
+- **Optik beim Folgen:** Makro ×1,2 bei f/22 statt ×18 bei f/11. Bei 75 µm Abstand hatte die
+  Makro-Optik nur etwa 3 µm Schärfentiefe – die Zelle ist 60 µm lang. Belichtung um die zwei
+  Blendenstufen ausgeglichen. Beim Zuschauen bleibt die filmische Optik.
+- **Eckige Coronazellen behoben:** Nanite zeichnet die Zellen fein, aber Schatten und Licht per
+  Raytracing nehmen das Ersatzmodell – und das war mit Fehlertoleranz 1,0 ein grober Polyeder,
+  dessen Schatten auf den glatten Zellen lag. Toleranz jetzt 0,05. Erst die schärfere Optik hat das
+  sichtbar gemacht, die Unschärfe hatte es verdeckt.
+- Die weite Einstellung beim Bohren ersetzt den Schnitt in den Zellkranz (`bCloseUpOnBinding` aus).
+
+### Offen
+
+- Die Flimmerhärchen der Wand schlagen im Material mit fester Zeitlupe (0,25) und laufen beim
+  Bohren nicht mit der schnelleren Zeitlupe mit.
+- Ein schwarzes, flächiges Artefakt an einer Eileiterfalte, sichtbar erst mit der schärferen Optik.
+- Die Akrosomreaktion dauert zufällig 2–6 s und entscheidet manches Rennen; der Spieler hat darauf
+  keinen Einfluss (biologisch richtig, spielerisch spürbar).

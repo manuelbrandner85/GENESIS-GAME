@@ -72,6 +72,15 @@ def import_mesh(fbx_name, asset_name, nanite, compute_normals=False):
     asset_tools.import_asset_tasks([task])
 
     asset = eal.load_asset(OOCYTE + "/" + asset_name)
+    if asset and nanite:
+        # Schatten und Licht per Raytracing nehmen das Nanite-Ersatzmodell. Mit der Standard-Toleranz
+        # (1,0) war es ein grober Polyeder, dessen Schatten die glatten Coronazellen eckig aussehen ließ
+        # – sichtbar erst mit der schärferen Optik des Rennens (GENESIS-037).
+        settings = asset.get_editor_property("nanite_settings")
+        settings.set_editor_property("fallback_target", unreal.NaniteFallbackTarget.RELATIVE_ERROR)
+        settings.set_editor_property("fallback_relative_error", 0.05)
+        asset.set_editor_property("nanite_settings", settings)
+        eal.save_loaded_asset(asset)
     if asset:
         log("%s importiert, Ausdehnung %s" % (asset_name, asset.get_bounds().box_extent))
     else:
