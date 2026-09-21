@@ -46,6 +46,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-032 | Durchscheinendes in der Schärfentiefe | Alle durchscheinenden Materialien vor die Schärfentiefe gelegt; mein Speicherfehler aus 030 zurückgenommen, Schwarm aus der Strahlenszene | DONE (facettierte Coronazellen offen) |
 | GENESIS-033 | Coronazellen umschließen einander | Ebenen-Schnitt durch Umschließen der Nachbarzelle ersetzt, Unterteilung 4, Materialschwellen nachgeführt | DONE (110 MB Asset, Fäden weiter starr) |
 | GENESIS-034 | Spielstart wie ein echtes Spiel | Studio-, Engine- und Hinweiskarte, Echtzeit-Prolog mit Erzähler und Untertiteln, Titel, „Beliebige Taste", Menümusik (Suno), Kapitelkarte mit frischem Level, Abspann → Menü | DONE (Mischung von Ohr zu bestätigen) |
+| GENESIS-035 | Der Kreißsaal | Echter Raum in echten Maßen statt Kästen und Kugel, Licht nur aus sichtbaren Quellen (Dämmerung), Kamera hebt das Kind auf die Brust der Mutter; Nanite-Materialfehler projektweit behoben | DONE (Gesicht der Mutter braucht MetaHuman + Epic-Anmeldung) |
 
 ## Protokoll
 
@@ -379,3 +380,13 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Prolog](Media/GENESIS-034_Prolog.png)
+
+### GENESIS-035 – Der Kreißsaal
+- 2026-09-21: Die erste Stunde – der Ort, an dem der Spieler zum ersten Mal handelt – zeigte drei Kästen und eine orange Kugel. Neu: Kreißsaal in echten Maßen (5,4 × 4,6 × 2,9 m), Entbindungsbett in Gebärstellung, per Stoffsimulation fallende Decke und Unterlage, Wärmebett, CTG, Infusionsständer, Wanduhr, Geburtsseil, Gebärball, Hocker, Schrankzeile, Tür, Fenster mit Jalousie. Licht nur aus Quellen, die im Raum stehen (Dämmerung am Fenster, gedimmte LED-Felder, warme Wandleuchte, Bildschirme).
+- 2026-09-21: **Kamera:** Nach der Geburt richtet sich das Kind in 8 s auf (vorher stand der Raum minutenlang auf der Seite); beim Hautkontakt hebt die Kamera sich in einem Bogen über den Bauch auf die Brust; dort liegt das Kind mit zur Seite gedrehtem Kopf und hebt und senkt sich mit dem Atem der Mutter.
+- 2026-09-21: **Fehler gefunden und behoben:** Tageslicht an der Wand ohne Fenster (FBX spiegelt Y); fehlende Nanite-Kennung an Materialien – das hätte in der gebauten Fassung graue Standardmaterialien ergeben und betraf auch Geburtskanal, Corona, Eizellplasma, Eileiterwand und Blastomeren (alle Aufbauskripte setzen sie jetzt); eckige Hocker/Bälle durch das Nanite-Ersatz-Mesh bei durchscheinenden Teilen; milchiger Dunst aus der Kanalszene; Belichtung aus dem Platzhalterraum (Median 0,79 → 0,26/0,46); Metaball-Körper als dürre Gliederpuppe (neu über Skelett mit echten Gliedradien).
+- 2026-09-21: 115 von 115 Tests. In der gebauten Fassung geprüft: alle Materialien sichtbar, keine Nanite-Warnung.
+- Offen: Gesicht der Mutter und Hebamme als MetaHuman – braucht einmal die Epic-Anmeldung des Game Directors im Editor (Gesichts-Rig und Hauttexturen laufen über Epics Cloud). Befruchtung dauert im Spiel über eine Minute ohne Handlung.
+- **Status: DONE.**
+
+![Der erste Blick](Media/GENESIS-035_Geburt.png)

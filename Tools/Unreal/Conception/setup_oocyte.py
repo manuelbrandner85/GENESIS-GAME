@@ -91,8 +91,12 @@ def load_or_create_material(name):
     if eal.does_asset_exist(full):
         material = eal.load_asset(full)
         mel.delete_all_material_expressions(material)
+        material.set_editor_property("used_with_nanite", True)
         return material
-    return asset_tools.create_asset(name, MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+    material = asset_tools.create_asset(name, MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+    # Nanite-Meshes: ohne Kennung zeigt die gebaute Fassung das Standardmaterial
+    material.set_editor_property("used_with_nanite", True)
+    return material
 
 
 def expression(material, cls, x, y, **props):

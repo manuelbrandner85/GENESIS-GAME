@@ -8,6 +8,9 @@
 # sind eigene Level, deshalb stören sie sich nicht.
 
 import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import unreal
 
@@ -34,7 +37,7 @@ def ensure_folders():
             eal.make_directory(folder)
 
 
-def import_mesh(fbx_name, asset_name):
+def import_mesh(fbx_name, asset_name, nanite=True):
     unreal.SystemLibrary.execute_console_command(None, "Interchange.FeatureFlags.Import.FBX false")
     options = unreal.FbxImportUI()
     options.set_editor_property("import_mesh", True)
@@ -48,7 +51,7 @@ def import_mesh(fbx_name, asset_name):
     data.set_editor_property("combine_meshes", True)
     data.set_editor_property("auto_generate_collision", False)
     data.set_editor_property("generate_lightmap_u_vs", False)
-    data.set_editor_property("build_nanite", True)
+    data.set_editor_property("build_nanite", nanite)
     data.set_editor_property("remove_degenerates", False)
     data.set_editor_property("convert_scene_unit", True)
     data.set_editor_property("compute_weighted_normals", True)
@@ -79,8 +82,12 @@ def load_or_create_material(name):
     if eal.does_asset_exist(full):
         material = eal.load_asset(full)
         mel.delete_all_material_expressions(material)
+        material.set_editor_property("used_with_nanite", True)
         return material
-    return asset_tools.create_asset(name, MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+    material = asset_tools.create_asset(name, MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+    # Der Kanal ist ein Nanite-Mesh: Ohne diese Kennung zeigt die gebaute Fassung das graue Standardmaterial
+    material.set_editor_property("used_with_nanite", True)
+    return material
 
 
 def expression(material, cls, x, y, **props):
@@ -220,32 +227,6 @@ def create_canal_material():
     return material
 
 
-def create_room_material():
-    """Wände und Decke des Raums: matt, hell, ohne Aussage – sie sind nur Träger des Lichts."""
-    material = load_or_create_material("M_GEN_BirthRoom")
-    base = color(material, -400, 0, 0.36, 0.33, 0.30)
-    mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    mel.connect_material_property(constant(material, -400, 160, 0.72), "", unreal.MaterialProperty.MP_ROUGHNESS)
-    mel.connect_material_property(constant(material, -400, 260, 0.2), "", unreal.MaterialProperty.MP_SPECULAR)
-    mel.recompile_material(material)
-    eal.save_loaded_asset(material)
-    return material
-
-
-def create_skin_material():
-    """Haut aus der Nähe: streuend, matt, warm. Für den ersten Blick genügt die Farbe eines Menschen."""
-    material = load_or_create_material("M_GEN_BirthPresence")
-    material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_SUBSURFACE)
-    base = color(material, -400, 0, 0.42, 0.26, 0.21)
-    mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    mel.connect_material_property(color(material, -400, 140, 0.62, 0.22, 0.16), "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
-    mel.connect_material_property(constant(material, -400, 240, 0.35), "", unreal.MaterialProperty.MP_OPACITY)
-    mel.connect_material_property(constant(material, -400, 340, 0.55), "", unreal.MaterialProperty.MP_ROUGHNESS)
-    mel.recompile_material(material)
-    eal.save_loaded_asset(material)
-    return material
-
-
 # ---------------------------------------------------------------------------------------------------------------------
 # Szene
 # ---------------------------------------------------------------------------------------------------------------------
@@ -264,21 +245,6 @@ def build_level(canal_mesh, canal_material):
         component.set_static_mesh(canal_mesh)
         component.set_editor_property("cast_shadow", True)
 
-    # Die Welt draußen: warmes Licht, das durch den Ausgang hereinfällt. Mehr braucht es nicht –
-    # für das Kind ist genau das die ganze Welt im ersten Moment.
-    light = actors.spawn_actor_from_class(unreal.RectLight, unreal.Vector(430.0, -380.0, 520.0))
-    light.set_actor_label("RoomLight")
-    # Von schräg oben, nicht frontal: Sonst wird alles, was aus dem Kanal kommt, sofort ausgebrannt
-    light.set_actor_rotation(unreal.MathLibrary.find_look_at_rotation(light.get_actor_location(), unreal.Vector(420.0, 40.0, 60.0)), False)
-    light_component = light.get_component_by_class(unreal.RectLightComponent)
-    light_component.set_editor_property("intensity_units", unreal.LightUnits.LUMENS)
-    light_component.set_editor_property("intensity", 3200.0)
-    light_component.set_editor_property("source_width", 400.0)
-    light_component.set_editor_property("source_height", 260.0)
-    light_component.set_editor_property("attenuation_radius", 3000.0)
-    light_component.set_editor_property("temperature", 3200.0)
-    light_component.set_editor_property("use_temperature", True)
-
     # Ein schwacher Schein tief im Kanal: Ohne ihn wäre das Bild vor der Austreibung vollständig schwarz.
     # Physikalisch ist das Streulicht, das durch das gedehnte Gewebe dringt.
     glow = actors.spawn_actor_from_class(unreal.PointLight, unreal.Vector(-60.0, 0.0, 0.0))
@@ -291,40 +257,10 @@ def build_level(canal_mesh, canal_material):
     glow_component.set_editor_property("use_temperature", True)
     glow_component.set_editor_property("cast_shadows", False)
 
-    # Die Welt draußen – bewusst grob: Ein Neugeborenes sieht mit etwa 20/400 und stellt nur auf
-    # Armlänge scharf. Für den ersten Blick braucht es keine Details, sondern warme Flächen und
-    # eine Gestalt, die sich über einen beugt. PLATZHALTER, bis der Kreißsaal gebaut ist.
-    cube = eal.load_asset("/Engine/BasicShapes/Cube")
-    sphere = eal.load_asset("/Engine/BasicShapes/Sphere")
-    room_material = create_room_material()
-
-    for label, location, scale in (
-        ("Room_Floor", unreal.Vector(420.0, 0.0, -220.0), unreal.Vector(12.0, 12.0, 0.4)),
-        ("Room_BackWall", unreal.Vector(900.0, 0.0, 180.0), unreal.Vector(0.4, 12.0, 8.0)),
-        ("Room_Ceiling", unreal.Vector(420.0, 0.0, 560.0), unreal.Vector(12.0, 12.0, 0.4)),
-    ):
-        if not cube:
-            break
-        part = actors.spawn_actor_from_class(unreal.StaticMeshActor, location)
-        part.set_actor_label(label)
-        part.set_actor_scale3d(scale)
-        part_component = part.static_mesh_component
-        part_component.set_editor_property("mobility", unreal.ComponentMobility.STATIC)
-        part_component.set_static_mesh(cube)
-        if room_material:
-            part_component.set_material(0, room_material)
-
-    if sphere:
-        # Eine Gestalt in Armlänge: Das erste, was ein Kind scharf sieht, ist ein Gesicht über sich.
-        presence = actors.spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(440.0, 50.0, 110.0))
-        presence.set_actor_label("Presence_PLACEHOLDER")
-        presence.set_actor_scale3d(unreal.Vector(1.6, 1.3, 1.9))
-        presence_component = presence.static_mesh_component
-        presence_component.set_editor_property("mobility", unreal.ComponentMobility.STATIC)
-        presence_component.set_static_mesh(sphere)
-        skin = create_skin_material()
-        if skin:
-            presence_component.set_material(0, skin)
+    # Der Kreißsaal (GENESIS-035) ersetzt die Platzhalter – Kästen, Kugel und ein Licht ohne Herkunft.
+    # Das Licht kommt jetzt aus dem Raum selbst: Fenster, gedimmte Deckenfelder, Wandleuchte.
+    import delivery_room
+    delivery_room.build(actors, import_mesh)
 
     rig = actors.spawn_actor_from_class(unreal.GenesisBirthCameraRig, unreal.Vector(0.0, 0.0, 0.0))
     rig.set_actor_label("ChildCamera")
@@ -332,7 +268,9 @@ def build_level(canal_mesh, canal_material):
     fog = actors.spawn_actor_from_class(unreal.ExponentialHeightFog, unreal.Vector(0, 0, -100000))
     fog.set_actor_label("MoistAir")
     fog_component = fog.get_component_by_class(unreal.ExponentialHeightFogComponent)
-    fog_component.set_editor_property("fog_density", 0.02)
+    # Kaum wahrnehmbar: In einem Raum mit 1 mm = 1 Einheit macht der alte Wert (0,02) aus 5 m Luft
+    # einen milchigen Nebel. Ein Kreißsaal hat keinen sichtbaren Dunst – nur einen Hauch im Fensterlicht.
+    fog_component.set_editor_property("fog_density", 0.0012)
     fog_component.set_editor_property("fog_height_falloff", 0.00001)
     fog_component.set_editor_property("enable_volumetric_fog", True)
     fog_component.set_editor_property("volumetric_fog_scattering_distribution", 0.5)

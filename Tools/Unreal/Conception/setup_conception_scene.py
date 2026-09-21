@@ -318,6 +318,8 @@ def create_mucosa_material():
     if eal.does_asset_exist(path):
         eal.delete_asset(path)
     material = asset_tools.create_asset("M_GEN_OviductMucosa", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+    # Nanite-Mesh: ohne Kennung zeigt die gebaute Fassung das Standardmaterial
+    material.set_editor_property("used_with_nanite", True)
     # Schleimhautfalten sind dünne Blätter (50–120 µm). Vom Licht abgewandte Seiten werden von hinten durchleuchtet,
     # deshalb das Modell für beidseitig durchscheinendes Gewebe statt einfachem Subsurface.
     material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_TWO_SIDED_FOLIAGE)
@@ -430,6 +432,8 @@ def create_cilia_material():
     if eal.does_asset_exist(path):
         eal.delete_asset(path)
     material = asset_tools.create_asset("M_GEN_Cilia", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+    # Nanite-Mesh: ohne Kennung zeigt die gebaute Fassung das Standardmaterial
+    material.set_editor_property("used_with_nanite", True)
     material.set_editor_property("two_sided", True)
 
     float3 = unreal.CustomMaterialOutputType.CMOT_FLOAT3

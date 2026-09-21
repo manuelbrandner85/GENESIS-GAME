@@ -6,6 +6,9 @@
 #include "GenesisFrontendSubsystem.h"
 #include "GenesisBootFlow.h"
 #include "GenesisMicroscopeCameraRig.h"
+#include "GenesisBirthCameraRig.h"
+#include "GenesisEarlyLifeSubsystem.h"
+#include "GenesisEarlyLifeTypes.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
@@ -70,6 +73,17 @@ void AGenesisSliceGameMode::BeginPlay()
 void AGenesisSliceGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	// Nach der Geburt: Die Kamera des Kindes folgt dem, was mit ihm geschieht. Liegt es auf der Haut
+	// der Mutter, liegt die Kamera auf ihrer Brust.
+	if (const UGenesisEarlyLifeSubsystem* EarlyLife = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisEarlyLifeSubsystem>() : nullptr)
+	{
+		const bool bOnChest = EarlyLife->HasNewborn() && EarlyLife->GetState().bSkinToSkin;
+		for (TActorIterator<AGenesisBirthCameraRig> It(GetWorld()); It; ++It)
+		{
+			It->bOnMothersChest = bOnChest;
+		}
+	}
 
 	const UGenesisFrontendSubsystem* Frontend = GetFrontend();
 	if (!Frontend)

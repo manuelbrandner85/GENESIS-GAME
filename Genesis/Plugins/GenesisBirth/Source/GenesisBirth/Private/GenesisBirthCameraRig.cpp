@@ -113,12 +113,44 @@ void AGenesisBirthCameraRig::ApplyPerception(const FGenesisBirthState& State, co
 	const float BeatAmplitude = FMath::Lerp(0.4f, 1.6f, 1.0f - Perception.Oxygen);
 
 	const FVector Local(Depth + Push, Beat * BeatAmplitude * 0.5f, Beat * BeatAmplitude);
-	Camera->SetRelativeLocation(Local);
 
 	// 3. Drehung: Das Kind dreht sich im Becken, um mit dem schmalsten Durchmesser durchzupassen
-	const float Roll = FMath::Lerp(0.0f, 88.0f, State.Rotation) + SmoothedPressure * 3.0f;
+	float Roll = FMath::Lerp(0.0f, 88.0f, State.Rotation) + SmoothedPressure * 3.0f;
+	// Nach der Geburt: Die Hebamme nimmt das Kind auf und hält es mit dem Gesicht nach oben. Die
+	// Drehung aus dem Becken löst sich in den Sekunden, in denen es aus dem Kanal kommt – sonst
+	// stünde der Raum für das Kind minutenlang auf der Seite.
+	if (State.IsBorn())
+	{
+		const float Righting = FMath::SmoothStep(0.0f, 8.0f, State.SecondsSinceBirth);
+		Roll = FMath::Lerp(Roll, 8.0f, Righting);
+	}
 	// Dazu der eigene Blick: Das Kind wendet sich der Stimme zu, soweit es das kann
-	Camera->SetRelativeRotation(FRotator(-4.0f * SmoothedPressure + LookOffsetDegrees.Y, LookOffsetDegrees.X, Roll));
+	const FRotator ExitRotation(-4.0f * SmoothedPressure + LookOffsetDegrees.Y, LookOffsetDegrees.X, Roll);
+
+	// 3b. Auf die Brust. Die Hebamme hebt das Kind in einem Bogen über den Bauch – nicht auf
+	// gerader Linie, und nicht in einem Schnitt: Der Weg ist das Erste, was das Kind vom Raum sieht.
+	const float ChestTarget = State.IsBorn() && bOnMothersChest ? 1.0f : 0.0f;
+	ChestBlend = FMath::FInterpConstantTo(ChestBlend, ChestTarget, DeltaSeconds, 1.0f / FMath::Max(0.5f, LiftSeconds));
+	const float Lift = FMath::SmoothStep(0.0f, 1.0f, ChestBlend);
+	if (Lift <= KINDA_SMALL_NUMBER)
+	{
+		Camera->SetRelativeLocation(Local);
+		Camera->SetRelativeRotation(ExitRotation);
+	}
+	else
+	{
+		// Die Brust hebt und senkt sich mit dem Atem der Mutter – das Kind liegt auf einem Menschen, nicht auf einem Tisch
+		BreathPhase += DeltaSeconds * MotherBreathsPerMinute / 60.0f;
+		const FVector ChestNormal(0.707f, 0.0f, 0.707f);
+		const FVector Breath = ChestNormal * (MotherBreathMm * 0.5f * (1.0f - FMath::Cos(BreathPhase * 2.0f * PI)));
+		const FVector ChestLocation = ChestEyeLocation + Breath + FVector(0.0f, 0.0f, Beat * BeatAmplitude * 0.3f);
+		const FVector Arc(0.0f, 0.0f, LiftArcMm * FMath::Sin(Lift * PI));
+		Camera->SetRelativeLocation(FMath::Lerp(Local, ChestLocation, Lift) + Arc);
+
+		const FQuat ChestBase = FRotationMatrix::MakeFromXZ(ChestViewForward.GetSafeNormal(), ChestViewUp.GetSafeNormal()).ToQuat();
+		const FQuat ChestLook = ChestBase * FRotator(LookOffsetDegrees.Y, LookOffsetDegrees.X, 0.0f).Quaternion();
+		Camera->SetRelativeRotation(FQuat::Slerp(ExitRotation.Quaternion(), ChestLook, Lift).Rotator());
+	}
 
 	// 4. Belichtung: dunkel im Kanal, grell beim Durchtritt. Der Wechsel ist ein Sprung, kein Verlauf.
 	SmoothedLight = FMath::FInterpTo(SmoothedLight, Perception.Light, DeltaSeconds, 2.5f);

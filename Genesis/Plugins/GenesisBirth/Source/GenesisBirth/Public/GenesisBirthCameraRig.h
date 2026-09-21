@@ -54,7 +54,12 @@ public:
 	float DarkExposureBias = 4.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Exposure")
-	float LightExposureBias = 3.0f;
+	/**
+	 * Draußen (nach der Geburt). Gemessen im Kreißsaal (GENESIS-035): Mit +3 EV lag der Median des Bildes
+	 * bei 0,79 – weiße Wände, untergehende Bildschirme. +1,6 EV ergibt einen gedimmten Raum, in dem das
+	 * Fenster hell und das CTG sichtbar leuchtet. Der Sprung ins Licht bleibt: im Kanal +4 EV auf fast nichts.
+	 */
+	float LightExposureBias = 1.6f;
 
 	UPROPERTY(EditAnywhere, Category = "Birth")
 	bool bBecomeViewTarget = true;
@@ -66,6 +71,51 @@ public:
 	 */
 	FVector2D LookOffsetDegrees = FVector2D::ZeroVector;
 
+	/**
+	 * Liegt das Kind auf der Brust der Mutter? Gesetzt von außen (Regie/Spielmodus), sobald die
+	 * Hebamme es auf die Haut legt. Der Rig hebt die Kamera dann in einem Bogen über den Bauch.
+	 */
+	bool bOnMothersChest = false;
+
+	/**
+	 * Augen des Kindes auf der Brust (mm, Kreißsaal-Koordinaten): bäuchlings auf der rechten Brust,
+	 * die Wange auf der Haut, gut 4 cm über ihr. Abgeleitet aus dem Aufbau in
+	 * Tools/Blender/Birth/build_delivery_room.py (Rückenteil 45°, Brust 360 mm das Rückenteil hinauf).
+	 * Y ist gegenüber Blender gespiegelt (FBX): Das Fenster liegt in Unreal bei −Y, der Raum mit CTG bei +Y.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Chest")
+	FVector ChestEyeLocation = FVector(-538.0, 60.0, 438.0);
+
+	/**
+	 * Blick von der Brust: Der Kopf liegt zur Seite gedreht – so liegen Neugeborene beim Hautkontakt,
+	 * damit Nase und Mund frei bleiben. Der Blick geht vom Fenster weg quer über die Brust in den Raum:
+	 * CTG, Wärmebett, Tür. Zum Fenster hin sähe das Kind nur eine überstrahlte helle Fläche – das
+	 * Tageslicht kommt so von der Seite, und der Raum bekommt Tiefe.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Chest")
+	FVector ChestViewForward = FVector(0.30, 0.95, -0.08);
+
+	/**
+	 * „Oben" für das liegende Kind: Der Scheitel zeigt zum Kinn der Mutter, also halb nach oben und
+	 * halb das Rückenteil hinauf. Daraus ergibt sich ein um gut 20° geneigter Horizont.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Chest")
+	FVector ChestViewUp = FVector(-0.35, 0.0, 0.94);
+
+	/** Wie lange das Hinüberheben dauert (s) und wie hoch der Bogen über den Bauch geht (mm). */
+	UPROPERTY(EditAnywhere, Category = "Chest")
+	float LiftSeconds = 7.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Chest")
+	float LiftArcMm = 380.0f;
+
+	/** Atem der Mutter: 14 Züge je Minute, die Brust hebt sich um wenige Millimeter. */
+	UPROPERTY(EditAnywhere, Category = "Chest")
+	float MotherBreathsPerMinute = 14.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Chest")
+	float MotherBreathMm = 4.0f;
+
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UCineCameraComponent> Camera;
 
@@ -76,4 +126,7 @@ private:
 	float HeartPhase = 0.0f;
 	float SmoothedPressure = 0.0f;
 	float SmoothedLight = 0.0f;
+	/** 0 = in den Händen der Hebamme am Fußende, 1 = auf der Brust. */
+	float ChestBlend = 0.0f;
+	float BreathPhase = 0.0f;
 };
