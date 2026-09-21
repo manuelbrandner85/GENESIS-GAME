@@ -300,18 +300,20 @@ void UGenesisSliceDirector::DrivePhase(float DeltaSeconds)
 
 	case EGenesisSlicePhase::Embryo:
 	{
-		// Die erste Woche dauert eine Woche. Sie ist sichtbar – Furchung, Morula, Blastozyste –,
-		// aber niemand sieht ihr sieben Tage lang zu: Die Regie springt in Stunden vorwärts.
-		GestationStepTimer += DeltaSeconds;
-		if (GestationStepTimer < Tuning.EmbryoStepSeconds)
+		// Die erste Woche als Zeitraffer wie im EmbryoScope: gleichmäßig, das Tempo nach der Stufe.
+		// Sekundenbruchteile sammeln sich, bis eine ganze Sekunde Keimzeit übersprungen werden kann.
+		const UGenesisEmbryoSubsystem* EmbryoSystem = GameInstance->GetSubsystem<UGenesisEmbryoSubsystem>();
+		const EGenesisEmbryoStage EmbryoStage = EmbryoSystem && EmbryoSystem->HasEmbryo() ? EmbryoSystem->GetState().Stage : EGenesisEmbryoStage::Zygote;
+		const float HoursPerSecond = GenesisSliceLogic::EmbryoHoursPerSecond(EmbryoStage, Tuning);
+		GestationStepTimer += DeltaSeconds * HoursPerSecond * 3600.0f;
+		const int64 Whole = static_cast<int64>(GestationStepTimer);
+		if (Whole > 0)
 		{
-			break;
-		}
-		GestationStepTimer = 0.0f;
-
-		if (UGenesisWorldClockSubsystem* Clock = GameInstance->GetSubsystem<UGenesisWorldClockSubsystem>())
-		{
-			Clock->SkipTime(static_cast<int64>(Tuning.EmbryoSkipHours) * 60 * 60);
+			GestationStepTimer -= static_cast<float>(Whole);
+			if (UGenesisWorldClockSubsystem* Clock = GameInstance->GetSubsystem<UGenesisWorldClockSubsystem>())
+			{
+				Clock->SkipTime(Whole);
+			}
 		}
 		break;
 	}

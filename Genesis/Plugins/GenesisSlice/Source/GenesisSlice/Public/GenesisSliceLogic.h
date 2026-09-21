@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GenesisSliceTypes.h"
+#include "GenesisEmbryoTypes.h"
 
 /**
  * Die Regeln des Durchlaufs – zustandslos, ohne Welt, ohne Karten.
@@ -22,4 +23,13 @@ namespace GenesisSliceLogic
 
 	/** Was in dieser Phase zu sehen ist – ein Satz für Anzeige und Log. */
 	GENESISSLICE_API FString GetPhaseDescription(EGenesisSlicePhase Phase);
+
+	/** Zeitraffer der ersten Woche: Stunden Keimzeit je Sekunde Echtzeit für diese Stufe. */
+	GENESISSLICE_API float EmbryoHoursPerSecond(EGenesisEmbryoStage Stage, const FGenesisSliceTuning& Tuning);
+
+	/**
+	 * Was gerade im Keim geschieht – ein Satz wie die Beschriftung eines Zeitraffers aus dem Labor,
+	 * mit den Zeiten, die man dort misst.
+	 */
+	GENESISSLICE_API FString DescribeEmbryoStage(EGenesisEmbryoStage Stage);
 }

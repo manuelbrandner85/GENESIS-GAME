@@ -106,4 +106,45 @@ namespace GenesisSliceLogic
 		default: return TEXT("");
 		}
 	}
+
+	float EmbryoHoursPerSecond(EGenesisEmbryoStage Stage, const FGenesisSliceTuning& Tuning)
+	{
+		switch (Stage)
+		{
+		case EGenesisEmbryoStage::Zygote:
+			return Tuning.ZygoteHoursPerSecond;
+		case EGenesisEmbryoStage::Cleavage:
+		case EGenesisEmbryoStage::Morula:
+		case EGenesisEmbryoStage::Blastocyst:
+		case EGenesisEmbryoStage::Hatching:
+			return Tuning.CleavageHoursPerSecond;
+		default:
+			return Tuning.ImplantationHoursPerSecond;
+		}
+	}
+
+	FString DescribeEmbryoStage(EGenesisEmbryoStage Stage)
+	{
+		switch (Stage)
+		{
+		case EGenesisEmbryoStage::Zygote:
+			return TEXT("Zygote – das Erbgut von Mutter und Vater liegt noch in zwei Vorkernen. Nach 22–24 h lösen sie sich auf und vereinen sich.");
+		case EGenesisEmbryoStage::Cleavage:
+			return TEXT("Furchung – die Zellen teilen sich etwa alle 12–17 h, ohne zu wachsen. Der Keim bleibt so groß wie die Eizelle.");
+		case EGenesisEmbryoStage::Morula:
+			return TEXT("Morula – die Zellen verzahnen sich zu einem dichten Verband. Seit dem 4- bis 8-Zell-Stadium arbeitet das eigene Erbgut.");
+		case EGenesisEmbryoStage::Blastocyst:
+			return TEXT("Blastozyste – innen sammelt sich Flüssigkeit. Außen der Trophoblast, später Mutterkuchen; innen der Embryoblast: daraus wirst du.");
+		case EGenesisEmbryoStage::Hatching:
+			return TEXT("Schlüpfen – die Hülle wird dünn und reißt, der Keim zwängt sich heraus.");
+		case EGenesisEmbryoStage::Implanting:
+			return TEXT("Einnistung – der Trophoblast dringt in die Schleimhaut der Gebärmutter ein.");
+		case EGenesisEmbryoStage::Implanted:
+			return TEXT("Eingenistet.");
+		case EGenesisEmbryoStage::Arrested:
+			return TEXT("Der Keim teilt sich nicht mehr.");
+		default:
+			return FString();
+		}
+	}
 }

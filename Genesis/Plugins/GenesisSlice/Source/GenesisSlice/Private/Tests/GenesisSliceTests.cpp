@@ -1,6 +1,7 @@
 // GENESIS: Der Kreislauf des Lebens
 
 #include "GenesisSliceLogic.h"
+#include "GenesisEmbryoLogic.h"
 #include "Misc/AutomationTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -187,6 +188,51 @@ bool FGenesisSliceTermTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Der Termin ist eine Stellschraube, keine feste Zahl"),
 		static_cast<int32>(Early), static_cast<int32>(EGenesisSlicePhase::Birth));
 
+	return true;
+}
+
+/**
+ * Die erste Woche als Zeitraffer (GENESIS-038): sichtbar, aber nicht zäh. Vorher liefen zehn Tage in
+ * zehn Sekunden – jede Teilung war nach einem Bild vorbei. Jetzt soll man die Teilungen sehen.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSliceEmbryoTimeLapseTest, "Genesis.Slice.EmbryoTimeLapse", GenesisSliceTests::SliceFlags)
+bool FGenesisSliceEmbryoTimeLapseTest::RunTest(const FString& Parameters)
+{
+	const FGenesisSliceTuning Slice;
+	const FGenesisEmbryoTuning EmbryoTuning;
+	FGenesisEmbryoState State = GenesisEmbryoLogic::CreateZygote(FGuid(1, 2, 3, 4), FGuid(5, 6, 7, 8), 0.85f, 0.6f, FGenesisTimestamp(), EmbryoTuning);
+
+	const float Frame = 1.0f / 60.0f;
+	float RealSeconds = 0.0f;
+	float HatchedAt = -1.0f;
+	float LastDivision = 0.0f;
+	float ShortestGap = TNumericLimits<float>::Max();
+	int32 Cells = State.GetCellCount();
+	while (State.Stage != EGenesisEmbryoStage::Implanted && RealSeconds < 600.0f)
+	{
+		const float Hours = GenesisSliceLogic::EmbryoHoursPerSecond(State.Stage, Slice) * Frame;
+		GenesisEmbryoLogic::Advance(State, EmbryoTuning, Hours);
+		RealSeconds += Frame;
+		if (State.GetCellCount() != Cells && State.GetCellCount() <= 8)
+		{
+			// Bis zum 8-Zell-Stadium ist jede einzelne Teilung ein Ereignis, das man sehen soll
+			if (Cells > 1)
+			{
+				ShortestGap = FMath::Min(ShortestGap, RealSeconds - LastDivision);
+			}
+			LastDivision = RealSeconds;
+		}
+		Cells = State.GetCellCount();
+		if (HatchedAt < 0.0f && State.Stage >= EGenesisEmbryoStage::Implanting)
+		{
+			HatchedAt = RealSeconds;
+		}
+	}
+	AddInfo(FString::Printf(TEXT("Bis zur Einnistung %.0f s, bis eingenistet %.0f s, kürzester Abstand zweier sichtbarer Teilungsereignisse %.1f s"),
+		HatchedAt, RealSeconds, ShortestGap));
+	TestTrue(TEXT("Die Woche ist zu sehen (mindestens eine Minute bis zur Einnistung)"), HatchedAt >= 60.0f);
+	TestTrue(TEXT("Und nicht zäh (höchstens zwei Minuten bis eingenistet)"), RealSeconds <= 120.0f);
+	TestTrue(TEXT("Eingenistet"), State.Stage == EGenesisEmbryoStage::Implanted);
 	return true;
 }
 

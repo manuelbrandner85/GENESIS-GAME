@@ -629,3 +629,9 @@ material_assets = {
 }
 
 place_oocyte(mesh_assets, material_assets)
+
+# Der Keim hängt an der Eizelle: Wer sie neu setzt, muss den Keim mitsetzen. Ohne diesen Aufruf ging der
+# Keim beim Neuaufbau verloren, und die erste Woche lief unsichtbar hinter einer unbefruchteten Eizelle
+# (gefunden in GENESIS-038 – sichtbar bei 35 und 97 Stunden nach der Befruchtung).
+import runpy
+runpy.run_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), "setup_embryo.py"), run_name="__main__")

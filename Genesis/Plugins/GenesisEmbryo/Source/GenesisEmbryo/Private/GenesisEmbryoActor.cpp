@@ -7,6 +7,8 @@
 #include "Engine/StaticMesh.h"
 #include "GenesisEmbryoSubsystem.h"
 #include "GenesisOocyte.h"
+#include "GenesisSpermSwarm.h"
+#include "EngineUtils.h"
 
 namespace
 {
@@ -27,6 +29,14 @@ AGenesisEmbryo::AGenesisEmbryo()
 	Blastomeres->SetNumCustomDataFloats(CellDataCount);
 	Blastomeres->SetCastShadow(true);
 	Blastomeres->bAffectDistanceFieldLighting = false;
+
+	Fragments = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Fragments"));
+	Fragments->SetupAttachment(Blastomeres);
+	Fragments->SetMobility(EComponentMobility::Movable);
+	Fragments->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Fragments->SetNumCustomDataFloats(CellDataCount);
+	Fragments->SetCastShadow(true);
+	Fragments->bAffectDistanceFieldLighting = false;
 }
 
 void AGenesisEmbryo::BeginPlay()
@@ -43,7 +53,18 @@ void AGenesisEmbryo::BeginPlay()
 		Blastomeres->ClearInstances();
 		Blastomeres->SetNumCustomDataFloats(CellDataCount);
 	}
+	if (Fragments)
+	{
+		Fragments->SetStaticMesh(CellMesh);
+		if (CellMaterial)
+		{
+			Fragments->SetMaterial(0, CellMaterial);
+		}
+		Fragments->ClearInstances();
+		Fragments->SetNumCustomDataFloats(CellDataCount);
+	}
 	LastCellCount = -1;
+	LastFragmentCount = -1;
 }
 
 void AGenesisEmbryo::Tick(float DeltaSeconds)
@@ -59,7 +80,57 @@ void AGenesisEmbryo::Tick(float DeltaSeconds)
 
 	const FGenesisEmbryoState& State = Embryo->GetState();
 	PushCells(State);
+	PushFragments(State);
 	UpdateOocyteRemains(State);
+}
+
+void AGenesisEmbryo::PushFragments(const FGenesisEmbryoState& State)
+{
+	if (!Fragments || !CellMesh)
+	{
+		return;
+	}
+	// Erst nach dem Schlüpfen verlieren sich die Trümmer: Sie bleiben in der Zona zurück
+	const bool bInsideZona = State.ZonaThicknessUm > 0.0f;
+	const int32 Count = bInsideZona ? FMath::Clamp(FMath::RoundToInt(State.Fragmentation * MaxFragments), 0, MaxFragments) : 0;
+	if (Count == LastFragmentCount)
+	{
+		return;
+	}
+	LastFragmentCount = Count;
+	Fragments->ClearInstances();
+	if (Count == 0)
+	{
+		return;
+	}
+
+	// Deterministisch aus dem Keim: dieselben Trümmer an denselben Stellen, Bild für Bild
+	FRandomStream Random(static_cast<int32>(State.Seed ^ (State.Seed >> 32)) ^ 0x5F7A11);
+	const float Inner = State.GetOuterRadiusUm() * 0.82f;
+	const float Outer = 58.0f; // Innenrand der Zona
+	TArray<FTransform> Transforms;
+	TArray<float> Data;
+	Transforms.Reserve(Count);
+	Data.Reserve(Count * CellDataCount);
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		// Fragmente liegen im Spalt zwischen Zellen und Hülle, gehäuft dort, wo schon welche liegen
+		const FVector Direction = Random.GetUnitVector();
+		const float Radius = FMath::Lerp(Inner, Outer - 2.0f, Random.FRand());
+		const float Size = FMath::Lerp(1.5f, 5.0f, FMath::Square(Random.FRand())) / BaseCellRadiusUm;
+		Transforms.Emplace(FQuat::Identity, Direction * Radius, FVector(Size * Random.FRandRange(0.8f, 1.2f), Size, Size * Random.FRandRange(0.7f, 1.0f)));
+		// Dunkler als lebende Zellen: Trümmer haben keinen Kern und zerfallen
+		Data.Add(0.1f);
+		Data.Add(0.0f);
+		Data.Add(1.0f);
+	}
+	Fragments->PreAllocateInstancesMemory(Count);
+	Fragments->AddInstances(Transforms, false, false, false);
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		Fragments->SetCustomData(Index, TArrayView<const float>(&Data[Index * CellDataCount], CellDataCount), false);
+	}
+	Fragments->MarkRenderStateDirty();
 }
 
 void AGenesisEmbryo::PushCells(const FGenesisEmbryoState& State)
@@ -136,13 +207,17 @@ void AGenesisEmbryo::UpdateOocyteRemains(const FGenesisEmbryoState& State)
 		Oocyte->Ooplasm->SetVisibility(false);
 	}
 
-	// Der Zellkranz löst sich in den Stunden nach der Befruchtung auf
-	if (Oocyte->Corona)
+	// Der Cumulus löst sich in den Stunden nach der Befruchtung auf – Zellkranz, Gallerte und ihre Fäden.
+	// Vorher blieben Gallerte und Fäden die ganze Woche stehen und verdeckten den Keim (gesehen bei 90 hpi).
+	const float Dispersal = FMath::Clamp(static_cast<float>(State.HoursSinceFusion) / FMath::Max(1.0f, CoronaDispersalHours), 0.0f, 1.0f);
+	for (UStaticMeshComponent* Part : { Oocyte->Corona.Get(), Oocyte->CumulusMatrix.Get(), Oocyte->CumulusStrands.Get() })
 	{
-		const float Dispersal = FMath::Clamp(static_cast<float>(State.HoursSinceFusion) / FMath::Max(1.0f, CoronaDispersalHours), 0.0f, 1.0f);
-		Oocyte->Corona->SetVisibility(Dispersal < 1.0f);
-		// Die Zellen treiben nach außen weg, bevor sie verschwinden
-		Oocyte->Corona->SetRelativeScale3D(FVector(1.0f + 0.35f * Dispersal));
+		if (Part)
+		{
+			Part->SetVisibility(Dispersal < 1.0f);
+			// Die Zellen treiben nach außen weg, bevor sie verschwinden
+			Part->SetRelativeScale3D(FVector(1.0f + 0.35f * Dispersal));
+		}
 	}
 
 	// Die Zona bleibt, bis der Keim schlüpft
@@ -152,6 +227,19 @@ void AGenesisEmbryo::UpdateOocyteRemains(const FGenesisEmbryoState& State)
 		// Die Zona dehnt sich mit dem Keim, bis sie reißt
 		const float Expansion = 1.0f + 0.35f * State.Cavity;
 		Oocyte->Zona->SetRelativeScale3D(FVector(Expansion));
+	}
+
+	// Die übrigen Spermien: Nach gut einem Tag sind sie abgestorben oder weitergetrieben
+	if (State.HoursSinceFusion > SwarmGoneHours)
+	{
+		for (TActorIterator<AGenesisSpermSwarm> It(GetWorld()); It; ++It)
+		{
+			if (!It->IsHidden())
+			{
+				It->SetActorHiddenInGame(true);
+				It->SetActorTickEnabled(false);
+			}
+		}
 	}
 
 	if (Oocyte->PolarBody)

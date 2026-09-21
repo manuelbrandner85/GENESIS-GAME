@@ -113,7 +113,16 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	/** Ab dieser Schwangerschaftswoche beginnt die Geburt. */
 	UPROPERTY(EditAnywhere, Category = "Slice") float BirthAtWeeks = 39.0f;
 
-	/** Wie viele Stunden die Regie je Schritt überspringt, solange die erste Woche läuft. */
+	/**
+	 * Zeitraffer der ersten Woche wie im EmbryoScope (Stunden Keimzeit je Sekunde Echtzeit, GENESIS-038):
+	 * vor der ersten Teilung zügig, während der Teilungen ruhig genug, dass man jede sieht, die Einnistung
+	 * wieder schneller. Vorher liefen zehn Tage in zehn Sekunden, in Sprüngen von sechs Stunden.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float ZygoteHoursPerSecond = 3.0f;
+	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float CleavageHoursPerSecond = 1.6f;
+	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float ImplantationHoursPerSecond = 10.0f;
+
+	/** Wie viele Stunden die Regie je Schritt überspringt, solange die erste Woche läuft (alt, nicht mehr benutzt). */
 	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "1", ClampMax = "24")) int32 EmbryoSkipHours = 6;
 
 	/** Echtzeit zwischen zwei Schritten der ersten Woche (s). */

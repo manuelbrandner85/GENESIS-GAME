@@ -98,6 +98,9 @@ def add(material, x, y, a, b, a_out="", b_out=""):
 # Zweidimensionales Wert-Rauschen auf der Kugel-UV: Die Körnung gehört zur Zelle und wandert mit ihr,
 # anders als weltbezogenes Rauschen, das bei Instanzen für alle Zellen dasselbe Muster ergäbe.
 FBM2D_CODE = """
+// Drehung je Oktave (36,87°), damit sich die Raster der Oktaven nicht decken. Sie fehlte – der Shader
+// kompilierte nicht, und das Spiel zeigte auf jeder Zelle das Ersatzraster der Engine (GENESIS-038).
+const float2x2 Rot = float2x2(0.8, -0.6, 0.6, 0.8);
 float2 q = UV * Freq;
 float v = 0.0;
 float amp = 0.5;
@@ -129,6 +132,9 @@ def create_blastomere_material():
     """
     material = load_or_create_material("M_GEN_Blastomere")
     material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_SUBSURFACE)
+    # Die Zellen werden als Instanzen gezeichnet. Ohne diese Kennung setzt das Spiel das Ersatzmaterial
+    # der Engine ein – ein graues Schachbrett auf jeder Zelle (gesehen in GENESIS-038).
+    material.set_editor_property("used_with_instanced_static_meshes", True)
 
     uv = expression(material, unreal.MaterialExpressionTextureCoordinate, -1700, 0)
     grain = custom(material, -1400, 0, "Zytoplasma-Korn", FBM2D_CODE, ["UV", "Freq"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)

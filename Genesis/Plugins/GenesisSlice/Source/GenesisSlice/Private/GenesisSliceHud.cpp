@@ -13,6 +13,8 @@
 #include "GenesisBootFlow.h"
 #include "GenesisSlicePlayerController.h"
 #include "GenesisSpermSwarm.h"
+#include "GenesisEmbryoSubsystem.h"
+#include "GenesisSliceLogic.h"
 #include "CanvasItem.h"
 #include "EngineUtils.h"
 
@@ -542,6 +544,24 @@ void AGenesisSliceHud::DrawHUD()
 	// Das Wettrennen (GENESIS-037): nüchterne Messwerte wie am Mikroskop, keine Spielgrafik
 	if (Director && Director->GetState().Phase == EGenesisSlicePhase::Conception && DrawRace(*Director))
 	{
+		return;
+	}
+
+	// Die erste Woche: Beschriftung wie in einem Zeitraffer aus dem Brutschrank (EmbryoScope)
+	if (Director && Director->GetState().Phase == EGenesisSlicePhase::Embryo)
+	{
+		const UGenesisEmbryoSubsystem* Embryo = GameInstance->GetSubsystem<UGenesisEmbryoSubsystem>();
+		const UGenesisFrontendSubsystem* Frontend = GameInstance->GetSubsystem<UGenesisFrontendSubsystem>();
+		if (Embryo && Embryo->HasEmbryo() && Frontend)
+		{
+			const FGenesisEmbryoState& Keim = Embryo->GetState();
+			const float Scale = (Canvas->SizeY / 900.0f) * (Frontend->GetSettings().TextScalePercent / 100.0f);
+			const FString Clock = FString::Printf(TEXT("%.1f hpi · Tag %d · %d %s"),
+				Keim.HoursSinceFusion, static_cast<int32>(Keim.HoursSinceFusion / 24.0) + 1,
+				Keim.GetCellCount(), Keim.GetCellCount() == 1 ? TEXT("Zelle") : TEXT("Zellen"));
+			DrawCentered(Clock, Canvas->SizeY - 118.0f * Scale, Scale * 1.15f, 0.85f, false);
+			DrawCentered(GenesisSliceLogic::DescribeEmbryoStage(Keim.Stage), Canvas->SizeY - 88.0f * Scale, Scale * 0.95f, 0.7f, false);
+		}
 		return;
 	}
 

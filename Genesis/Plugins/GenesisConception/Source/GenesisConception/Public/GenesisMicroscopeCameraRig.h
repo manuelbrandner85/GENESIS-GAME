@@ -99,6 +99,21 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Oocyte", meta = (ClampMin = "1"))
 	float PushInSeconds = 22.0f;
 
+	/**
+	 * Optik in der ersten Woche. Mit der filmischen Optik (×18, f/11) blieben aus 260 µm nur ~18 µm scharf –
+	 * der Keim ist 140 µm tief und war eine Wand aus unscharfen Zellen (gesehen bei 90 hpi). Ein Zeitraffer-
+	 * Brutschrank zeigt den Keim scharf; mit ×3 bei f/22 sind es gut 150 µm.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Oocyte", meta = (ClampMin = "1", ClampMax = "40"))
+	float EmbryoMacroScale = 3.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Oocyte", meta = (ClampMin = "1.2", ClampMax = "32"))
+	float EmbryoAperture = 22.0f;
+
+	/** Abstand zur Mitte des Keims in der ersten Woche (µm): Zona und Keim füllen gut die Hälfte des Bildes. */
+	UPROPERTY(EditAnywhere, Category = "Oocyte", meta = (ClampMin = "120"))
+	float EmbryoViewDistanceUm = 260.0f;
+
 	/** Nach der Verschmelzung zurück auf die ganze Eizelle – die Cortikalreaktion läuft über ihre ganze Oberfläche (s). */
 	UPROPERTY(EditAnywhere, Category = "Oocyte", meta = (ClampMin = "0.5"))
 	float PullBackSeconds = 6.0f;

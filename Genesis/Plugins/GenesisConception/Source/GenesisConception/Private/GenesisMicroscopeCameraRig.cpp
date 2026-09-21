@@ -218,10 +218,12 @@ void AGenesisMicroscopeCameraRig::ApplyOptics()
 
 	// Im Rennen, solange die Kamera der eigenen Zelle folgt: mehr Schärfentiefe
 	const bool bFollowingPlayer = Swarm && Swarm->IsRacing() && !bWatchOocyte && FollowCellIndex == Swarm->GetPlayerCellIndex();
-	const float EffectiveAperture = bFollowingPlayer ? RaceAperture : Aperture;
+	// Nach der Verschmelzung zeigt die Kamera den Keim wie ein Zeitraffer-Brutschrank: der ganze Keim scharf
+	const bool bWatchingEmbryo = SecondsSinceFusion >= 0.0f && bWatchOocyte;
+	const float EffectiveAperture = bFollowingPlayer ? RaceAperture : (bWatchingEmbryo ? EmbryoAperture : Aperture);
 
 	// Sensor und Brennweite gemeinsam vergrößern: gleicher Bildwinkel, aber die Schärfentiefe einer Makro-Optik
-	const float Scale = FMath::Max(1.0f, bFollowingPlayer ? RaceMacroScale : MacroScale);
+	const float Scale = FMath::Max(1.0f, bFollowingPlayer ? RaceMacroScale : (bWatchingEmbryo ? EmbryoMacroScale : MacroScale));
 	Camera->LensSettings.MaxFocalLength = FMath::Max(Camera->LensSettings.MaxFocalLength, NominalFocalLengthMm * Scale + 1.0f);
 	Camera->Filmback.SensorWidth = 36.0f * Scale;
 	Camera->Filmback.SensorHeight = 20.25f * Scale;
@@ -302,7 +304,10 @@ bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat&
 		Direction = FQuat(PitchAxis, FMath::DegreesToRadians(-PlayerPitch)).RotateVector(Direction);
 	}
 
-	float Distance = FMath::Lerp(OocyteDistanceUm, PushInDistanceUm, Approach) * GenesisMicroScale::UnitsPerMicrometer;
+	// Nach der Verschmelzung geht die Kamera auf den Keim zurück, nicht auf den ganzen Cumulus: Der löst
+	// sich in den nächsten Stunden auf, übrig bleibt eine Zelle von 110 µm in ihrer Hülle
+	const float Resting = SecondsSinceFusion >= 0.0f ? EmbryoViewDistanceUm : OocyteDistanceUm;
+	float Distance = FMath::Lerp(Resting, PushInDistanceUm, Approach) * GenesisMicroScale::UnitsPerMicrometer;
 	FVector Candidate = Center + Direction * Distance;
 	// Die Kamera darf nicht in der Schleimhaut stehen: notfalls näher an die Eizelle heran
 	const float Limit = (Swarm->GetChannel().LumenRadiusUm - 25.0f) * GenesisMicroScale::UnitsPerMicrometer;

@@ -70,3 +70,33 @@ der Polkörper zerfällt in den ersten drei Tagen, die Zona bleibt bis zum Schl�
 - Die **Einnistung** läuft als Fortschrittswert – die Gebärmutterschleimhaut als Ort gibt es noch nicht.
 - Die Entwicklung nach der Einnistung übernimmt die Körpersimulation in Wochenschritten; die Organbildung
   im Detail (GENESIS-021 und später) ist noch nicht ausgearbeitet.
+
+## GENESIS-038 (Teil 1) – Die erste Woche wird sichtbar
+
+**Befund:** Im Level der Befruchtung gab es **keinen Keim-Actor**. Beim letzten Neuaufbau der Szene war er
+verloren gegangen (das Szenenskript rief das Keim-Skript nicht mehr auf). Die erste Woche lief seitdem
+unsichtbar: Man sah die unbefruchtete Eizelle samt Cumulus, zehn Tage lang, in zehn Sekunden.
+Dazu kam ein Material, das nicht kompilierte (Drehmatrix fehlte) – das Spiel zeigte das Ersatzraster.
+
+![Vorher: Cumulus bei 35 hpi, der Keim unsichtbar](Media/GENESIS-038_Vorher_Cumulus.png)
+
+![Zwischenstand: Keim da, Material defekt (Raster)](Media/GENESIS-038_Vorher_Raster.png)
+
+![Jetzt: Morula an Tag 3 mit Laborbeschriftung](Media/GENESIS-038_Morula.png)
+
+Behoben und neu:
+- Keim-Actor wieder im Level; `setup_oocyte.py` setzt ihn jetzt immer mit.
+- Material kompiliert und ist für Instanzen freigegeben.
+- **Zeitraffer wie im EmbryoScope:** Zygote 3 h/s, Teilungen bis zum Schlüpfen 1,6 h/s, Einnistung 10 h/s –
+  bis zur Einnistung 75 s statt 10 s (Test `Genesis.Slice.EmbryoTimeLapse`).
+- **Beschriftung** wie im Brutschrank: „70,5 hpi · Tag 3 · 14 Zellen" und ein Satz zum Geschehen.
+- **Zelltrümmer** sichtbar (bis 60 Fragmente, 1,5–5 µm, im Spalt unter der Zona).
+- Der ganze Cumulus (Zellkranz, Gallerte, Fäden) löst sich in 20 h auf; die übrigen Spermien sind nach
+  30 h fort.
+- Kamera auf den Keim (260 µm, Makro ×3, f/22 – der ganze Keim scharf; vorher 18 µm Schärfentiefe).
+
+**Noch nicht AAA (Teil 2):** Die Zellen sind glatt und rosa wie Kunststoff. Echte Keime sind im
+Hoffman-Kontrast grau-beige, durchscheinend, körnig, mit sichtbaren Kernen, Vorkernen und Polkörper.
+Die Zeiten der Simulation weichen von den Klinikdaten ab (erste Teilung 24 h statt Median 25,8 h, 8 Zellen
+bei 56 h statt 58,7 h, Morula mit 8 statt nach Kompaktierung bei ~89 h, Blastozyste bei 74 statt ~100–110 h).
+Beides ist der nächste Schritt – Zahlen siehe [26 – Recherche und Plan](26_Recherche_und_Plan_AAA.md).
