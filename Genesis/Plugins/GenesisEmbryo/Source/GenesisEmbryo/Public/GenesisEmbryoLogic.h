@@ -26,6 +26,15 @@ namespace GenesisEmbryoLogic
 	/** Anzahl der Zellen des Embryoblasten (daraus entsteht der Mensch; der Rest wird Mutterkuchen). */
 	GENESISEMBRYO_API int32 CountInnerCellMass(const FGenesisEmbryoState& State);
 
+	/**
+	 * Was vom Zellkern einer Zelle zu sehen ist (für die Darstellung).
+	 * OutVisibility 0..1: Vorkerne erscheinen ~8 h nach der Verschmelzung und lösen sich ~23 h danach auf
+	 * (Syngamie); in den Furchungszellen verschwindet die Kernhülle kurz vor jeder Teilung.
+	 * bOutPronuclei: Zygote mit zwei Vorkernen (mütterlich und väterlich) statt eines Kerns.
+	 */
+	GENESISEMBRYO_API void GetNucleusDisplay(const FGenesisEmbryoState& State, int32 CellIndex, const FGenesisEmbryoTuning& Tuning,
+		float& OutVisibility, bool& bOutPronuclei);
+
 	GENESISEMBRYO_API FString GetStageName(EGenesisEmbryoStage Stage);
 	GENESISEMBRYO_API FString GetArrestReasonName(EGenesisEmbryoArrestReason Reason);
 }

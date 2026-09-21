@@ -112,7 +112,9 @@ namespace GenesisEmbryoLogic
 			First.RadiusUm = Radius;
 			First.Generation = Parent.Generation + 1;
 			First.Tint = FMath::Clamp(Parent.Tint + Rng.Gaussian(0.0f, 0.12f), 0.05f, 1.0f);
-			First.HoursToDivision = Rng.FRandRange(Tuning.CleavageIntervalHours.Min, Tuning.CleavageIntervalHours.Max);
+			// Ab der dritten Runde sind die Zellzyklen länger (Genomaktivierung)
+			const FFloatInterval& Interval = Parent.Generation + 1 <= 1 ? Tuning.CleavageIntervalHours : Tuning.LaterCleavageIntervalHours;
+			First.HoursToDivision = Rng.FRandRange(Interval.Min, Interval.Max);
 
 			FGenesisBlastomere Second = Parent;
 			Second.Position = Parent.Position - Offset;
@@ -120,7 +122,7 @@ namespace GenesisEmbryoLogic
 			Second.Generation = Parent.Generation + 1;
 			Second.Tint = FMath::Clamp(Parent.Tint + Rng.Gaussian(0.0f, 0.12f), 0.05f, 1.0f);
 			// Teilungen laufen nicht synchron – deshalb gibt es auch 3-, 5- und 7-Zell-Stadien
-			Second.HoursToDivision = Rng.FRandRange(Tuning.CleavageIntervalHours.Min, Tuning.CleavageIntervalHours.Max) * 1.15f;
+			Second.HoursToDivision = Rng.FRandRange(Interval.Min, Interval.Max) * 1.15f;
 
 			State.Cells[Index] = First;
 			State.Cells.Add(Second);
@@ -356,6 +358,36 @@ namespace GenesisEmbryoLogic
 			Count += Cell.bInnerCellMass ? 1 : 0;
 		}
 		return Count;
+	}
+
+	void GetNucleusDisplay(const FGenesisEmbryoState& State, int32 CellIndex, const FGenesisEmbryoTuning& Tuning,
+		float& OutVisibility, bool& bOutPronuclei)
+	{
+		OutVisibility = 0.0f;
+		bOutPronuclei = false;
+		if (!State.Cells.IsValidIndex(CellIndex) || !State.IsAlive())
+		{
+			return;
+		}
+
+		const float Hours = static_cast<float>(State.HoursSinceFusion);
+		if (State.Cells.Num() == 1)
+		{
+			// Zygote: zwei Vorkerne, dann Syngamie – danach ist bis zur ersten Teilung kein Kern zu sehen
+			bOutPronuclei = true;
+			const float In = FMath::Clamp((Hours - Tuning.PronucleiAppearHours) / 1.5f, 0.0f, 1.0f);
+			const float Out = FMath::Clamp((Tuning.PronucleiFadeHours - Hours) / 1.0f, 0.0f, 1.0f);
+			OutVisibility = FMath::Min(In, Out);
+			return;
+		}
+
+		// Furchungszelle: Kern sichtbar, bis sich vor der Teilung die Kernhülle auflöst
+		const float ToDivision = State.Cells[CellIndex].HoursToDivision;
+		const float Mitosis = FMath::Max(0.1f, Tuning.MitosisHours);
+		const bool bStillDividing = State.Cells[CellIndex].RadiusUm > Tuning.MinimumBlastomereRadiusUm;
+		OutVisibility = State.Stage <= EGenesisEmbryoStage::Blastocyst && bStillDividing
+			? FMath::Clamp((ToDivision - 0.4f * Mitosis) / (0.6f * Mitosis), 0.0f, 1.0f)
+			: 1.0f;
 	}
 
 	FString GetStageName(EGenesisEmbryoStage Stage)

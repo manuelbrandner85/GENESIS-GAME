@@ -68,8 +68,20 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Embryo")
 	float SwarmGoneHours = 30.0f;
 
+	/**
+	 * Optischer Schnitt in der Blastozyste: Was näher als dieser Anteil des Keimradius vor seiner Mitte liegt,
+	 * wird ausgeblendet (0,35 = Trophoblast-Kappe weg, Embryoblast und Hohlraum sichtbar).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Rendering")
+	float SectionMarginFraction = 0.35f;
+
 private:
-	void PushCells(const FGenesisEmbryoState& State);
+	void UpdateSection(const FGenesisEmbryoState& State);
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> SectionMaterial;
+
+	void PushCells(const FGenesisEmbryoState& State, const FGenesisEmbryoTuning& Tuning);
 	void PushFragments(const FGenesisEmbryoState& State);
 	void UpdateOocyteRemains(const FGenesisEmbryoState& State);
 	int32 LastFragmentCount = -1;

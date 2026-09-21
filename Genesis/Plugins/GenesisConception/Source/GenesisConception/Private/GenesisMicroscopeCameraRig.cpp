@@ -34,6 +34,17 @@ namespace
 			}
 		}));
 
+	FAutoConsoleCommandWithWorldAndArgs GenesisWatchEmbryoCommand(
+		TEXT("genesis.Conception.WatchEmbryo"),
+		TEXT("Kamera sofort auf den Keim, mit der Optik der ersten Woche (für Bildprüfungen mit genesis.Embryo.Start)."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			for (TActorIterator<AGenesisMicroscopeCameraRig> It(World); It; ++It)
+			{
+				It->DebugWatchEmbryo();
+			}
+		}));
+
 	FAutoConsoleCommandWithWorldAndArgs GenesisEgoViewCommand(
 		TEXT("genesis.Race.EgoView"),
 		TEXT("Rennen: halbe Ich-Perspektive (1) oder Verfolgeransicht (0). Optional: <Abstand µm> <Höhe °> <Vorausblick µm> <Seite °> <Brennweite mm>."),

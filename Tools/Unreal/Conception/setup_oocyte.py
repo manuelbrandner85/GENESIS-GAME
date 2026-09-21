@@ -380,7 +380,16 @@ def create_zona_material():
     mel.connect_material_property(spec, "", unreal.MaterialProperty.MP_SPECULAR)
 
     # Relativer Brechungsindex gegen die Eileiterflüssigkeit (1,38 / 1,335): kaum Versatz, aber sichtbarer Rand
-    ior = constant(material, -700, 860, 1.04)
+    # Brechung im Bildraum liest das Bild dahinter versetzt aus. Am Bildrand gibt es kein „dahinter" –
+    # die Engine wiederholt die letzte Zeile, und über der Zona standen helle Balken am oberen und unteren
+    # Rand (GENESIS-038, gegengeprüft mit r.RefractionQuality 0). Zum Rand hin läuft die Brechung deshalb aus.
+    screen = expression(material, unreal.MaterialExpressionScreenPosition, -1000, 900)
+    ior = custom(material, -700, 860, "Brechung ohne Randfehler", """
+float2 uv = ViewportUV;
+float edge = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+return lerp(1.0, 1.04, smoothstep(0.0, 0.12, edge));
+""", ["ViewportUV"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    connect(screen, "ViewportUV", ior, ["ViewportUV"])
     mel.connect_material_property(ior, "", unreal.MaterialProperty.MP_REFRACTION)
 
     mel.recompile_material(material)

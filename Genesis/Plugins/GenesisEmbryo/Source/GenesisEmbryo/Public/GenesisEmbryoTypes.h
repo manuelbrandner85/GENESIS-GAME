@@ -157,20 +157,38 @@ struct GENESISEMBRYO_API FGenesisEmbryoTuning
 	/** Stunden bis zur ersten Furchungsteilung. */
 	UPROPERTY(EditAnywhere, Category = "Timing") FFloatInterval FirstCleavageHours = FFloatInterval(24.0f, 30.0f);
 
-	/** Stunden zwischen den weiteren Teilungen einer Zelle. */
-	UPROPERTY(EditAnywhere, Category = "Timing") FFloatInterval CleavageIntervalHours = FFloatInterval(11.0f, 17.0f);
+	/**
+	 * Zeiten gegen die Mediane aus IVF-Zeitraffer-Aufnahmen gesetzt (340 Keime, HROpen 2024; Docs/26):
+	 * t2 25,8 · t3 36,9 · t4 38,3 · t8 58,7 · Kompaktierung 80,2 · Morula 88,9 · Blastulation 99,0 ·
+	 * volle Blastozyste 109,9 · Schlüpfen ab 116 h. Das Modell trifft jede Marke auf gut 2 h
+	 * (Test Genesis.Embryo.ClinicalTimings). Vorher kamen Kompaktierung und Blastozyste fast einen Tag zu früh.
+	 *
+	 * Der zweite Zellzyklus (2 → 4) ist kurz, ab dem dritten (4 → 8) werden die Zyklen deutlich länger –
+	 * dort übernimmt das eigene Erbgut des Keims die Steuerung.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Timing") FFloatInterval CleavageIntervalHours = FFloatInterval(10.0f, 13.0f);
 
-	/** Ab dieser Zellzahl beginnt die Kompaktierung. */
-	UPROPERTY(EditAnywhere, Category = "Timing") int32 CompactionCellCount = 8;
+	/** Zellzyklus ab der dritten Teilungsrunde (h). */
+	UPROPERTY(EditAnywhere, Category = "Timing") FFloatInterval LaterCleavageIntervalHours = FFloatInterval(15.0f, 20.0f);
 
-	/** Dauer der Kompaktierung (h). */
-	UPROPERTY(EditAnywhere, Category = "Timing") float CompactionHours = 14.0f;
+	/** Ab dieser Zellzahl beginnt die Kompaktierung (klinisch um 80 h, zwischen 8 und 16 Zellen). */
+	UPROPERTY(EditAnywhere, Category = "Timing") int32 CompactionCellCount = 15;
+
+	/** Dauer der Kompaktierung (h): 80,2 → 88,9 h. */
+	UPROPERTY(EditAnywhere, Category = "Timing") float CompactionHours = 9.0f;
 
 	/** Ab dieser Zellzahl bildet sich der Hohlraum. */
-	UPROPERTY(EditAnywhere, Category = "Timing") int32 CavitationCellCount = 16;
+	UPROPERTY(EditAnywhere, Category = "Timing") int32 CavitationCellCount = 28;
 
-	/** Dauer bis zur voll ausgedehnten Blastozyste (h). */
-	UPROPERTY(EditAnywhere, Category = "Timing") float ExpansionHours = 34.0f;
+	/** Dauer bis zur voll ausgedehnten Blastozyste (h). Hälfte (volle Blastozyste) nach 11 h. */
+	UPROPERTY(EditAnywhere, Category = "Timing") float ExpansionHours = 22.0f;
+
+	/** Vorkerne sichtbar ab (h, Median 8,3) bis zu ihrer Auflösung (h, Median 23,3). */
+	UPROPERTY(EditAnywhere, Category = "Timing") float PronucleiAppearHours = 8.3f;
+	UPROPERTY(EditAnywhere, Category = "Timing") float PronucleiFadeHours = 23.3f;
+
+	/** Vor einer Teilung löst sich die Kernhülle auf; so lange ist kein Kern zu sehen (h). */
+	UPROPERTY(EditAnywhere, Category = "Timing") float MitosisHours = 1.5f;
 
 	/** Ab diesem Ausdehnungsgrad reißt die Zona. */
 	UPROPERTY(EditAnywhere, Category = "Timing", meta = (ClampMin = "0", ClampMax = "1")) float HatchingCavity = 0.95f;

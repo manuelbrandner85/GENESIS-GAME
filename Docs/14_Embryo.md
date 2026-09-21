@@ -100,3 +100,71 @@ Hoffman-Kontrast grau-beige, durchscheinend, körnig, mit sichtbaren Kernen, Vor
 Die Zeiten der Simulation weichen von den Klinikdaten ab (erste Teilung 24 h statt Median 25,8 h, 8 Zellen
 bei 56 h statt 58,7 h, Morula mit 8 statt nach Kompaktierung bei ~89 h, Blastozyste bei 74 statt ~100–110 h).
 Beides ist der nächste Schritt – Zahlen siehe [26 – Recherche und Plan](26_Recherche_und_Plan_AAA.md).
+## GENESIS-038 (Teil 3) – Der Keim wie im Labor: Klinikzeiten, Kerne, Hoffman-Kontrast, optischer Schnitt
+
+Zielbild: kie.ai-Referenz „Keim mit 4 Zellen im Hoffman-Kontrast" (Docs/26, Abschnitt 4).
+
+### Die Uhr gegen die Klinik
+
+Bisher kamen Kompaktierung und Blastozyste fast **einen Tag zu früh** (Kompaktierung bei 59 statt 80 h,
+Blastulation bei 76 statt 99 h). Ursache: ein einziger Zellzyklus für alle Runden und Kompaktierung schon ab 8
+Zellen. Jetzt: Der zweite Zyklus (2 → 4) ist kurz (10–13 h), ab der dritten Runde 15–20 h
+(Genomaktivierung). Kompaktierung ab 15 Zellen, 9 h Dauer; Hohlraum ab 28 Zellen, 22 h Ausdehnung.
+Vorher per Nachbau in Python gegen 200 Keime abgestimmt, dann im Test gemessen (60 Keime,
+`Genesis.Embryo.ClinicalTimings`):
+
+| Marke | Modell | Klinik (Median, HROpen 2024) |
+|---|---|---|
+| 2 Zellen | 26,0 h | 25,8 h |
+| 4 Zellen | 39,2 h | 38,3 h |
+| 8 Zellen | 60,0 h | 58,7 h |
+| Kompaktierung | 79,0 h | 80,2 h |
+| Blastulation | 97,5 h | 99,0 h |
+| volle Blastozyste | 108,5 h | 109,9 h |
+
+Tag 5: 57 Zellen, davon 16 Embryoblast (Hardy 1989: 58 ± 8, davon ~20). Der alte Test erwartete die
+Kompaktierung am dritten Tag – das war falsch und ist korrigiert.
+
+### Kerne
+
+Neu `GenesisEmbryoLogic::GetNucleusDisplay`: zwei Vorkerne von 8,3 bis 23,3 h (Syngamie), danach bis zur
+ersten Teilung kein Kern; in den Furchungszellen ein Kern, der sich 1,5 h vor jeder Teilung auflöst.
+Test `Genesis.Embryo.NucleiVisible`. Die Zellen tragen jetzt fünf Werte je Instanz.
+
+### Hoffman-Kontrast statt rosa Plastik
+
+Die Helligkeit folgt – wie im Hoffman-Mikroskop – dem Gefälle der optischen Weglänge in einer festen
+Bildrichtung: q.x / √(1 − |q|²), mit q aus der Flächennormale (bei einer Kugel ist das genau die Lage im
+Bild). Eine Seite jeder Zelle hell gesäumt, die andere dunkel. Der Kern schimmert durch als glatte Scheibe
+mit eigenem Reliefsaum und Kernkörperchen; die Zygote zeigt zwei Vorkerne, die sich berühren. Körnung in drei
+Größen, grau-beige statt rosa (Zytoplasma ist farblos). Die Helligkeit kam vor allem aus der Streufarbe
+(0,26), nicht aus der Grundfarbe – erst deren Absenken machte das Relief sichtbar.
+
+### Optischer Schnitt
+
+Ein Mikroskop zeigt eine dünne Ebene durch die Mitte. Für die Furchung sieht das aus wie die Zellen von
+außen. Die Blastozyste aber war eine Kugel aus Zellen ohne Hohlraum (gesehen bei 110 h). Jetzt blendet das
+Material ab dem Hohlraum alles vor und hinter einer Scheibe von ±35 % des Keimradius gerastert aus; der
+Keim-Actor setzt die Ebene je Bild. **Eigene Fehler dabei:**
+- Maskenschwelle 0,333 statt 0,5: 17 % der ausgeblendeten Punkte blieben als Tarnmuster stehen.
+- Der Embryoblast lag zufällig vorn und wurde weggeschnitten, übrig blieb ein leerer Ring. Jetzt dreht sich
+  der Keim langsam so, dass der Embryoblast auf 3 Uhr liegt – wie Embryologen es am Mikroskop tun.
+
+### Nebenbefund: Balken am Bildrand
+
+Helle Balken oben und unten in jeder Keim-Aufnahme. Ursache ist die Brechung der Zona im Bildraum: Am
+Rand gibt es kein Bild dahinter. Gegengeprüft mit `r.RefractionQuality 0`. Die Brechung läuft jetzt zum
+Rand hin aus.
+
+Neuer Befehl zum Prüfen: `genesis.Embryo.Start 0.8, genesis.Embryo.Advance <h>, genesis.Conception.WatchEmbryo`.
+
+![Vorkerne 21 h](Media/GENESIS-038_Vorkerne_21h.png)
+![8 Zellen 70 h](Media/GENESIS-038_8Zellen_70h.png)
+![Blastozyste 118 h](Media/GENESIS-038_Blastozyste_118h.png)
+![Im Spielablauf: 2 Zellen](Media/GENESIS-038_Spielablauf_2Zellen.png)
+
+### Offen
+
+- Der Polkörper ist noch rosa (eigenes Material der Eizelle).
+- Ein Glanzpunkt des Endoskoplichts in der Bildmitte – im Hoffman-Mikroskop gibt es ihn nicht.
+- Zellen, die sich überlappen, zeigen ihre Schnittkante als Linie, statt sich abzuflachen.

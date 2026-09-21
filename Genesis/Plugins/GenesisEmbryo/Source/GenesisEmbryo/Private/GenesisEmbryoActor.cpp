@@ -6,15 +6,20 @@
 #include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
 #include "GenesisEmbryoSubsystem.h"
+#include "GenesisEmbryoLogic.h"
 #include "GenesisOocyte.h"
 #include "GenesisSpermSwarm.h"
 #include "EngineUtils.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "GameFramework/PlayerController.h"
+#include "Camera/PlayerCameraManager.h"
 
 namespace
 {
 	/** Radius der Zellkugel des Grundmesh (SM_GEN_OocyteCytoplasm) in µm. */
 	constexpr float BaseCellRadiusUm = 55.0f;
-	constexpr int32 CellDataCount = 3;
+	/** Je Zelle: Farbton, Embryoblast, Fragmentierung, Kern sichtbar (0..1), Vorkerne (0/1). */
+	constexpr int32 CellDataCount = 5;
 }
 
 AGenesisEmbryo::AGenesisEmbryo()
@@ -43,12 +48,14 @@ void AGenesisEmbryo::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Eine dynamische Materialinstanz für beide Komponenten: Die Lage des optischen Schnitts ändert sich je Bild
+	SectionMaterial = CellMaterial ? UMaterialInstanceDynamic::Create(CellMaterial, this) : nullptr;
 	if (Blastomeres)
 	{
 		Blastomeres->SetStaticMesh(CellMesh);
-		if (CellMaterial)
+		if (SectionMaterial)
 		{
-			Blastomeres->SetMaterial(0, CellMaterial);
+			Blastomeres->SetMaterial(0, SectionMaterial);
 		}
 		Blastomeres->ClearInstances();
 		Blastomeres->SetNumCustomDataFloats(CellDataCount);
@@ -56,9 +63,9 @@ void AGenesisEmbryo::BeginPlay()
 	if (Fragments)
 	{
 		Fragments->SetStaticMesh(CellMesh);
-		if (CellMaterial)
+		if (SectionMaterial)
 		{
-			Fragments->SetMaterial(0, CellMaterial);
+			Fragments->SetMaterial(0, SectionMaterial);
 		}
 		Fragments->ClearInstances();
 		Fragments->SetNumCustomDataFloats(CellDataCount);
@@ -79,9 +86,59 @@ void AGenesisEmbryo::Tick(float DeltaSeconds)
 	}
 
 	const FGenesisEmbryoState& State = Embryo->GetState();
-	PushCells(State);
+	PushCells(State, Embryo->Tuning);
 	PushFragments(State);
 	UpdateOocyteRemains(State);
+	UpdateSection(State);
+}
+
+void AGenesisEmbryo::UpdateSection(const FGenesisEmbryoState& State)
+{
+	if (!SectionMaterial)
+	{
+		return;
+	}
+	// Ein Mikroskop zeigt eine dünne Ebene durch die Mitte. Bei den Furchungsstadien sieht das aus wie die
+	// Zellen von außen (ihr Umriss ist ihr Äquator). Erst die Blastozyste ist hohl: Dann gehört die vordere
+	// Kappe der Hülle ausgeblendet, damit Hohlraum, Trophoblast-Ring und Embryoblast zu sehen sind.
+	const APlayerController* Controller = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	const APlayerCameraManager* CameraManager = Controller ? Controller->PlayerCameraManager.Get() : nullptr;
+	float Front = -1.0e6f;
+	float Back = 1.0e6f;
+	if (CameraManager && State.Cavity > 0.02f)
+	{
+		const FVector Camera = CameraManager->GetCameraLocation();
+		const FVector Forward = CameraManager->GetCameraRotation().Vector();
+		const float CenterDepth = static_cast<float>(FVector::DotProduct(GetActorLocation() - Camera, Forward));
+		const float Radius = State.GetOuterRadiusUm();
+		// Mit wachsendem Hohlraum zieht sich die Schicht von „ganzer Keim" auf eine Scheibe um die Mitte zusammen:
+		// vorn und hinten je SectionMarginFraction des Radius. Die hintere Kappe als Mosaik durch den Hohlraum
+		// zu sehen, wäre ebenso falsch wie die vordere (gesehen bei 118 h).
+		const float Open = FMath::SmoothStep(0.02f, 0.4f, State.Cavity);
+		const float Half = FMath::Lerp(1.3f * Radius, SectionMarginFraction * Radius, Open);
+
+		// Den Embryoblast in die Schnittebene drehen, wie Embryologen es am Mikroskop tun („ICM auf 3 Uhr").
+		// Lag er zufällig vorn oder hinten, schnitt der optische Schnitt ihn weg – die Blastozyste war
+		// dann ein leerer Ring (gesehen bei 118 h).
+		FVector Inner = FVector::ZeroVector;
+		for (const FGenesisBlastomere& Cell : State.Cells)
+		{
+			Inner += Cell.bInnerCellMass ? Cell.Position : FVector::ZeroVector;
+		}
+		if (!Inner.IsNearlyZero())
+		{
+			const FVector Current = GetActorQuat().RotateVector(Inner.GetSafeNormal());
+			const FVector Right = CameraManager->GetCameraRotation().Quaternion().GetRightVector();
+			const FQuat Delta = FQuat::FindBetweenNormals(Current, Right);
+			const float DeltaSeconds = GetWorld()->GetDeltaSeconds();
+			const float Alpha = 1.0f - FMath::Exp(-DeltaSeconds / 2.5f);
+			SetActorRotation(FQuat::Slerp(FQuat::Identity, Delta, Alpha) * GetActorQuat());
+		}
+		Front = CenterDepth - Half;
+		Back = CenterDepth + Half;
+	}
+	SectionMaterial->SetScalarParameterValue(TEXT("SectionFrontUm"), Front);
+	SectionMaterial->SetScalarParameterValue(TEXT("SectionBackUm"), Back);
 }
 
 void AGenesisEmbryo::PushFragments(const FGenesisEmbryoState& State)
@@ -123,6 +180,8 @@ void AGenesisEmbryo::PushFragments(const FGenesisEmbryoState& State)
 		Data.Add(0.1f);
 		Data.Add(0.0f);
 		Data.Add(1.0f);
+		Data.Add(0.0f); // Trümmer haben keinen Kern
+		Data.Add(0.0f);
 	}
 	Fragments->PreAllocateInstancesMemory(Count);
 	Fragments->AddInstances(Transforms, false, false, false);
@@ -133,7 +192,7 @@ void AGenesisEmbryo::PushFragments(const FGenesisEmbryoState& State)
 	Fragments->MarkRenderStateDirty();
 }
 
-void AGenesisEmbryo::PushCells(const FGenesisEmbryoState& State)
+void AGenesisEmbryo::PushCells(const FGenesisEmbryoState& State, const FGenesisEmbryoTuning& Tuning)
 {
 	if (!Blastomeres || !CellMesh)
 	{
@@ -172,6 +231,11 @@ void AGenesisEmbryo::PushCells(const FGenesisEmbryoState& State)
 		CustomDataBuffer[Index * CellDataCount + 0] = Cell.Tint;
 		CustomDataBuffer[Index * CellDataCount + 1] = Cell.bInnerCellMass ? 1.0f : 0.0f;
 		CustomDataBuffer[Index * CellDataCount + 2] = State.Fragmentation;
+		float NucleusVisibility = 0.0f;
+		bool bPronuclei = false;
+		GenesisEmbryoLogic::GetNucleusDisplay(State, Index, Tuning, NucleusVisibility, bPronuclei);
+		CustomDataBuffer[Index * CellDataCount + 3] = NucleusVisibility;
+		CustomDataBuffer[Index * CellDataCount + 4] = bPronuclei ? 1.0f : 0.0f;
 	}
 
 	if (LastCellCount != Count)

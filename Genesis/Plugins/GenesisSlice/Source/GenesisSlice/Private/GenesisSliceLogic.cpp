@@ -128,11 +128,11 @@ namespace GenesisSliceLogic
 		switch (Stage)
 		{
 		case EGenesisEmbryoStage::Zygote:
-			return TEXT("Zygote – das Erbgut von Mutter und Vater liegt noch in zwei Vorkernen. Nach 22–24 h lösen sie sich auf und vereinen sich.");
+			return TEXT("Zygote – nach etwa 8 h erscheinen zwei Vorkerne: das Erbgut von Mutter und Vater, noch getrennt. Nach etwa 23 h lösen sie sich auf und vereinen sich.");
 		case EGenesisEmbryoStage::Cleavage:
-			return TEXT("Furchung – die Zellen teilen sich etwa alle 12–17 h, ohne zu wachsen. Der Keim bleibt so groß wie die Eizelle.");
+			return TEXT("Furchung – die Zellen teilen sich, ohne zu wachsen: erst nach etwa 12 h, ab vier Zellen nach 15–20 h. Der Keim bleibt so groß wie die Eizelle.");
 		case EGenesisEmbryoStage::Morula:
-			return TEXT("Morula – die Zellen verzahnen sich zu einem dichten Verband. Seit dem 4- bis 8-Zell-Stadium arbeitet das eigene Erbgut.");
+			return TEXT("Morula – ab Tag 4 verzahnen sich die Zellen zu einem dichten Verband. Seit dem 4- bis 8-Zell-Stadium arbeitet das eigene Erbgut.");
 		case EGenesisEmbryoStage::Blastocyst:
 			return TEXT("Blastozyste – innen sammelt sich Flüssigkeit. Außen der Trophoblast, später Mutterkuchen; innen der Embryoblast: daraus wirst du.");
 		case EGenesisEmbryoStage::Hatching:

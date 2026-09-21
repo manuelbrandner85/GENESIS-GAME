@@ -212,6 +212,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Race|Ego", meta = (ClampMin = "0"))
 	float RaceEgoLightBackUm = 36.0f;
 
+	/** Entwickler: sofort die Einstellung auf den Keim wie nach der Verschmelzung (genesis.Conception.WatchEmbryo). */
+	void DebugWatchEmbryo() { bWatchOocyte = true; bWatchFertilization = true; SecondsSinceFusion = 1000.0f; bInitialized = false; }
+
 	void ToggleRaceView() { bRaceEgoView = !bRaceEgoView; bInitialized = false; }
 	bool IsRaceEgoView() const { return bRaceEgoView; }
 	/** Zeigt die Kamera gerade die Ich-Perspektive (im Rennen, hinter der eigenen Zelle)? */

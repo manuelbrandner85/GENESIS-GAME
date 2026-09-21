@@ -41,9 +41,13 @@ bool FGenesisEmbryoTimelineTest::RunTest(const FString& Parameters)
 	AddInfo(FString::Printf(TEXT("72 h: %d Zellen, Stufe %s, Kompaktierung %.0f %%"),
 		State.GetCellCount(), *GenesisEmbryoLogic::GetStageName(State.Stage), 100.0f * State.Compaction));
 	TestTrue(TEXT("Tag 3: mindestens 8 Zellen"), State.GetCellCount() >= 8);
-	TestTrue(TEXT("Tag 3: Kompaktierung hat begonnen"), State.Stage == EGenesisEmbryoStage::Morula || State.Stage == EGenesisEmbryoStage::Blastocyst);
+	// Kompaktierung klinisch ab ~80 h, also am vierten Tag – die frühere Erwartung „Tag 3" war zu früh
+	TestTrue(TEXT("Tag 3: noch keine Blastozyste"), State.Stage < EGenesisEmbryoStage::Blastocyst);
 
-	GenesisEmbryoLogic::Advance(State, Tuning, 48.0); // 120 h = Tag 5
+	GenesisEmbryoLogic::Advance(State, Tuning, 24.0); // 96 h = Tag 4
+	TestTrue(TEXT("Tag 4: Morula"), State.Stage == EGenesisEmbryoStage::Morula || State.Stage == EGenesisEmbryoStage::Blastocyst);
+
+	GenesisEmbryoLogic::Advance(State, Tuning, 24.0); // 120 h = Tag 5
 	AddInfo(FString::Printf(TEXT("120 h: %d Zellen, Stufe %s, Hohlraum %.0f %%, Embryoblast %d"),
 		State.GetCellCount(), *GenesisEmbryoLogic::GetStageName(State.Stage), 100.0f * State.Cavity,
 		GenesisEmbryoLogic::CountInnerCellMass(State)));
@@ -60,6 +64,93 @@ bool FGenesisEmbryoTimelineTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Tag 10: eingenistet"), State.Stage == EGenesisEmbryoStage::Implanted);
 	TestEqual(TEXT("Zona ist aufgebraucht"), State.ZonaThicknessUm, 0.0f);
 
+	return true;
+}
+
+/**
+ * Die Uhr der ersten Woche gegen die Klinik: Mediane aus IVF-Zeitraffer-Aufnahmen (340 Keime, HROpen 2024).
+ * 60 Keime unterschiedlicher Lebenskraft; jeder Median muss auf 10 % (mindestens 4 h) an der Klinik liegen.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisEmbryoClinicalTimingsTest, "Genesis.Embryo.ClinicalTimings",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FGenesisEmbryoClinicalTimingsTest::RunTest(const FString& Parameters)
+{
+	const FGenesisEmbryoTuning Tuning;
+	struct FMark { const TCHAR* Name; double Clinic; TArray<double> Seen; };
+	FMark Marks[] = {
+		{ TEXT("t2"), 25.8 }, { TEXT("t4"), 38.3 }, { TEXT("t8"), 58.7 },
+		{ TEXT("Kompaktierung"), 80.2 }, { TEXT("Blastulation"), 99.0 }, { TEXT("volle Blastozyste"), 109.9 } };
+
+	for (int32 Seed = 0; Seed < 60; ++Seed)
+	{
+		FGenesisEmbryoState State = MakeEmbryo(500 + Seed, 0.5f + 0.4f * (Seed % 10) / 9.0f);
+		bool bDone[UE_ARRAY_COUNT(Marks)] = {};
+		for (int32 Step = 0; Step < 200 * 4; ++Step)
+		{
+			GenesisEmbryoLogic::Advance(State, Tuning, 0.25);
+			const bool Reached[] = { State.GetCellCount() >= 2, State.GetCellCount() >= 4, State.GetCellCount() >= 8,
+				State.Stage >= EGenesisEmbryoStage::Morula, State.Stage >= EGenesisEmbryoStage::Blastocyst, State.Cavity >= 0.5f };
+			for (int32 Mark = 0; Mark < UE_ARRAY_COUNT(Marks); ++Mark)
+			{
+				if (Reached[Mark] && !bDone[Mark])
+				{
+					bDone[Mark] = true;
+					Marks[Mark].Seen.Add(State.HoursSinceFusion);
+				}
+			}
+		}
+	}
+
+	for (FMark& Mark : Marks)
+	{
+		Mark.Seen.Sort();
+		const double Median = Mark.Seen.Num() > 0 ? Mark.Seen[Mark.Seen.Num() / 2] : 0.0;
+		const double Tolerance = FMath::Max(4.0, 0.1 * Mark.Clinic);
+		AddInfo(FString::Printf(TEXT("%s: Modell %.1f h, Klinik %.1f h"), Mark.Name, Median, Mark.Clinic));
+		TestTrue(FString::Printf(TEXT("%s im klinischen Bereich"), Mark.Name), FMath::Abs(Median - Mark.Clinic) <= Tolerance);
+	}
+	return true;
+}
+
+/** Vorkerne erscheinen und verschwinden zur richtigen Zeit; vor jeder Teilung ist der Kern weg. */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisEmbryoNucleiTest, "Genesis.Embryo.NucleiVisible",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FGenesisEmbryoNucleiTest::RunTest(const FString& Parameters)
+{
+	const FGenesisEmbryoTuning Tuning;
+	FGenesisEmbryoState State = MakeEmbryo(31, 0.8f);
+	float Visibility = 0.0f;
+	bool bPronuclei = false;
+
+	GenesisEmbryoLogic::Advance(State, Tuning, 4.0);
+	GenesisEmbryoLogic::GetNucleusDisplay(State, 0, Tuning, Visibility, bPronuclei);
+	TestTrue(TEXT("4 h: noch keine Vorkerne"), Visibility < 0.01f);
+
+	GenesisEmbryoLogic::Advance(State, Tuning, 12.0); // 16 h
+	GenesisEmbryoLogic::GetNucleusDisplay(State, 0, Tuning, Visibility, bPronuclei);
+	TestTrue(TEXT("16 h: zwei Vorkerne sichtbar"), bPronuclei && Visibility > 0.99f);
+
+	GenesisEmbryoLogic::Advance(State, Tuning, 8.0); // 24 h
+	GenesisEmbryoLogic::GetNucleusDisplay(State, 0, Tuning, Visibility, bPronuclei);
+	TestTrue(TEXT("24 h: Vorkerne aufgelöst (Syngamie)"), Visibility < 0.01f);
+
+	GenesisEmbryoLogic::Advance(State, Tuning, 8.0); // 32 h, zwei Zellen
+	bool bSawHidden = false;
+	bool bSawVisible = false;
+	for (int32 Step = 0; Step < 4 * 40; ++Step)
+	{
+		GenesisEmbryoLogic::Advance(State, Tuning, 0.25);
+		for (int32 Index = 0; Index < State.GetCellCount(); ++Index)
+		{
+			GenesisEmbryoLogic::GetNucleusDisplay(State, Index, Tuning, Visibility, bPronuclei);
+			TestFalse(TEXT("Furchungszellen haben keine Vorkerne"), bPronuclei);
+			bSawHidden |= Visibility < 0.01f;
+			bSawVisible |= Visibility > 0.99f;
+		}
+	}
+	TestTrue(TEXT("Kerne sichtbar und vor der Teilung aufgelöst"), bSawHidden && bSawVisible);
 	return true;
 }
 

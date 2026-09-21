@@ -125,6 +125,72 @@ return saturate(v);
 """
 
 
+# Hoffman-Modulationskontrast (so zeigt jedes IVF-Labor den Keim, Zielbild ArtSource/Reference/kie/02):
+# Die Helligkeit folgt dem Gefälle der optischen Weglänge in EINER Bildrichtung – eine Seite jeder Zelle
+# hell gesäumt, die andere dunkel, die Mitte mittelgrau. Für eine Kugel ist das Gefälle an der Stelle q
+# (Lage im Bild relativ zur Zellmitte, 0 Mitte … 1 Rand) proportional zu q.x / sqrt(1 − |q|²).
+# q kommt aus der Flächennormale: Bei einer Kugel ist sie (P − Mitte)/R, ihr Anteil quer zur Blickrichtung
+# ist also genau die Lage im Bild – unabhängig von Größe und Abstand der Zelle.
+# Der Zellkern liegt in der Mitte und schimmert durch das klare Zytoplasma: eine glatte, runde Fläche mit
+# eigenem Reliefsaum und ein bis zwei Kernkörperchen. Die Zygote zeigt stattdessen zwei Vorkerne, die
+# sich in der Mitte berühren.
+COMPOSE_CODE = """
+float3 n = normalize(N);
+float3 v = normalize(V);
+float3 s = normalize(S - v * dot(S, v));
+float3 u = normalize(cross(v, s));
+float3 np = n - v * dot(n, v);
+float2 q = float2(dot(np, s), dot(np, u));
+float r2 = saturate(dot(q, q));
+
+// Relief der Zelle
+float relief = clamp(q.x / sqrt(max(1.0 - r2, 0.03)) * 0.42, -1.1, 1.1);
+
+// Kern(e)
+float nucleus = 0.0;
+float detail = 0.0;
+if (NucVis > 0.01)
+{
+    int count = Pro > 0.5 ? 2 : 1;
+    float rn = Pro > 0.5 ? 0.24 : 0.30;
+    float sep = Pro > 0.5 ? 0.235 : 0.0;
+    for (int k = 0; k < count; ++k)
+    {
+        float sg = k == 0 ? 1.0 : -1.0;
+        float2 d = (q - float2(0.03, sg * sep)) / rn;
+        float dd = length(d);
+        float inside = 1.0 - smoothstep(0.86, 1.0, dd);
+        nucleus = max(nucleus, inside);
+        // Saum der Kernhülle: dasselbe Relief im Kleinen
+        float rim = smoothstep(0.72, 0.95, dd) * (1.0 - smoothstep(0.98, 1.12, dd));
+        detail += rim * d.x * 1.3;
+        // Kernkörperchen (Nucleoli): kleine dichte Punkte, bei Vorkernen in einer Reihe an der Berührungsseite
+        float2 c1 = Pro > 0.5 ? float2(0.15, -sg * 0.45) : float2(0.28, -0.18);
+        float2 c2 = Pro > 0.5 ? float2(-0.25, -sg * 0.40) : float2(-0.22, 0.25);
+        float n1 = 1.0 - smoothstep(0.10, 0.17, length(d - c1));
+        float n2 = 1.0 - smoothstep(0.08, 0.14, length(d - c2));
+        // dunkler Punkt mit eigenem kleinen Reliefsaum
+        detail += -0.45 * (n1 + n2) + 0.6 * (n1 * (d.x - c1.x) / 0.17 + n2 * (d.x - c2.x) / 0.14);
+    }
+    nucleus *= NucVis;
+    detail *= NucVis;
+}
+
+// Körnung: im Kern fast glatt, im Zytoplasma fein gekörnt
+float grain = 0.5 * Fine + 0.3 * Mid + 0.2 * Coarse;
+float grainAmount = (1.0 - 0.8 * nucleus) * (0.85 + 0.3 * Tint);
+float tone = 0.45 + (grain - 0.5) * 1.1 * grainAmount + relief * 0.34 + detail * 0.36 + nucleus * 0.03;
+tone = saturate(tone);
+
+float3 dark = float3(0.012, 0.0115, 0.0105);
+float3 light = float3(0.13, 0.123, 0.112);
+float3 col = lerp(dark, light, tone);
+// Embryoblast etwas dichter gepackt: minimal wärmer und dunkler
+col *= lerp(float3(1.0, 1.0, 1.0), float3(0.97, 0.93, 0.88), Inner);
+return col;
+"""
+
+
 def create_blastomere_material():
     """
     Furchungszelle: Das Zytoplasma stammt aus der Eizelle, ist also ebenso körnig –
@@ -136,39 +202,76 @@ def create_blastomere_material():
     # der Engine ein – ein graues Schachbrett auf jeder Zelle (gesehen in GENESIS-038).
     material.set_editor_property("used_with_instanced_static_meshes", True)
 
+    float1 = unreal.CustomMaterialOutputType.CMOT_FLOAT1
     uv = expression(material, unreal.MaterialExpressionTextureCoordinate, -1700, 0)
-    grain = custom(material, -1400, 0, "Zytoplasma-Korn", FBM2D_CODE, ["UV", "Freq"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
-    connect(uv, "", grain, ["UV"])
-    connect(constant(material, -1700, 180, 42.0), "", grain, ["Freq"])
 
-    coarse = custom(material, -1400, 300, "Plasmaschlieren", FBM2D_CODE, ["UV", "Freq"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
-    connect(uv, "", coarse, ["UV"])
-    connect(constant(material, -1700, 380, 6.5), "", coarse, ["Freq"])
+    def fbm(y, description, frequency):
+        node = custom(material, -1400, y, description, FBM2D_CODE, ["UV", "Freq"], float1)
+        connect(uv, "", node, ["UV"])
+        connect(constant(material, -1700, y + 80, frequency), "", node, ["Freq"])
+        return node
 
-    # Per-Instance-Daten aus der Simulation: 0 = Farbton der Zelle, 1 = Embryoblast, 2 = Fragmentierung
-    tint = expression(material, unreal.MaterialExpressionPerInstanceCustomData, -1400, 520, data_index=0)
-    inner = expression(material, unreal.MaterialExpressionPerInstanceCustomData, -1400, 620, data_index=1)
+    # Körnung in drei Größen: Granula (~1 µm), Organellenhaufen, Plasmaschlieren
+    fine = fbm(-200, "Granula", 160.0)
+    grain = fbm(0, "Zytoplasma-Korn", 42.0)
+    coarse = fbm(300, "Plasmaschlieren", 6.5)
 
-    structure = add(material, -1100, 150,
-                    multiply(material, -1250, 60, grain, constant(material, -1400, 120, 0.25)),
-                    multiply(material, -1250, 320, coarse, constant(material, -1400, 400, 0.30)))
-    shade = multiply(material, -900, 300, structure, tint)
+    # Per-Instance-Daten aus der Simulation: 0 Farbton, 1 Embryoblast, 2 Fragmentierung, 3 Kern sichtbar, 4 Vorkerne
+    def instance_data(index, y):
+        return expression(material, unreal.MaterialExpressionPerInstanceCustomData, -1400, y, data_index=index)
+    tint = instance_data(0, 520)
+    inner = instance_data(1, 620)
+    nucleus = instance_data(3, 720)
+    pronuclei = instance_data(4, 820)
 
-    dark = color(material, -900, -200, 0.045, 0.034, 0.028)
-    light = color(material, -900, -80, 0.155, 0.12, 0.10)
-    base = lerp3(material, -650, -140, dark, light, shade)
+    normal = expression(material, unreal.MaterialExpressionVertexNormalWS, -1400, 920)
+    camera = expression(material, unreal.MaterialExpressionCameraVectorWS, -1400, 1020)
+    # Scherrichtung des Hoffman-Kontrasts: fest im Bild (Bildrechts), wie der Modulator im Mikroskop
+    right = expression(material, unreal.MaterialExpressionTransform, -1400, 1120)
+    right.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_VIEW)
+    right.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_WORLD)
+    connect(color(material, -1700, 1120, 1.0, 0.0, 0.0), "", right, ["", "Input"])
 
-    # Der Embryoblast – aus ihm wird der Mensch – ist dichter gepackt und dadurch etwas wärmer und heller
-    inner_color = color(material, -900, 40, 0.20, 0.14, 0.105)
-    final_base = lerp3(material, -420, -80, base, inner_color, inner)
-    mel.connect_material_property(final_base, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    compose = custom(material, -900, 300, "Hoffman-Kontrast", COMPOSE_CODE,
+                     ["N", "V", "S", "Fine", "Mid", "Coarse", "Tint", "Inner", "NucVis", "Pro"],
+                     unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    for node, pin in ((normal, "N"), (camera, "V"), (right, "S"), (fine, "Fine"), (grain, "Mid"), (coarse, "Coarse"),
+                      (tint, "Tint"), (inner, "Inner"), (nucleus, "NucVis"), (pronuclei, "Pro")):
+        connect(node, "", compose, [pin])
+    mel.connect_material_property(compose, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
-    subsurface = color(material, -420, 200, 0.22, 0.10, 0.07)
+    # Streufarbe neutral warmgrau statt rosa: Zytoplasma ist farblos, das Rosa war erfunden
+    subsurface = color(material, -420, 200, 0.075, 0.07, 0.062)
     mel.connect_material_property(subsurface, "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
 
     opacity = expression(material, unreal.MaterialExpressionScalarParameter, -420, 320,
                          parameter_name="ScatterAmount", default_value=0.14)
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
+
+    # Optischer Schnitt: Ein Mikroskop zeigt eine dünne Ebene durch die Mitte des Keims, nicht seine
+    # Oberfläche. Ohne das war die Blastozyste eine Kugel aus Zellen, ohne Hohlraum und Embryoblast (gesehen
+    # bei 110 h). Was vor der Schnittebene liegt, blendet gerastert aus – wie eine unscharfe Ebene.
+    # Die Lage der Ebene setzt der Keim-Actor je Bild (SectionFrontUm = Tiefe, ab der gezeigt wird).
+    material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
+    # Schwelle genau in der Mitte des Rasters: Mit der Vorgabe 0,333 blieben 17 % der ausgeblendeten Punkte
+    # stehen – im Hohlraum ein Tarnmuster aus Zellresten (gesehen bei 118 h)
+    material.set_editor_property("opacity_mask_clip_value", 0.5)
+    depth = expression(material, unreal.MaterialExpressionPixelDepth, -900, 700)
+    front = expression(material, unreal.MaterialExpressionScalarParameter, -900, 780,
+                       parameter_name="SectionFrontUm", default_value=-1000000.0)
+    # Gerastert (Interleaved Gradient Noise, je Bild versetzt), das Zeit-Antialiasing glättet es zu einem Übergang
+    section = custom(material, -650, 720, "Optischer Schnitt", """
+float fade = min(saturate((Depth - Front) / 2.5), saturate((Back - Depth) / 2.5));
+float2 p = Parameters.SvPosition.xy + 5.588238 * float(View.StateFrameIndexMod8);
+float noise = frac(52.9829189 * frac(dot(p, float2(0.06711056, 0.00583715))));
+return fade + (noise - 0.5) * 0.98;
+""", ["Depth", "Front", "Back"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    connect(depth, "", section, ["Depth"])
+    connect(front, "", section, ["Front"])
+    back = expression(material, unreal.MaterialExpressionScalarParameter, -900, 860,
+                      parameter_name="SectionBackUm", default_value=1000000.0)
+    connect(back, "", section, ["Back"])
+    mel.connect_material_property(section, "", unreal.MaterialProperty.MP_OPACITY_MASK)
 
     roughness = add(material, -420, 430, constant(material, -650, 430, 0.30),
                     multiply(material, -650, 500, grain, constant(material, -820, 540, 0.12)))

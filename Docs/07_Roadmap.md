@@ -49,7 +49,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-035 | Der Kreißsaal | Echter Raum in echten Maßen statt Kästen und Kugel, Licht nur aus sichtbaren Quellen (Dämmerung), Kamera hebt das Kind auf die Brust der Mutter; Nanite-Materialfehler projektweit behoben | DONE (Gesicht der Mutter in 036) |
 | GENESIS-036 | Die Mutter und der erste Blick | MetaHuman-Mutter (4K-Gesicht, volles Mimik-Rig) im Bett; neues Plugin `GenesisPeople`: Haltung, Atem, Lidschlag, Blick, Hände per IK; Blick nach oben → sie holt das Kind vor ihr Gesicht (25 cm), Blickkontakt bindet | DONE (Kind ohne Körper, Hemd, Stimme beim Blickkontakt offen) |
 | GENESIS-037 | Das Wettrennen | Der Spieler lenkt eine Zelle aus 6000 und gibt beim Bohren die Kraft; Sieg = dieses Leben beginnt, Niederlage = neues Rennen. Ausgewogen gemessen (gut gelenkt 4/5, ohne Führung 0/5). Vier Modellfehler behoben (durchlässige Zona, Strom im Cumulus, fehlendes Progesteron, immer gleiches Feld), Coronazellen rund | DONE (Artefakt an Falte, Zilien-Zeitlupe offen) |
-| GENESIS-038 | Die erste Woche, Zelle für Zelle | Vorkerne und Syngamie (12–24 h), Teilungen 2→4→8 (bis Tag 3), Kompaktierung, Morula (Tag 4), Blastozyste mit Trophoblast und innerer Zellmasse (Tag 5), Schlüpfen aus der Zona (Tag 6), Anheften (Tag 7) – Carnegie-Stadien 1–4 in echten Maßen. Teil 1: Keim wieder sichtbar (war verloren), EmbryoScope-Zeitraffer 75 s, Laborbeschriftung, Zelltrümmer. Teil 2: echte Geißelwelle statt Wackeln, halbe Ich-Perspektive im Rennen, sechs kie.ai-Zielbilder | IN ARBEIT (Teil 3: Hoffman-Look, Kerne, Klinikzeiten) |
+| GENESIS-038 | Die erste Woche, Zelle für Zelle | Vorkerne und Syngamie (12–24 h), Teilungen 2→4→8 (bis Tag 3), Kompaktierung, Morula (Tag 4), Blastozyste mit Trophoblast und innerer Zellmasse (Tag 5), Schlüpfen aus der Zona (Tag 6), Anheften (Tag 7) – Carnegie-Stadien 1–4 in echten Maßen. Teil 1: Keim wieder sichtbar (war verloren), EmbryoScope-Zeitraffer 75 s, Laborbeschriftung, Zelltrümmer. Teil 2: echte Geißelwelle statt Wackeln, halbe Ich-Perspektive im Rennen, sechs kie.ai-Zielbilder. Teil 3: Uhr auf Klinik-Mediane (±2 h), Vorkerne und Kerne, Hoffman-Kontrast, optischer Schnitt durch die Blastozyste | DONE (Polkörper rosa, Glanzpunkt offen) |
 | GENESIS-039 | Einnistung und Keimscheibe | Synzytiotrophoblast wächst in die Schleimhaut, Lakunen mit mütterlichem Blut, zweiblättrige Keimscheibe (Epiblast/Hypoblast), Amnionhöhle, Dottersack, hCG – Woche 2, Carnegie 5–6 | PLAN |
 | GENESIS-040 | Gastrulation, Neuralrohr, erster Herzschlag | Primitivstreifen (Tag 15), drei Keimblätter, Chorda, Neuralplatte (Tag 18), Somiten, Neuralrohr schließt (Tag 22–28), der Herzschlauch schlägt (Tag 22) – Woche 3–4, Carnegie 7–12 | PLAN |
 | GENESIS-041 | Organogenese | Gliedmaßenknospen, Schlundbögen → Gesicht, Augenbecher und Linse, Herzscheidewände, Hirnbläschen, Finger und Zehen; Ende Woche 8: 3 cm, alle Organe angelegt – Carnegie 13–23 | PLAN |
@@ -431,3 +431,16 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Halbe Ich-Perspektive](Media/GENESIS-038_Ich-Perspektive.png)
+
+### GENESIS-038 (Teil 3) – Der Keim wie im Labor
+- 2026-09-21: Die Uhr der ersten Woche gegen die Mediane aus IVF-Zeitrafferaufnahmen gesetzt. Vorher kamen Kompaktierung und Blastozyste fast einen Tag zu früh. Jetzt liegt jede Marke auf gut 2 h (neuer Test ClinicalTimings). Der alte Test erwartete die Kompaktierung falsch schon am Tag 3.
+- 2026-09-21: Vorkerne (8,3–23,3 h) und Zellkerne, die sich vor jeder Teilung auflösen (neuer Test NucleiVisible).
+- 2026-09-21: Hoffman-Kontrast im Material (Relief aus dem Weglängengefälle, Kerne mit Saum und Kernkörperchen, grau-beige) statt rosa Plastik.
+- 2026-09-21: Optischer Schnitt durch die Blastozyste; der Keim dreht den Embryoblast auf 3 Uhr.
+- 2026-09-21: Eigene Fehler unterwegs: Maskenschwelle 0,333 statt 0,5 ergab ein Tarnmuster; der Embryoblast wurde weggeschnitten.
+- 2026-09-21: Nebenbefund behoben: helle Balken am Bildrand durch die Brechung der Zona.
+- 2026-09-21: 126 von 126 Tests. Sichtprüfung bei 21, 40, 70, 110 und 118 h und im echten Spielablauf (Rennen → Verschmelzung → 2 Zellen bei 31,8 hpi).
+- Offen: Polkörper rosa, Glanzpunkt des Lichts in der Bildmitte, Schnittkanten überlappender Zellen.
+- **Status: DONE.**
+
+![Blastozyste](Media/GENESIS-038_Blastozyste_118h.png)
