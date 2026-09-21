@@ -400,9 +400,12 @@ def create_corona_material():
     # Berührungstiefe aus dem Blender-Aufbau (Vertexfarbe B): 1 = freie Oberfläche, kleiner = an den
     # Nachbarn gedrückt. Dort, wo zwei Zellen aneinander liegen, kommt kein Licht hin – ohne diese
     # dunklen Fugen verschmelzen die Zellen zu einer hellen Masse, und der Komplex sieht aus wie Popcorn.
-    # Gemessen aus dem Aufbau: freie Oberflächen liegen bei 1,0, der Median bei 0,91, das untere
-    # Zehntel bei 0,71. Die Schwellen liegen deshalb dort, wo die Zellen einander wirklich drücken.
-    crease = smoothstep(material, -950, 620, vertex, "B", 0.70, 0.95)
+    # Die Schwellen müssen der gemessenen Verteilung folgen, sonst behandelt das Material halbe
+    # Zellen als Fuge oder gar keine. Gemessen im Aufbau nach GENESIS-033: Median 1,0, unteres
+    # Zehntel 0,956 – seit die Zellen einander umschließen statt sich an Ebenen zu schneiden, ist
+    # nur noch ein schmaler Saum wirklich gedrückt. Die Schwellen liegen deshalb eng beieinander;
+    # mit den alten (0,70/0,95) wäre die ganze Zellwolke eine einzige Fuge gewesen.
+    crease = smoothstep(material, -950, 620, vertex, "B", 0.90, 1.0)
 
     # Deutlich dunkler als Papier: Eine Zellwolke unter dem Endoskoplicht ist keine weiße Wand.
     # Mit hellem Grundton frisst das nahe Licht jede Zeichnung weg (gemessen: Median 0,87 bei 0,04 Tonumfang).

@@ -44,6 +44,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-030 | Schwimmbewegung gegen die Literatur | Aliasing durch Echtzeit behoben, zwei falsche Modellwerte korrigiert, CASA-Messung auf 60 Hz und Ebenenprojektion umgestellt; alle Kenngrößen in der Streubreite der Referenz | DONE (Sichtbestätigung der Bewegung offen) |
 | GENESIS-031 | Startbildschirm, Einstellungen, Controller | Menü und Pause, 17 Einstellungen in fünf Abschnitten, jede Handlung auf Taste **und** Controller-Taste | DONE (Gefühl am echten Controller von Hand zu bestätigen) |
 | GENESIS-032 | Durchscheinendes in der Schärfentiefe | Alle durchscheinenden Materialien vor die Schärfentiefe gelegt; mein Speicherfehler aus 030 zurückgenommen, Schwarm aus der Strahlenszene | DONE (facettierte Coronazellen offen) |
+| GENESIS-033 | Coronazellen umschließen einander | Ebenen-Schnitt durch Umschließen der Nachbarzelle ersetzt, Unterteilung 4, Materialschwellen nachgeführt | DONE (110 MB Asset, Fäden weiter starr) |
 
 ## Protokoll
 
@@ -355,3 +356,14 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Nahe Zellen sind jetzt weiche Schemen](Media/GENESIS-032_Schaerfentiefe.png)
+
+### GENESIS-033 – Zellen umschließen einander, sie werden nicht geschnitten
+- 2026-09-21: Der Befund aus GENESIS-032: Sobald die Tiefenschärfe größer wird, sehen die Coronazellen aus wie geschnittener Stein. Ursache war die Methode selbst – seit GENESIS-027 wurde jede Zelle an der Mittelebene zu jedem Nachbarn abgeschnitten. Dabei fällt ein großer Teil der Kugel auf eine Kreisscheibe mit scharfem Rand zusammen, und ist die Nachbarin kleiner als diese Scheibe, sieht man von außen direkt darauf.
+- 2026-09-21: **Symptomarbeit hat nicht geholfen.** Verrundungsradius 0,9 → 2,0 → 4,5 µm, feinere Unterteilung, gewölbte Berührungsfläche, kleinerer Spalt – der größere Radius hat es sogar verschlechtert, weil er die ganze Zelle schrumpfen lässt. Jetzt legt sich jede Zelle um ihre Nachbarin: Jeder Punkt, der in der Nachbarin läge, wird auf deren Oberfläche hinausgeschoben. Zwei Zellen teilen sich eine gekrümmte Grenzfläche wie zwei aneinandergedrückte Tropfen.
+- 2026-09-21: Corona jetzt 3 348 825 statt 852 825 Flächen (Unterteilung 4, Kante ≈ 1,35 µm); merklich gedrückte Punkte 6,5 % statt 84,8 %, Berührungstiefe Median 1,0 statt 0,91. Die Materialschwellen mussten mitwandern (0,70/0,95 → 0,90/1,0), sonst wäre die ganze Zellwolke eine einzige dunkle Fuge.
+- 2026-09-21: **Ein eigener Fehler, der drei Durchläufe gekostet hat:** Der Aufruf lautete `blender ... -- export=1`, das Skript erwartet `--export`. Blender hat jedes Mal sauber gebaut und nichts geschrieben; ich habe drei Umbauten lang dasselbe Bild beurteilt. Merksatz: vor der Sichtprüfung den Zeitstempel der Datei prüfen.
+- 2026-09-21: 111 von 111 Tests bestanden.
+- Offen: Das Corona-Asset ist 110 MB groß – Nanite trägt das im Bild ohne Mehrkosten, aber jede Änderung kostet das Archiv diesen Betrag. Die Fäden sind weiterhin starr.
+- **Status: DONE.**
+
+![Coronazellen aus der Nähe](Media/GENESIS-033_Corona_nah.png)

@@ -554,3 +554,75 @@ weiterhin. Der Grafikspeicher läuft damit nicht mehr über.
   Veröffentlichungsfassung erscheint die Warnung ohnehin nicht – sie ist eine Entwicklerhilfe.
 - **Die Coronazellen wirken scharf gezeichnet facettiert.** Sichtbar, sobald die Tiefenschärfe
   größer wird.
+
+## GENESIS-033 – Zellen umschließen einander, sie werden nicht geschnitten
+
+GENESIS-032 hatte den Befund geliefert: Sobald die Tiefenschärfe größer wird, sehen die
+Coronazellen aus wie geschnittener Stein – ebene Flächen, scharfe Kanten, Kartons statt Zellen.
+Dieser Block behebt die Ursache.
+
+### Die Ursache war die Methode selbst
+
+Seit GENESIS-027 wurde jede Zelle an der **Mittelebene** zu jedem Nachbarn abgeschnitten
+(radiusgewichtet, also eine Art Potenz-Voronoi). Das ist die übliche Schaum-Näherung, und sie war
+hier falsch:
+
+- Ein großer Teil der Kugel fällt dabei auf eine **Kreisscheibe** zusammen. Deren Rand ist eine
+  scharfe Kante.
+- Ist die Nachbarzelle kleiner als diese Scheibe – und das ist bei Ellipsoiden verschiedener Größe
+  und Ausrichtung der Normalfall –, schaut man von außen direkt auf die Schnittfläche.
+
+Ich habe zuerst an den Symptomen gearbeitet: Verrundungsradius von 0,9 auf 2,0 und dann auf 4,5 µm,
+feinere Unterteilung, eine Wölbung der Berührungsfläche, ein kleinerer Spalt. Nichts davon hat
+geholfen, und der größere Radius hat es sogar verschlechtert, weil er die ganze Zelle schrumpfen
+lässt. **Die ebene Fläche selbst war das Problem.**
+
+### Was jetzt passiert
+
+Wo zwei Zellen ineinanderstünden, legt sich die eine um die andere: Jeder Punkt, der in der
+Nachbarzelle läge, wird auf deren Ellipsoid-Oberfläche hinausgeschoben. Die beiden teilen sich
+dadurch eine **gekrümmte** Grenzfläche – wie zwei aneinandergedrückte Tropfen. An der
+Berührungslinie (Tiefe genau 1) ist der Zielpunkt der Punkt selbst, die Fläche bleibt also
+zusammenhängend; was bleibt, ist der Knick der Membran, und den gibt es an zwei aneinanderliegenden
+Zellen wirklich.
+
+Dazu kommt die Auflösung: Unterteilung 4 statt 3 (1 280 statt 320 Flächen je Zelle, Kante ≈ 1,35 µm
+statt 2,7 µm). Bei der alten Auflösung fiel jeder weiche Übergang zwischen zwei Punkte.
+
+| | vorher | jetzt |
+|---|---|---|
+| Flächen der Corona | 852 825 | **3 348 825** |
+| Punkte, die merklich gedrückt sind | 84,8 % | **6,5 %** |
+| Berührungstiefe (Median / unteres Zehntel) | 0,91 / 0,71 | **1,0 / 0,956** |
+| Asset auf der Platte | 31 MB | **110 MB** |
+
+Dass nur noch 6,5 % der Punkte gedrückt sind, ist kein Verlust: Vorher wurde auch dort geschnitten,
+wo zwei Zellen einander gar nicht erreichen. Im expandierten äußeren Cumulus ist genau das der
+Normalfall – dort schwimmen die Zellen in der Gallerte.
+
+Die Schwellen im Material mussten mitwandern (`crease` von 0,70/0,95 auf **0,90/1,0**): Mit den
+alten Werten wäre die ganze Zellwolke eine einzige dunkle Fuge gewesen. Eine Materialschwelle, die
+sich auf eine gemessene Verteilung bezieht, muss mit ihr gepflegt werden – sonst ist sie eine Zahl
+ohne Bedeutung.
+
+![Coronazellen aus der Nähe](Media/GENESIS-033_Corona_nah.png)
+
+![Der Komplex in der Einstellung des Spiels](Media/GENESIS-033_Komplex.png)
+
+### Ein Fehler, der drei Durchläufe gekostet hat
+
+Drei Umbauten in Folge zeigten kein anderes Bild. Ich habe die Geometrie geändert, neu gebaut, neu
+importiert, aufgenommen – und dasselbe Bild bekommen. Die Ursache: Der Aufruf lautete
+`blender ... -- export=1`, das Skript erwartet aber `--export`. Blender hat die Geometrie jedes Mal
+sauber gebaut und **nichts geschrieben**. Die Zeile „exportiert … .fbx" im Log fehlte, und ich habe
+nicht hingesehen.
+
+Merksatz für die nächsten Male: Vor jeder Sichtprüfung prüfen, ob die Datei, die man zu beurteilen
+glaubt, gerade überhaupt neu geschrieben wurde. Ein Zeitstempel hätte drei Durchläufe gespart.
+
+### Offen
+
+- **Das Asset ist 110 MB groß.** Nanite trägt die Flächen im Bild ohne Mehrkosten, aber jede
+  Änderung daran kostet das Projektarchiv diesen Betrag. Falls das stört, ist Unterteilung 3 mit
+  dem neuen Umschließen eine Option – sie wäre gröber, aber nicht mehr kantig.
+- Die Fäden sind weiterhin starr, die Gallerte weiterhin kein Volumen.

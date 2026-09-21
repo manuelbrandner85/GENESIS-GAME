@@ -150,14 +150,22 @@ def build_polar_body():
     return obj
 
 
+
+
 def build_corona():
     """
     Corona radiata und Cumulus: dicht gepackte Zellen, die sich gegenseitig platt drücken.
 
     Der entscheidende Punkt ist die Packung. Einzelne Ellipsoide nebeneinander sehen aus wie Popcorn;
-    lebendes Gewebe besteht aus Zellen, die aneinander anliegen und dort **flache Berührungsflächen**
-    bilden – wie Schaum. Deshalb wird jede Zelle an der Mittelebene zu jedem Nachbarn abgeschnitten
-    (radiusgewichtet, also eine Art Potenz-Voronoi).
+    lebendes Gewebe besteht aus Zellen, die aneinander anliegen. Wo zwei Zellen ineinanderstünden,
+    legt sich deshalb die eine um die andere: Jeder Punkt, der in der Nachbarzelle läge, wird auf
+    deren Oberfläche hinausgeschoben. Die beiden teilen sich dann eine **gekrümmte** Grenzfläche.
+
+    Bis GENESIS-033 wurde stattdessen an einer Ebene abgeschnitten (Potenz-Voronoi). Das ist die
+    übliche Schaum-Näherung und war hier falsch: Ein großer Teil der Kugel fällt dabei auf eine
+    Kreisscheibe zusammen, deren Rand eine scharfe Kante ist – und wenn die Nachbarzelle kleiner
+    ist als diese Scheibe, sieht man von außen direkt auf sie. Die Zellen sahen aus wie
+    geschnittener Stein, und kein Verrundungsradius konnte das heilen.
 
     Was dabei entsteht, steht in der Vertexfarbe:
       R = Ton der Zelle, G = Lage im Komplex, B = Berührungstiefe (1 = freie Oberfläche, 0 = platt gedrückt).
@@ -212,10 +220,14 @@ def build_corona():
         layers.append(layer)
         tints_per_cell.append(float(rng.uniform(0.15, 1.0)))
 
-    # Eine Vorlage für alle Zellen: Unterteilung 3, damit keine Facetten stehenbleiben.
-    # Punkte und Flächen werden einmal gelesen und dann 2 600-mal wiederverwendet.
+    # Eine Vorlage für alle Zellen. Unterteilung 4 statt 3 – und das ist kein Feinschliff, sondern
+    # die Ursache eines sichtbaren Fehlers: Bei Unterteilung 3 ist eine Dreieckskante rund 2,7 µm
+    # lang. Der weiche Übergang an den Berührungsflächen misst aber nur wenige Zehntel Mikrometer.
+    # Er fiel damit komplett zwischen zwei Punkte – die Zellen sahen aus wie geschliffener Stein.
+    # Mit Unterteilung 4 (1 280 statt 320 Flächen je Zelle, Kante ≈ 1,35 µm) hat der Übergang
+    # überhaupt erst Stützpunkte. Nanite trägt die vierfache Menge ohne Mehrkosten im Bild.
     template = bmesh.new()
-    bmesh.ops.create_icosphere(template, subdivisions=3, radius=1.0)
+    bmesh.ops.create_icosphere(template, subdivisions=4, radius=1.0)
     template.verts.ensure_lookup_table()
     unit = np.array([vert.co[:] for vert in template.verts])
     template_faces = [tuple(vert.index for vert in face.verts) for face in template.faces]
@@ -236,28 +248,40 @@ def build_corona():
         world = local @ basis + position
         free = np.linalg.norm(world - position, axis=1)
 
-        # Nachbarn: An jeder Mittelebene wird abgeschnitten – dort liegen die Zellen aneinander
+        # Nachbarn: Wo zwei Zellen ineinanderstehen würden, legt sich die eine um die andere.
+        #
+        # Vorher wurde an einer **Ebene** abgeschnitten (Potenz-Voronoi). Das ist die übliche
+        # Schaum-Näherung, und sie ist hier die Ursache eines hartnäckigen Fehlers gewesen: Ein
+        # großer Teil der Kugel fällt dabei auf eine Kreisscheibe zusammen. Deren Rand ist eine
+        # scharfe Kante, und wenn die Nachbarzelle kleiner ist als diese Scheibe, schaut man von
+        # außen direkt auf sie. Genau das hat die Zellen wie geschnittenen Stein, wie Kartons
+        # aussehen lassen – und kein Verrundungsradius konnte es heilen, weil die ebene Fläche
+        # selbst das Problem war.
+        #
+        # Jetzt wird an der **tatsächlichen Oberfläche der Nachbarzelle** abgeschnitten: Jeder Punkt,
+        # der in der Nachbarin läge, wird auf deren Ellipsoid hinausgeschoben. Zwei Zellen teilen
+        # sich damit eine gekrümmte Grenzfläche, so wie zwei aneinandergedrückte Tropfen. Es gibt
+        # keine ebene Fläche mehr, keinen scharfen Scheibenrand und keinen Spalt dazwischen.
         distances = np.linalg.norm(centers - position, axis=1)
         neighbours = np.where((distances > 1e-6) & (distances < 26.0))[0]
         for other in neighbours:
-            delta = centers[other] - position
-            gap = np.linalg.norm(delta)
-            normal = delta / gap
-            # Radiusgewichtete Mittelebene: Die größere Zelle drückt die kleinere stärker
-            plane = gap * radii[index] / max(radii[index] + radii[other], 1e-6)
-            # Ein schmaler Spalt bleibt: Zellmembranen liegen an, verschmelzen aber nicht
-            plane -= 0.35
-            projection = (world - position) @ normal
-            # Weicher Schnitt statt harter Kante: Eine Zellmembran knickt nicht, sie wölbt sich.
-            # Der Übergang von der freien Rundung in die Berührungsfläche bekommt deshalb einen
-            # Radius von etwa einem Mikrometer (Softplus statt Maximum) – sonst sehen die Zellen
-            # aus wie geschliffene Steine.
-            fillet = 0.9
-            smoothed = plane - fillet * np.log1p(np.exp(np.clip((plane - projection) / fillet, -30.0, 30.0)))
-            moved = smoothed < projection - 1e-6
-            if np.any(moved):
-                world[moved] -= normal[None, :] * (projection[moved] - smoothed[moved])[:, None]
-                clipped_total += int(np.count_nonzero(projection > plane))
+            other_basis, other_scale = axes[other]
+            # Wo liegt der Punkt in den Achsen der Nachbarzelle? 1 ist genau ihre Oberfläche.
+            relative = (world - centers[other]) @ other_basis.T
+            depth = np.linalg.norm(relative / np.maximum(other_scale, 1e-6), axis=1)
+
+            touching = depth < 1.0
+            if not np.any(touching):
+                continue
+
+            # Zielpunkt: derselbe Punkt, aber auf die Oberfläche der Nachbarin hinausgeschoben.
+            # An der Grenze (Tiefe genau 1) ist der Zielpunkt der Punkt selbst – die Fläche bleibt
+            # also zusammenhängend. Was bleibt, ist der Knick der Membran an der Berührungslinie,
+            # und den gibt es an zwei aneinanderliegenden Zellen wirklich.
+            factor = 1.0 / np.maximum(depth[touching], 1e-6)
+            target = centers[other] + (relative[touching] * factor[:, None]) @ other_basis
+            world[touching] = target
+            clipped_total += int(np.count_nonzero(touching))
 
         # Berührungstiefe: Wie weit ist dieser Punkt gegenüber der freien Form eingedrückt?
         pressed = np.linalg.norm(world - position, axis=1)
