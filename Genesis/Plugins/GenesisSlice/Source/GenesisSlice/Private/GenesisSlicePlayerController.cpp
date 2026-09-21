@@ -249,6 +249,20 @@ void AGenesisSlicePlayerController::PlayerTick(float DeltaTime)
 	LookOffset = FMath::Vector2DInterpTo(LookOffset, FVector2D::ZeroVector, DeltaTime, 0.9f);
 	LookInput = FVector2D::ZeroVector;
 
+	// Das Gesicht der Mutter suchen: eine Weile nach oben sehen. Loslassen erst mit einem Blick nach unten.
+	const float MaxPitch = MaxLookDegrees * 0.6f;
+	SeekUpSeconds = LookOffset.Y > MaxPitch * 0.7f ? SeekUpSeconds + DeltaTime : 0.0f;
+	if (!bSeekingFace && SeekUpSeconds >= SeekFaceSeconds)
+	{
+		bSeekingFace = true;
+		UE_LOG(LogGenesis, Display, TEXT("Das Kind sucht das Gesicht der Mutter."));
+	}
+	else if (bSeekingFace && LookOffset.Y < -MaxPitch * 0.6f)
+	{
+		bSeekingFace = false;
+		UE_LOG(LogGenesis, Display, TEXT("Das Kind sieht wieder weg."));
+	}
+
 	UGameInstance* GameInstance = GetGameInstance();
 	UGenesisEarlyLifeSubsystem* EarlyLife = GameInstance ? GameInstance->GetSubsystem<UGenesisEarlyLifeSubsystem>() : nullptr;
 	if (EarlyLife && EarlyLife->HasNewborn())
@@ -258,8 +272,15 @@ void AGenesisSlicePlayerController::PlayerTick(float DeltaTime)
 	}
 
 	// Der Blick geht an das Kamera-Rig der Szene: Es entscheidet, wie viel davon durchkommt
+	bool bOnChest = false;
 	for (TActorIterator<AGenesisBirthCameraRig> It(GetWorld()); It; ++It)
 	{
 		It->LookOffsetDegrees = LookOffset;
+		bOnChest |= It->bOnMothersChest;
+	}
+	// Suchen gibt es nur auf ihrer Brust – ein Blick nach oben in den Händen der Hebamme zählt nicht
+	if (!bOnChest)
+	{
+		bSeekingFace = false;
 	}
 }

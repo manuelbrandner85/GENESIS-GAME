@@ -43,4 +43,5 @@ private:
 
 	float CryUsedSeconds = -1.0f;
 	float RootUsedSeconds = -1.0f;
+	float SeekFaceUsedSeconds = -1.0f;
 };

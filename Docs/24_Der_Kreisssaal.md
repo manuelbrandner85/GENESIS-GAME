@@ -87,7 +87,8 @@ selbstleuchtende Flächen mit Leuchtdichte in cd/m², Isolierglas und streuende 
 
 ## Offen – und ehrlich
 
-- **Die Mutter hat kein Gesicht.** Kopf und Gesicht sind für eine MetaHuman-Figur vorgesehen.
+- ~~**Die Mutter hat kein Gesicht.**~~ Erledigt in GENESIS-036, siehe [25 – Die Mutter](25_Die_Mutter.md).
+  Ursprünglicher Stand: Kopf und Gesicht sind für eine MetaHuman-Figur vorgesehen.
   MetaHuman Creator ist in Unreal 5.8 eingebaut und per Skript steuerbar, aber zwei Schritte laufen
   über Epics Cloud – das Gesichts-Rig und die hochauflösenden Hauttexturen – und brauchen **einmal
   deine Anmeldung mit deinem Epic-Konto im Editor**. Das kann und darf ich nicht übernehmen.

@@ -56,6 +56,9 @@ public:
 	/** Jemand spricht mit dem Kind. */
 	void SetMotherSpeaking(bool bEnabled);
 
+	/** Kind und Mutter sehen einander in die Augen. */
+	void SetEyeContact(bool bEnabled);
+
 	/**
 	 * Das Kind schreit aus eigenem Antrieb (0..1). Sein einziges Werkzeug: Die Welt hört es.
 	 * Es kostet Wärme und Ruhe – aber es holt Hilfe.

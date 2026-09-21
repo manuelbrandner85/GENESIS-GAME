@@ -84,6 +84,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GenesisPeople",
+			"Enabled": true
+		},
+		{
 			"Name": "GenesisSlice",
 			"Enabled": true
 		},
@@ -116,6 +120,10 @@
 		},
 		{
 			"Name": "MovieRenderPipeline",
+			"Enabled": true
+		},
+		{
+			"Name": "MetaHumanCharacter",
 			"Enabled": true
 		}
 	]

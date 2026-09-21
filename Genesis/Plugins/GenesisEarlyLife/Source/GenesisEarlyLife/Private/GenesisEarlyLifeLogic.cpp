@@ -103,6 +103,12 @@ namespace GenesisEarlyLifeLogic
 			{
 				BondingRate += Tuning.BondingPerMinute * 0.4f;
 			}
+			// Gegenseitiger Blick: In der ruhigen Wachheit sucht ein Neugeborenes Gesichter, und
+			// eine Mutter, die den Blick erwidert, hält ihn. Er zählt nur, wo auch Haut ist.
+			if (State.bEyeContact && State.bSkinToSkin)
+			{
+				BondingRate += Tuning.BondingPerMinute * Tuning.EyeContactBondingFactor;
+			}
 			// Sättigung: Eine perfekte erste Stunde legt eine Bindung an, sie vollendet sie nicht.
 			// Ohne diese Bremse stünde nach einer halben Stunde 1.00 – und der Rest des Lebens
 			// könnte nichts mehr dazu beitragen.

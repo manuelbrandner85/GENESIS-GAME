@@ -116,6 +116,20 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Chest")
 	float MotherBreathMm = 4.0f;
 
+	/**
+	 * Atemhub der Mutter (0..1), gesetzt von der Regie, sobald es eine Mutter mit eigenem Atem gibt.
+	 * Dann liegt das Kind auf genau diesem Atem statt auf einem eigenen Takt – sonst schwebte es
+	 * über einer Brust, die sich im anderen Rhythmus hebt. Negativ = eigener Takt.
+	 */
+	float MotherBreathLift = -1.0f;
+
+	/**
+	 * Die Mutter holt das Kind vor ihr Gesicht (0..1, von der Regie). Die Kamera geht dann zu
+	 * EnFaceView: die Augen des Kindes auf Sehschärfe-Abstand vor ihren, der Blick auf ihre Augen.
+	 */
+	float EnFaceBlend = 0.0f;
+	FTransform EnFaceView = FTransform::Identity;
+
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UCineCameraComponent> Camera;
 

@@ -43,6 +43,17 @@ public:
 	/** Blickrichtung relativ zur Ruhelage (Grad) – die Kamera liest sie aus. */
 	FVector2D GetLookOffsetDegrees() const { return LookOffset; }
 
+	/**
+	 * Sucht das Kind das Gesicht der Mutter? Wer auf ihrer Brust eine Weile nach oben sieht, sucht
+	 * sie – sie antwortet darauf und holt es zu sich hoch. Erst ein deutlicher Blick nach unten
+	 * lässt es wieder los. So bleibt der Blickkontakt, auch wenn der Spieler den Stick loslässt.
+	 */
+	bool IsSeekingFace() const { return bSeekingFace; }
+
+	/** Wie lange der Blick oben bleiben muss, bis er als Suchen gilt (s). */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Input")
+	float SeekFaceSeconds = 0.6f;
+
 	/** 0..1 – was der Spieler gerade tut. Für die Anzeige. */
 	float GetCryInput() const { return CryInput; }
 	float GetRootInput() const { return RootInput; }
@@ -83,4 +94,6 @@ private:
 	float RootInput = 0.0f;
 	FVector2D LookInput = FVector2D::ZeroVector;
 	FVector2D LookOffset = FVector2D::ZeroVector;
+	float SeekUpSeconds = 0.0f;
+	bool bSeekingFace = false;
 };

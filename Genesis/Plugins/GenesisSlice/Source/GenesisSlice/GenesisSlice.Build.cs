@@ -21,7 +21,9 @@ public class GenesisSlice : ModuleRules
 			"GenesisBody",
 			"GenesisBirth",
 			"GenesisEarlyLife",
-			"GenesisFrontend"
+			"GenesisFrontend",
+			"GenesisPeople",
+			"CinematicCamera"
 		});
 	}
 }

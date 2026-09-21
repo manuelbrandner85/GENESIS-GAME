@@ -109,6 +109,32 @@ bool FGenesisEarlyLifeBondingTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/** Der erste Blick: Gegenseitiges Ansehen bindet – aber nur mit Haut, ein Blick über Distanz ersetzt keine Nähe. */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisEarlyLifeEyeContactTest, "Genesis.EarlyLife.EyeContactBinds", EarlyLifeFlags)
+
+bool FGenesisEarlyLifeEyeContactTest::RunTest(const FString& Parameters)
+{
+	const FGenesisEarlyLifeTuning Tuning;
+
+	FGenesisNewbornState Held = MakeNewborn(21);
+	Held.bSkinToSkin = true;
+	FGenesisNewbornState Gazing = MakeNewborn(21);
+	Gazing.bSkinToSkin = true;
+	Gazing.bEyeContact = true;
+	FGenesisNewbornState Distant = MakeNewborn(21);
+	Distant.bEyeContact = true;
+
+	GenesisEarlyLifeLogic::Advance(Held, Tuning, 10.0);
+	GenesisEarlyLifeLogic::Advance(Gazing, Tuning, 10.0);
+	GenesisEarlyLifeLogic::Advance(Distant, Tuning, 10.0);
+
+	AddInfo(FString::Printf(TEXT("Nach 10 min: Haut %.3f, Haut und Blick %.3f, Blick ohne Haut %.3f"),
+		Held.Bonding, Gazing.Bonding, Distant.Bonding));
+	TestTrue(TEXT("Blickkontakt bindet zusätzlich"), Gazing.Bonding > Held.Bonding * 1.5f);
+	TestTrue(TEXT("Ohne Haut zählt der Blick nicht"), Distant.Bonding < 0.01f);
+	return true;
+}
+
 /** Was das Kind sieht und hört: auf Armlänge scharf, anfangs geblendet, die Stimme der Mutter vertraut. */
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisEarlyLifePerceptionTest, "Genesis.EarlyLife.PerceptionOfANewborn", EarlyLifeFlags)
 

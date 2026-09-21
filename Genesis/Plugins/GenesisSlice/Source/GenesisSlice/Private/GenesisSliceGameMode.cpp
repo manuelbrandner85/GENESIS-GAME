@@ -9,6 +9,8 @@
 #include "GenesisBirthCameraRig.h"
 #include "GenesisEarlyLifeSubsystem.h"
 #include "GenesisEarlyLifeTypes.h"
+#include "GenesisMotherRig.h"
+#include "CineCameraComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
@@ -16,6 +18,15 @@
 #include "GenesisLog.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+
+namespace
+{
+	/** Prüfhilfe: erzwingt, dass das Kind auf der Brust das Gesicht der Mutter sucht (wie ein gehaltener Blick nach oben). */
+	TAutoConsoleVariable<int32> CVarSeekFace(
+		TEXT("genesis.Mother.SeekFace"),
+		0,
+		TEXT("1 = das Kind sucht das Gesicht der Mutter, als hielte der Spieler den Blick oben."));
+}
 
 AGenesisSliceGameMode::AGenesisSliceGameMode()
 {
@@ -76,12 +87,39 @@ void AGenesisSliceGameMode::Tick(float DeltaSeconds)
 
 	// Nach der Geburt: Die Kamera des Kindes folgt dem, was mit ihm geschieht. Liegt es auf der Haut
 	// der Mutter, liegt die Kamera auf ihrer Brust.
-	if (const UGenesisEarlyLifeSubsystem* EarlyLife = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisEarlyLifeSubsystem>() : nullptr)
+	if (UGenesisEarlyLifeSubsystem* EarlyLife = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisEarlyLifeSubsystem>() : nullptr)
 	{
 		const bool bOnChest = EarlyLife->HasNewborn() && EarlyLife->GetState().bSkinToSkin;
+		const AGenesisSlicePlayerController* Player = Cast<AGenesisSlicePlayerController>(GetWorld()->GetFirstPlayerController());
+		const bool bSeeksFace = bOnChest && ((Player && Player->IsSeekingFace()) || CVarSeekFace.GetValueOnGameThread() > 0);
+
+		AGenesisMotherRig* Mother = nullptr;
+		for (TActorIterator<AGenesisMotherRig> It(GetWorld()); It; ++It)
+		{
+			Mother = *It;
+			break;
+		}
+
+		bool bEyeContact = false;
 		for (TActorIterator<AGenesisBirthCameraRig> It(GetWorld()); It; ++It)
 		{
 			It->bOnMothersChest = bOnChest;
+			// Die Mutter sieht, wo das Kind ist, und das Kind liegt auf ihrem Atem. Hebt es den Blick,
+			// holt sie es vor ihr Gesicht – und die Kamera geht mit ihren Händen.
+			if (Mother && It->Camera)
+			{
+				Mother->SetChild(bOnChest, bSeeksFace, It->Camera->GetComponentLocation(), It->Camera->GetComponentQuat());
+				// Das Kind liegt auf ihrem Körper, nicht auf festen Koordinaten
+				It->ChestEyeLocation = It->GetActorTransform().InverseTransformPosition(Mother->GetChestChildLocation());
+				It->MotherBreathLift = Mother->GetBreathLift();
+				It->EnFaceBlend = Mother->GetEnFaceBlend();
+				It->EnFaceView = Mother->GetEnFaceChildTransform();
+				bEyeContact = Mother->HasEyeContact();
+			}
+		}
+		if (EarlyLife->HasNewborn())
+		{
+			EarlyLife->SetEyeContact(bEyeContact);
 		}
 	}
 

@@ -211,6 +211,15 @@ void UGenesisEarlyLifeSubsystem::SetMotherSpeaking(bool bEnabled)
 	}
 }
 
+void UGenesisEarlyLifeSubsystem::SetEyeContact(bool bEnabled)
+{
+	if (HasNewborn() && State.bEyeContact != bEnabled)
+	{
+		State.bEyeContact = bEnabled;
+		UE_LOG(LogGenesis, Display, TEXT("Erste Stunde: %s"), bEnabled ? TEXT("Blickkontakt mit der Mutter.") : TEXT("Blickkontakt gelöst."));
+	}
+}
+
 void UGenesisEarlyLifeSubsystem::SetCryEffort(float Effort)
 {
 	if (HasNewborn())

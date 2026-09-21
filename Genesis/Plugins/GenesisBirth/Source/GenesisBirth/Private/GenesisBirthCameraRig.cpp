@@ -141,15 +141,33 @@ void AGenesisBirthCameraRig::ApplyPerception(const FGenesisBirthState& State, co
 	{
 		// Die Brust hebt und senkt sich mit dem Atem der Mutter – das Kind liegt auf einem Menschen, nicht auf einem Tisch
 		BreathPhase += DeltaSeconds * MotherBreathsPerMinute / 60.0f;
+		const float BreathLift = MotherBreathLift >= 0.0f
+			? FMath::Clamp(MotherBreathLift, 0.0f, 1.0f)
+			: 0.5f * (1.0f - FMath::Cos(BreathPhase * 2.0f * PI));
 		const FVector ChestNormal(0.707f, 0.0f, 0.707f);
-		const FVector Breath = ChestNormal * (MotherBreathMm * 0.5f * (1.0f - FMath::Cos(BreathPhase * 2.0f * PI)));
+		const FVector Breath = ChestNormal * (MotherBreathMm * BreathLift);
 		const FVector ChestLocation = ChestEyeLocation + Breath + FVector(0.0f, 0.0f, Beat * BeatAmplitude * 0.3f);
 		const FVector Arc(0.0f, 0.0f, LiftArcMm * FMath::Sin(Lift * PI));
-		Camera->SetRelativeLocation(FMath::Lerp(Local, ChestLocation, Lift) + Arc);
 
+		const FQuat Look = FRotator(LookOffsetDegrees.Y, LookOffsetDegrees.X, 0.0f).Quaternion();
 		const FQuat ChestBase = FRotationMatrix::MakeFromXZ(ChestViewForward.GetSafeNormal(), ChestViewUp.GetSafeNormal()).ToQuat();
-		const FQuat ChestLook = ChestBase * FRotator(LookOffsetDegrees.Y, LookOffsetDegrees.X, 0.0f).Quaternion();
-		Camera->SetRelativeRotation(FQuat::Slerp(ExitRotation.Quaternion(), ChestLook, Lift).Rotator());
+		FVector HeldLocation = ChestLocation;
+		FQuat HeldLook = ChestBase * Look;
+
+		// Vor ihrem Gesicht: Sie hebt das Kind mit beiden Händen, in einem flachen Bogen zu sich hoch.
+		// Der Blick bleibt beim Kind – es kann sich umsehen, aber geradeaus liegen ihre Augen.
+		const float Face = FMath::Clamp(EnFaceBlend, 0.0f, 1.0f);
+		if (Face > KINDA_SMALL_NUMBER)
+		{
+			const FVector FaceLocation = GetActorTransform().InverseTransformPosition(EnFaceView.GetLocation());
+			const FQuat FaceRotation = GetActorQuat().Inverse() * EnFaceView.GetRotation();
+			const FVector Raise = ChestNormal * (60.0f * FMath::Sin(Face * PI));
+			HeldLocation = FMath::Lerp(ChestLocation, FaceLocation, Face) + Raise;
+			HeldLook = FQuat::Slerp(ChestBase, FaceRotation, Face) * Look;
+		}
+
+		Camera->SetRelativeLocation(FMath::Lerp(Local, HeldLocation, Lift) + Arc);
+		Camera->SetRelativeRotation(FQuat::Slerp(ExitRotation.Quaternion(), HeldLook, Lift).Rotator());
 	}
 
 	// 4. Belichtung: dunkel im Kanal, grell beim Durchtritt. Der Wechsel ist ein Sprung, kein Verlauf.

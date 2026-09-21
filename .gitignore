@@ -56,3 +56,9 @@ ArtSource/Generated/
 
 # Gebaute, spielbare Fassung (wird aus dem Projekt erzeugt)
 /Build/
+
+# MetaHuman-Figuren (GENESIS-036): Quelldateien aus Epics MetaHuman Creator duerfen nach der
+# Unreal-Lizenz nicht oeffentlich im Rohformat verteilt werden (dieses Repository ist oeffentlich),
+# und sie sind gross (Mutter: ~1 GB). Im gebauten Spiel sind sie enthalten. Neu erzeugen:
+# Docs/25_Die_Mutter.md, Abschnitt "Die Figur".
+Genesis/Content/Genesis/Characters/

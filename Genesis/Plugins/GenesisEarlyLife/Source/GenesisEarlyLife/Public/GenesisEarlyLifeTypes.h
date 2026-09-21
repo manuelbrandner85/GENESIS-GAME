@@ -87,6 +87,9 @@ struct GENESISEARLYLIFE_API FGenesisNewbornState
 	/** true, solange jemand mit dem Kind spricht. */
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") bool bMotherSpeaking = false;
 
+	/** true, solange Kind und Mutter einander in die Augen sehen (En-face-Haltung). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") bool bEyeContact = false;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") float Hunger = 0.0f;
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") float Calm = 0.15f;
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") float Sleepiness = 0.0f;
@@ -179,6 +182,12 @@ struct GENESISEARLYLIFE_API FGenesisEarlyLifeTuning
 
 	/** Bindung je Minute unter guten Bedingungen – mit Sättigung, die erste Stunde kommt nicht auf 1. */
 	UPROPERTY(EditAnywhere, Category = "Needs") float BondingPerMinute = 0.016f;
+
+	/**
+	 * Zusätzliche Bindung durch gegenseitigen Blick (Anteil von BondingPerMinute). Etwas mehr als
+	 * die Stimme: Blickkontakt ist die erste Form von Austausch, die beide Seiten aktiv führen.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Needs") float EyeContactBondingFactor = 0.8f;
 
 	/** Ab dieser Ruhe schläft das Kind ein, wenn es müde und satt ist. */
 	UPROPERTY(EditAnywhere, Category = "Needs", meta = (ClampMin = "0", ClampMax = "1")) float SleepCalmThreshold = 0.7f;

@@ -41,6 +41,7 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 22. [Startbildschirm, Einstellungen und Controller](Docs/22_Startbildschirm_und_Steuerung.md)
 23. [Der Spielstart](Docs/23_Der_Spielstart.md)
 24. [Der Kreißsaal](Docs/24_Der_Kreisssaal.md)
+25. [Die Mutter und der erste Blick](Docs/25_Die_Mutter.md)
 25. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
 
 ## Voraussetzungen

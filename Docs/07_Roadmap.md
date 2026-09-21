@@ -46,7 +46,8 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-032 | Durchscheinendes in der Schärfentiefe | Alle durchscheinenden Materialien vor die Schärfentiefe gelegt; mein Speicherfehler aus 030 zurückgenommen, Schwarm aus der Strahlenszene | DONE (facettierte Coronazellen offen) |
 | GENESIS-033 | Coronazellen umschließen einander | Ebenen-Schnitt durch Umschließen der Nachbarzelle ersetzt, Unterteilung 4, Materialschwellen nachgeführt | DONE (110 MB Asset, Fäden weiter starr) |
 | GENESIS-034 | Spielstart wie ein echtes Spiel | Studio-, Engine- und Hinweiskarte, Echtzeit-Prolog mit Erzähler und Untertiteln, Titel, „Beliebige Taste", Menümusik (Suno), Kapitelkarte mit frischem Level, Abspann → Menü | DONE (Mischung von Ohr zu bestätigen) |
-| GENESIS-035 | Der Kreißsaal | Echter Raum in echten Maßen statt Kästen und Kugel, Licht nur aus sichtbaren Quellen (Dämmerung), Kamera hebt das Kind auf die Brust der Mutter; Nanite-Materialfehler projektweit behoben | DONE (Gesicht der Mutter braucht MetaHuman + Epic-Anmeldung) |
+| GENESIS-035 | Der Kreißsaal | Echter Raum in echten Maßen statt Kästen und Kugel, Licht nur aus sichtbaren Quellen (Dämmerung), Kamera hebt das Kind auf die Brust der Mutter; Nanite-Materialfehler projektweit behoben | DONE (Gesicht der Mutter in 036) |
+| GENESIS-036 | Die Mutter und der erste Blick | MetaHuman-Mutter (4K-Gesicht, volles Mimik-Rig) im Bett; neues Plugin `GenesisPeople`: Haltung, Atem, Lidschlag, Blick, Hände per IK; Blick nach oben → sie holt das Kind vor ihr Gesicht (25 cm), Blickkontakt bindet | DONE (Kind ohne Körper, Hemd, Stimme beim Blickkontakt offen) |
 
 ## Protokoll
 
@@ -390,3 +391,13 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Status: DONE.**
 
 ![Der erste Blick](Media/GENESIS-035_Geburt.png)
+
+### GENESIS-036 – Die Mutter und der erste Blick
+- 2026-09-21: Game Director hat sich im Editor bei Epic angemeldet („fab ist offen und angemeldet"). Damit liefen die Cloud-Schritte des MetaHuman Creators: Gesichts-Rig mit Korrektur-Formen und 4K-Gesichtstexturen. Mutter aus der Vorlage „Celeste", tiefer Zopf, natürliche Wimpern, Kino-Pipeline (`BP_Mother`).
+- 2026-09-21: Neues Plugin **`GenesisPeople`**: `GenesisMotherLogic` (Atem 14/min, Lidschlag 12/min rechtsschief, En face, Lächeln), `UGenesisMotherAnimInstance` (Pose ohne Animations-Blueprint: Haltung, Atem, Blick mit Hals/Kopf/Augen, Zwei-Knochen-IK der Arme, Gesichtskurven), `AGenesisMotherRig` (übernimmt die MetaHuman-Figur im Level). Einbindung: Kamera des Kindes liegt auf ihrem Atem und an ihrem Brustwirbel; Blick nach oben halten → sie hebt das Kind vor ihr Gesicht; Blickkontakt erhöht die Bindung (`EyeContactBondingFactor` 0,8, nur mit Haut). Hinweis im Bild. Prüfhilfe `genesis.Mother.SeekFace`.
+- 2026-09-21: **Fehler gefunden und behoben:** durchsichtiger Oberkörper (Creator blendet die Haut unter dem Standard-Shirt aus – Shirt ausgezogen, neu gebaut); Gesicht folgte im Editor dem Hals nicht; Augenpunkt 4 cm zu hoch (jetzt aus den Augenknochen); Kind über ihrem Kopf statt vor dem Gesicht (Blickachse bei 45° Rückenlehne); Kamera lag im alten Platzhalterkörper.
+- 2026-09-21: 119 von 119 Tests (4 neu). Im Spiel und in der gebauten Fassung geprüft: Brustlage, Suchen, En face, „Blickkontakt mit der Mutter" im Protokoll. Dabei gefunden: Blickkontakt flackerte mit Herzschlag/Atem an und aus – Hysterese 10°/15° eingebaut, danach stabil.
+- Offen: Kind ohne Körper (von außen hält sie Luft), Hautkontakt mit Unterwäsche statt geöffnetem Hemd, keine Stimme beim Blickkontakt, Hebamme.
+- **Status: DONE.**
+
+![Blickkontakt](Media/GENESIS-036_Blickkontakt.png)

@@ -426,6 +426,10 @@ void AGenesisSliceHud::DrawHUD()
 	{
 		RootUsedSeconds = Now;
 	}
+	if (Controller->IsSeekingFace() && SeekFaceUsedSeconds < 0.0f)
+	{
+		SeekFaceUsedSeconds = Now;
+	}
 
 	auto FadeOf = [this, Now](float UsedSeconds)
 	{
@@ -438,8 +442,15 @@ void AGenesisSliceHud::DrawHUD()
 
 	// Schreien geht immer. Suchen erst, wenn das Kind auf der Haut liegt – vorher wäre der Hinweis eine Lüge.
 	DrawLine(AGenesisSlicePlayerController::DescribeAction(TEXT("GenesisCry")) + TEXT(": rufen"), 0.0f, FadeOf(CryUsedSeconds));
+	float Line = 1.0f;
 	if (State.bSkinToSkin && !State.bHasFed)
 	{
-		DrawLine(AGenesisSlicePlayerController::DescribeAction(TEXT("GenesisRoot")) + TEXT(": suchen"), 1.0f, FadeOf(RootUsedSeconds));
+		DrawLine(AGenesisSlicePlayerController::DescribeAction(TEXT("GenesisRoot")) + TEXT(": suchen"), Line, FadeOf(RootUsedSeconds));
+		Line += 1.0f;
+	}
+	// Hinsehen: Auf der Haut der Mutter kann das Kind ihr Gesicht suchen – sie antwortet darauf
+	if (State.bSkinToSkin)
+	{
+		DrawLine(TEXT("Blick nach oben halten: ihr Gesicht suchen"), Line, FadeOf(SeekFaceUsedSeconds));
 	}
 }
