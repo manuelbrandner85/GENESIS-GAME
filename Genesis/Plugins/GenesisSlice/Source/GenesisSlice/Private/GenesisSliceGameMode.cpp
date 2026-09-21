@@ -204,10 +204,10 @@ void AGenesisSliceGameMode::EnsureSceneSound()
 				Voice->FinishSpawning(FTransform(Location));
 			}
 		};
-		if (!bChild)
-		{
-			SpawnVoice(EGenesisVoiceRole::Newborn, FVector(160.0f, 0.0f, 0.0f));
-		}
+		// Das Kind schreit jetzt mit echten Aufnahmen (AGenesisSceneSpeech, geprüft: Grundton 440–470 Hz wie bei
+		// Neugeborenen). Die Synthese liefe sonst gleichzeitig – zwei Kinder in einem Raum.
+		(void)bChild;
+		(void)SpawnVoice;
 		// Die Mutter spricht jetzt echte Sätze (AGenesisSceneSpeech). Ihre bisherige Stimme aus Silben ohne Worte
 		// liefe sonst gleichzeitig darüber – zwei Mütter in einem Raum.
 		(void)bMother;

@@ -10,7 +10,7 @@ auftraege.json: Liste von {"name": ..., "model": ..., "input": {...}}
 Vor und nach dem Lauf wird das Guthaben gemeldet – jeder Auftrag kostet echtes Geld.
 Ergebnisse (mp3) laufen nach 14 Tagen bei kie.ai ab; sie werden sofort heruntergeladen.
 """
-import json, os, sys, time, urllib.request
+import json, os, re, sys, time, urllib.request
 
 KEY = os.environ.get("KIE_API_KEY")
 BASE = "https://api.kie.ai/api/v1"
@@ -66,6 +66,12 @@ def main():
             if state == "success":
                 result = json.loads(data.get("resultJson") or "{}")
                 urls = result.get("resultUrls") or result.get("audio_urls") or []
+                if not urls:
+                    # Andere Antwortformen (Suno sounds): alle Adressen einsammeln, die nach Audio aussehen
+                    text = json.dumps(data)
+                    urls = sorted(set(re.findall(r'https?://[^"\\\\ ]+?\.(?:mp3|wav|m4a)', text)))
+                    if not urls:
+                        print("Antwort ohne Audio-Adresse:", text[:1500])
                 for index, url in enumerate(urls):
                     suffix = "" if index == 0 else "_v%d" % (index + 1)
                     # Gemini liefert WAV, ElevenLabs und Suno MP3 – die Endung kommt aus der Adresse

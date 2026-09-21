@@ -305,7 +305,9 @@ def create_ooplasm_material():
     mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
     # Streuung: warmes, fleischfarbenes Durchleuchten – der Zellleib ist keine klare Flüssigkeit
-    subsurface = color(material, -450, 200, 0.45, 0.21, 0.14)
+    # Durchleuchtung fast farblos: Rotes Durchscheinen gibt es nur in dickem, durchblutetem Gewebe. Durch eine
+    # Zelle von 110 µm geht Licht nahezu ungefärbt – das frühere Rot (0,45/0,21/0,14) machte Eizelle und Polkörper rosa.
+    subsurface = color(material, -450, 200, 0.20, 0.175, 0.145)
     mel.connect_material_property(subsurface, "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
 
     opacity = scalar(material, -450, 340, "ScatterAmount", 0.16)
@@ -431,18 +433,65 @@ def create_corona_material():
 
     # Deutlich dunkler als Papier: Eine Zellwolke unter dem Endoskoplicht ist keine weiße Wand.
     # Mit hellem Grundton frisst das nahe Licht jede Zeichnung weg (gemessen: Median 0,87 bei 0,04 Tonumfang).
-    dark = color(material, -900, -200, 0.055, 0.036, 0.029)
-    light = color(material, -900, -60, 0.22, 0.155, 0.125)
+    # Kaum Farbe: Zytoplasma ist farblos, die Wärme kommt vom Licht. Das frühere Rosa war erfunden und machte
+    # die Zellen aus der Nähe (Ich-Perspektive, GENESIS-038) zu glatten Plastikeiern.
+    dark = color(material, -900, -200, 0.050, 0.041, 0.035)
+    # Heller als zuvor: Die zweite Fassung wirkte wie Kieselsteine – lebende Zellen sind durchscheinend und licht
+    light = color(material, -900, -60, 0.28, 0.25, 0.215)
     base_tone = lerp3(material, -650, -120, dark, light, variation)
     # Die Fuge behält ein Viertel ihrer Helligkeit: Sie ist dunkel, aber nicht schwarz
-    base = multiply(material, -450, -120, base_tone, add(material, -600, -40, constant(material, -750, -20, 0.25),
-                                                         multiply(material, -750, 60, crease, constant(material, -900, 80, 0.75))))
+    creased = multiply(material, -450, -120, base_tone, add(material, -600, -40, constant(material, -750, -20, 0.25),
+                                                            multiply(material, -750, 60, crease, constant(material, -900, 80, 0.75))))
+
+    # Zellkern und Randsaum. Eine Cumuluszelle (~12 µm) ist zum größten Teil Kern (~7–8 µm): durch das klare
+    # Zytoplasma sieht man ihn als glatte, etwas dichtere Scheibe mit feinem Saum. Seine Lage im Bild ergibt sich
+    # aus der Flächennormale (wie bei den Furchungszellen, GENESIS-038), je Zelle leicht versetzt (Vertexfarbe R).
+    # Der helle Saum an der Silhouette ist Brechung am Übergang Zelle/Flüssigkeit – an ihm erkennt man im
+    # Mikroskop überhaupt erst eine Zelle.
+    normal = expression(material, unreal.MaterialExpressionVertexNormalWS, -1200, 760)
+    camera = expression(material, unreal.MaterialExpressionCameraVectorWS, -1200, 840)
+    cell = custom(material, -900, 800, "Kern und Saum", """
+float3 n = normalize(N);
+float3 v = normalize(V);
+float facing = saturate(dot(n, v));
+float3 np = n - v * dot(n, v);
+float3 s = normalize(cross(v, float3(0.0, 0.0, 1.0)) + 1e-4);
+float3 u = normalize(cross(v, s));
+float2 q = float2(dot(np, s), dot(np, u));
+float2 offset = (float2(frac(Cell * 7.31), frac(Cell * 3.17)) - 0.5) * 0.22;
+float d = length(q - offset) / lerp(0.42, 0.55, frac(Cell * 5.7));
+float nucleus = 1.0 - smoothstep(0.82, 1.0, d);
+float envelope = smoothstep(0.78, 0.95, d) * (1.0 - smoothstep(0.98, 1.1, d));
+float rim = pow(1.0 - facing, 3.0);
+// x: Faktor auf den Grundton, y: aufgehellter Saum
+// Kern nur angedeutet: Er ist fast so klar wie das Zytoplasma (erster Versuch mit 0,86/0,35: Spiegeleier)
+// Weiches Rauschen statt Würfel-Zufall: Die erste Fassung zeigte sichtbare Voxel
+float granules = Fine;
+float grain = lerp(0.84, 1.08, granules) * (1.0 - nucleus * 0.1);
+return float2(lerp(1.0, 0.95, nucleus) * (1.0 - 0.12 * envelope) * grain, rim);
+""", ["N", "V", "Cell", "Fine"], unreal.CustomMaterialOutputType.CMOT_FLOAT2)
+    connect(normal, "", cell, ["N"])
+    connect(camera, "", cell, ["V"])
+    connect(vertex, "R", cell, ["Cell"])
+    fine = custom(material, -1200, 900, "Granula", FBM_CODE, ["P", "Freq"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    connect(position, "", fine, ["P"])
+    connect(constant(material, -1400, 960, 1.1), "", fine, ["Freq"])
+    connect(fine, "", cell, ["Fine"])
+    # Ein Custom-Knoten hat nur einen Ausgang – die Anteile holt eine Komponentenmaske heraus
+    shade_factor = expression(material, unreal.MaterialExpressionComponentMask, -600, 800, r=True, g=False, b=False, a=False)
+    connect(cell, "", shade_factor, ["", "Input"])
+    rim_amount = expression(material, unreal.MaterialExpressionComponentMask, -600, 880, r=False, g=True, b=False, a=False)
+    connect(cell, "", rim_amount, ["", "Input"])
+    shaded = multiply(material, -300, -120, creased, shade_factor)
+    halo = multiply(material, -300, 0, rim_amount, color(material, -450, 40, 0.10, 0.092, 0.082))
+    base = add(material, -150, -80, shaded, halo)
     mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
     # Durchleuchtung: warmes Rot, wie Licht durch eine dünne Gewebeschicht.
     # An den Berührungsflächen ist der Weg durch das Gewebe am längsten – dort dringt am wenigsten durch.
-    transmission_dark = color(material, -900, 140, 0.16, 0.055, 0.035)
-    transmission_light = color(material, -900, 220, 0.34, 0.14, 0.09)
+    # Fast farblos aus demselben Grund wie beim Zellleib der Eizelle: kein Blut, nur 12 µm Gewebe
+    transmission_dark = color(material, -900, 140, 0.10, 0.085, 0.07)
+    transmission_light = color(material, -900, 220, 0.22, 0.19, 0.16)
     transmission_tone = lerp3(material, -650, 180, transmission_dark, transmission_light, variation)
     transmission = multiply(material, -450, 180, transmission_tone,
                             add(material, -600, 260, constant(material, -750, 240, 0.12),

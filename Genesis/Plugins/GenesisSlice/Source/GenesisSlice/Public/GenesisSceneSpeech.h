@@ -40,7 +40,18 @@ namespace GenesisSceneSpeechLogic
 		bool bCanSpeak = true;
 		/** Ist der Kanal für Laute ohne Worte (Pressen, Stöhnen) frei? Er darf über der Rede liegen. */
 		bool bCanVocalize = true;
+		/** 0..1 – wie laut das Kind gerade schreit (aus dem Zustand der ersten Stunde). */
+		float CryLoudness = 0.0f;
+		/** Die ersten Atemzüge (Stufe FirstBreaths) – der erste Schrei. */
+		bool bFirstBreaths = false;
 	};
+
+	/**
+	 * Was das Kind gerade von sich gibt (echte Aufnahmen, eigener Kanal) oder NAME_None.
+	 * SFX_Schrei_Erster bei den ersten Atemzügen, SFX_Schrei_Stark / SFX_Schrei_Wimmern je nach Schreilautstärke,
+	 * SFX_Baby_Laute ruhig auf der Haut der Mutter (selten). bChildFree: Läuft gerade kein Laut des Kindes?
+	 */
+	GENESISSLICE_API FName ChooseChild(const FInputs& In, float Now, float& InOutLastQuietSound, bool& bInOutFirstCryDone, bool bChildFree);
 
 	/** Gedächtnis der Szene: was schon gesagt wurde, und wie die letzte Wehe war. */
 	struct FMemory
@@ -104,9 +115,26 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UAudioComponent> Vocal;
 
+	/** Lautstärke des Raumklangs (nachts im Kreißsaal). Unter der Sprache, nie davor. */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Speech")
+	float RoomVolume = 0.35f;
+
+	void PlayChild(FName SoundId);
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> ChildAudio;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> Room;
+
 	GenesisSceneSpeechLogic::FMemory Memory;
 	float Busy = 0.0f;
 	float BusyVocal = 0.0f;
+	float ChildBusy = 0.0f;
+	float LastQuietSound = -100.0f;
+	bool bFirstCryDone = false;
+	int32 ChildVariant = 0;
+	FName LastChildSound;
 	float BornAt = -1.0f;
 	FName LastLine;
 };

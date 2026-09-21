@@ -77,3 +77,59 @@ Im Spiel gemessen (Protokoll, Uhrzeit):
   wären ein nächster Schritt.
 - Keine Stimme eines Partners, keine zweite Fachkraft (z. B. Ärztin bei Schulterdystokie).
 - Die Stimmenwahl (Sulafat/Gacrux) wartet auf das Ohr des Game Directors.
+
+## GENESIS-039 (Teil 2) – Realistischer: das Kind, der Raum, die Zellen
+
+Game Director: „Fahre fort und realistischer."
+
+### Das Kind schreit mit echten Aufnahmen
+
+Das synthetische Schreien ist abgeschaltet. Jetzt spielen echte Aufnahmen (kie.ai, Suno „sounds", je zwei
+Varianten im Wechsel, 15 Credits ≈ 0,08 $). **Geprüft ohne Zuhören** mit `Tools/Audio/check_cry.py`: Grundton
+410–471 Hz (Neugeborene: ~450 Hz), 23–37 Schreie pro Minute, kurze Einatmer dazwischen. Die Anlässe kommen
+aus der Simulation (`GenesisSceneSpeechLogic::ChooseChild`, Test ChildSounds):
+- **Erster Schrei:** eine halbe Sekunde nach der Geburt (Keuchen, Husten, dünner Schrei). Die Hebamme spricht darüber.
+- **Kräftig oder wimmernd:** je nach Schreilautstärke des Kindes (Kälte, Hunger, allein). Ohne Pause in Wellen;
+  beruhigt es sich, klingt der Schrei aus.
+- **Ruhig auf der Haut:** selten Grunzen, Seufzen, Schmatzen. Im Schlaf still.
+
+### Der Kreißsaal hat einen Raum
+
+Echter Raumklang nachts (Lüftung, ferne Schritte, Tür, Monitore) als Schleife unter der Sprache. Vor der Geburt
+nur als dumpfes Rauschen durch die Bauchdecke, danach klar. Gemessen nach der Geburt: −21 dBFS, Spitzen
+−3 dBFS vom Schreien des Kindes.
+
+**Messfehler gefunden:** Eine Aufnahme war völlig still (−180 dBFS). Ursache: Unreal stellt ein Fenster, das
+nicht vorn liegt, stumm (`UnfocusedVolumeMultiplier = 0`). Für Spieler bleibt das so; die Testläufe setzen es
+jetzt auf 1, damit jede Messung unabhängig vom Fenster ist.
+
+### Die Zellen um die Eizelle sehen aus wie Zellen
+
+Aus der Ich-Perspektive waren die Cumuluszellen glatte, rosa Plastikeier. Jetzt:
+- ein angedeuteter Kern (aus der Flächennormale, je Zelle versetzt)
+- feine Granula (~1 µm)
+- ein heller Saum an der Silhouette
+- kaum Farbe
+
+**Das Rosa war erfunden:** Rotes Durchscheinen gibt es nur in dickem, durchblutetem Gewebe. Durch 12–110 µm
+Zelle geht Licht fast farblos. Das galt auch für Eizelle und Polkörper; beide sind jetzt grau-beige.
+
+**Drei Anläufe, alle am Bild geprüft:**
+1. Kern zu deutlich: Die Zellen wirkten wie Spiegeleier.
+2. Körnung als Würfel-Zufall: sichtbare Voxel; die Zellen wirkten wie Kiesel.
+3. Weiches Rauschen und hellerer Ton.
+
+![Vorher: Spiegeleier](Media/GENESIS-039_Coronazellen_Spiegeleier.png)
+![Jetzt](Media/GENESIS-039_Coronazellen.png)
+
+### Bewusst nicht gemacht
+
+**Kein Klang im Rennen für die eigene Bewegung:** Ein Spermium hört nichts, und in dieser Größe gibt es keinen
+hörbaren Schall. Erfundene „Schwimmgeräusche" wären unrealistisch. Der Ortsklang (Strömung, Herzschlag der
+Mutter durchs Gewebe) bleibt.
+
+### Offen
+
+- Die Form der Cumuluszellen ist zu regelmäßig (Ellipsoide aus Blender), ohne Fortsätze zur Zona.
+- Die Raumschleife hat die Nahtstelle einer MP3; ein weicher Übergang wäre besser.
+- Die Stimmen und das Schreien warten auf das Ohr des Game Directors.

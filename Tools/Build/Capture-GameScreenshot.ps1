@@ -25,7 +25,7 @@ New-Item -ItemType Directory -Force -Path (Split-Path $OutputPath) | Out-Null
 # "shot showui" als letzter Befehl: Die Engine speichert das nächste Bild inklusive HUD
 $Commands = if ($ShotDelaySeconds -gt 0) { "$ExecCmds,genesis.Debug.After $ShotDelaySeconds shot showui" } else { "$ExecCmds,shot showui" }
 $Started = Get-Date
-$Arguments = @("`"$Project`"") + $(if ($Map) { @($Map) } else { @() }) + @("-game", "-windowed", "-ResX=1600", "-ResY=900", "-nosplash", "-ExecCmds=`"$Commands`"")
+$Arguments = @("`"$Project`"") + $(if ($Map) { @($Map) } else { @() }) + @("-game", "-windowed", "-ResX=1600", "-ResY=900", "-nosplash", "-ini:Engine:[Audio]:UnfocusedVolumeMultiplier=1.0", "-ExecCmds=`"$Commands`"")
 $Process = Start-Process -FilePath $Editor -ArgumentList $Arguments -PassThru
 
 $Shot = $null

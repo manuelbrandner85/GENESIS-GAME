@@ -38,6 +38,44 @@ namespace GenesisSceneSpeechLogic
 		return LineId == FName(TEXT("P_M_Pressen"));
 	}
 
+	FName ChooseChild(const FInputs& In, float Now, float& InOutLastQuietSound, bool& bInOutFirstCryDone, bool bChildFree)
+	{
+		if (!In.bNewborn || In.SecondsSinceBirth < 0.0f)
+		{
+			return NAME_None;
+		}
+		// Der erste Schrei kommt eine halbe Sekunde nach der Geburt – die Hebamme spricht über ihn hinweg
+		if (!bInOutFirstCryDone)
+		{
+			if (In.SecondsSinceBirth >= 0.5f)
+			{
+				bInOutFirstCryDone = true;
+				return TEXT("SFX_Schrei_Erster");
+			}
+			return NAME_None;
+		}
+		if (!bChildFree || In.bAsleep)
+		{
+			return NAME_None;
+		}
+		// Schreien läuft ohne Pause weiter, solange der Zustand es verlangt – ein Kind schreit in Wellen, nicht in Einzelsätzen
+		if (In.bCrying && In.CryLoudness > 0.6f)
+		{
+			return TEXT("SFX_Schrei_Stark");
+		}
+		if (In.bCrying && In.CryLoudness > 0.25f)
+		{
+			return TEXT("SFX_Schrei_Wimmern");
+		}
+		// Ruhig auf der Haut: ab und zu ein Grunzen, Seufzen, Schmatzen
+		if (In.bSkinToSkin && !In.bCrying && Now - InOutLastQuietSound > 22.0f)
+		{
+			InOutLastQuietSound = Now;
+			return TEXT("SFX_Baby_Laute");
+		}
+		return NAME_None;
+	}
+
 	FName Choose(const FInputs& In, FMemory& Memory)
 	{
 		// Wehen erkennen, auch während gerade jemand spricht: Anstieg über 0,5, Abklingen unter 0,25
@@ -242,6 +280,8 @@ GenesisSceneSpeechLogic::FInputs AGenesisSceneSpeech::GatherInputs() const
 			In.bCrying = Child.IsCrying();
 			In.RootingEffort = Child.RootingEffort;
 			In.bAsleep = Child.Stage == EGenesisNewbornStage::FirstSleep;
+			In.CryLoudness = Child.GetCryLoudness();
+			In.bFirstBreaths = Child.Stage == EGenesisNewbornStage::FirstBreaths;
 		}
 	}
 	In.SecondsSinceBirth = BornAt >= 0.0f ? Memory.Now - BornAt : -1.0f;
@@ -270,11 +310,42 @@ void AGenesisSceneSpeech::Tick(float DeltaSeconds)
 		Play(Line);
 	}
 
+	// Das Kind: echte Aufnahmen auf eigenem Kanal (Schreien liegt unter der Rede der Erwachsenen)
+	ChildBusy = FMath::Max(0.0f, ChildBusy - DeltaSeconds);
+	const FName ChildSound = GenesisSceneSpeechLogic::ChooseChild(In, Memory.Now, LastQuietSound, bFirstCryDone, ChildBusy <= 0.0f);
+	if (!ChildSound.IsNone())
+	{
+		PlayChild(ChildSound);
+	}
+	// Beruhigt sich das Kind, klingt das Schreien aus, statt bis zum Ende der Aufnahme weiterzulaufen
+	if (ChildAudio && ChildAudio->IsPlaying() && LastChildSound.ToString().StartsWith(TEXT("SFX_Schrei_")) && LastChildSound != FName(TEXT("SFX_Schrei_Erster")) && !In.bCrying)
+	{
+		ChildAudio->FadeOut(1.2f, 0.0f);
+		ChildBusy = FMath::Min(ChildBusy, 1.2f);
+		LastChildSound = NAME_None;
+	}
+
 	// Vor der Geburt hört das Kind alles durch Bauchdecke und Fruchtwasser – nur die Tiefen kommen durch
 	const UGameInstance* GameInstance = GetGameInstance();
 	const UGenesisBirthSubsystem* Birth = GameInstance ? GameInstance->GetSubsystem<UGenesisBirthSubsystem>() : nullptr;
 	const float Muffling = Birth ? FMath::Clamp(Birth->GetPerception().SoundMuffling, 0.0f, 1.0f) : 0.0f;
 	const float Cutoff = FMath::Exp(FMath::Lerp(FMath::Loge(20000.0f), FMath::Loge(WombCutoffHz), Muffling));
+
+	// Der Raum: nachts im Kreißsaal – Lüftung, ferne Schritte, Monitore. Vor der Geburt nur als dumpfes Rauschen
+	if (!Room)
+	{
+		if (USoundWave* RoomSound = Cast<USoundWave>(FSoftObjectPath(TEXT("/Game/Genesis/Audio/Sounds/SFX_Kreisssaal_Nacht.SFX_Kreisssaal_Nacht")).TryLoad()))
+		{
+			Room = UGameplayStatics::SpawnSound2D(this, RoomSound, RoomVolume, 1.0f, 0.0f, nullptr, false, false);
+		}
+	}
+	if (Room)
+	{
+		Room->SetLowPassFilterEnabled(Muffling > 0.02f);
+		Room->SetLowPassFilterFrequency(Cutoff);
+		Room->SetVolumeMultiplier(RoomVolume * FMath::Lerp(1.0f, 0.3f, Muffling));
+	}
+
 	for (UAudioComponent* Component : { Current.Get(), Vocal.Get() })
 	{
 		if (Component && Component->IsPlaying())
@@ -284,6 +355,25 @@ void AGenesisSceneSpeech::Tick(float DeltaSeconds)
 			Component->SetVolumeMultiplier(FMath::Lerp(1.0f, 0.55f, Muffling));
 		}
 	}
+}
+
+void AGenesisSceneSpeech::PlayChild(FName SoundId)
+{
+	// Zwei Aufnahmen je Laut, abwechselnd: Ein Kind schreit nie zweimal genau gleich
+	const FString Name = SoundId.ToString() + ((ChildVariant++ % 2 == 1) ? TEXT("_v2") : TEXT(""));
+	const FString Path = FString::Printf(TEXT("/Game/Genesis/Audio/Sounds/%s.%s"), *Name, *Name);
+	USoundWave* Sound = Cast<USoundWave>(FSoftObjectPath(Path).TryLoad());
+	if (!Sound)
+	{
+		UE_LOG(LogGenesis, Warning, TEXT("Klang fehlt: %s"), *Path);
+		return;
+	}
+	const bool bQuiet = SoundId == FName(TEXT("SFX_Baby_Laute"));
+	ChildAudio = UGameplayStatics::SpawnSound2D(this, Sound, bQuiet ? 0.55f : 0.9f);
+	// Schreien schließt ohne Pause an (Wellen), ruhige Laute brauchen keinen Anschluss
+	ChildBusy = Sound->GetDuration() - (bQuiet ? 0.0f : 0.15f);
+	LastChildSound = SoundId;
+	UE_LOG(LogGenesis, Display, TEXT("Kind: %s"), *Name);
 }
 
 void AGenesisSceneSpeech::Play(FName LineId)

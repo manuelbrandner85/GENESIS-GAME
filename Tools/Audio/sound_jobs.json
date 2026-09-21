@@ -1,0 +1,47 @@
+[
+ {
+  "name": "SFX_Schrei_Erster",
+  "model": "ai-music-api/sounds",
+  "input": {
+   "prompt": "The very first cry of a newborn baby seconds after birth: a sharp gasp, a small wet cough and splutter, then thin, breathy, trembling cries that slowly get stronger. Hospital delivery room. Realistic close-microphone field recording, natural, no music, no melody, no voice-over.",
+   "model": "V5_5",
+   "sound_loop": false
+  }
+ },
+ {
+  "name": "SFX_Schrei_Stark",
+  "model": "ai-music-api/sounds",
+  "input": {
+   "prompt": "A newborn baby crying hard and rhythmically, one to two days old, cold and hungry, short gasping breaths between the cries, quiet hospital room. Realistic close-microphone field recording, natural, no music, no melody, no voice-over.",
+   "model": "V5_5",
+   "sound_loop": false
+  }
+ },
+ {
+  "name": "SFX_Schrei_Wimmern",
+  "model": "ai-music-api/sounds",
+  "input": {
+   "prompt": "A newborn baby whimpering and fussing softly, short weak unsettled sounds and little sobs, not a full cry, very close and intimate. Realistic close-microphone field recording, natural, no music, no melody, no voice-over.",
+   "model": "V5_5",
+   "sound_loop": false
+  }
+ },
+ {
+  "name": "SFX_Baby_Laute",
+  "model": "ai-music-api/sounds",
+  "input": {
+   "prompt": "A calm newborn baby lying skin to skin on its mother's chest: tiny grunts, soft sighs, small sucking and smacking sounds, quiet breathing. Very quiet and intimate. Realistic close-microphone field recording, natural, no music, no melody, no voice-over.",
+   "model": "V5_5",
+   "sound_loop": false
+  }
+ },
+ {
+  "name": "SFX_Kreisssaal_Nacht",
+  "model": "ai-music-api/sounds",
+  "input": {
+   "prompt": "Room tone of a quiet hospital delivery room at night: soft ventilation hum, very distant corridor footsteps and a door, faint electronic monitor beeps far away, the rustle of a sheet. Realistic close-microphone field recording, natural, no music, no melody, no voice-over.",
+   "model": "V5_5",
+   "sound_loop": true
+  }
+ }
+]

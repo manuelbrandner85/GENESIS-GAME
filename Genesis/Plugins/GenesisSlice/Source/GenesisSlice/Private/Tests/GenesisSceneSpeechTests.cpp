@@ -93,4 +93,35 @@ bool FGenesisSceneSpeechLaborTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSceneSpeechChildTest, "Genesis.Slice.Speech.ChildSounds", GenesisSceneSpeechTests::Flags)
+bool FGenesisSceneSpeechChildTest::RunTest(const FString& Parameters)
+{
+	using namespace GenesisSceneSpeechLogic;
+	float LastQuiet = -100.0f;
+	bool bFirstCry = false;
+	FInputs In;
+	TestEqual(TEXT("Vor der Geburt schreit niemand"), ChooseChild(In, 0.0f, LastQuiet, bFirstCry, true), FName());
+
+	In.bNewborn = true;
+	In.SecondsSinceBirth = 0.6f;
+	TestEqual(TEXT("Der erste Schrei nach einer halben Sekunde"), ChooseChild(In, 0.6f, LastQuiet, bFirstCry, true), FName(TEXT("SFX_Schrei_Erster")));
+	TestEqual(TEXT("Nur einmal"), ChooseChild(In, 0.7f, LastQuiet, bFirstCry, true), FName());
+
+	In.bCrying = true;
+	In.CryLoudness = 0.9f;
+	TestEqual(TEXT("Kalt und allein: kräftiges Schreien"), ChooseChild(In, 5.0f, LastQuiet, bFirstCry, true), FName(TEXT("SFX_Schrei_Stark")));
+	In.CryLoudness = 0.4f;
+	TestEqual(TEXT("Leichte Unruhe: Wimmern"), ChooseChild(In, 6.0f, LastQuiet, bFirstCry, true), FName(TEXT("SFX_Schrei_Wimmern")));
+	TestEqual(TEXT("Solange ein Laut läuft, kein zweiter"), ChooseChild(In, 6.1f, LastQuiet, bFirstCry, false), FName());
+
+	In.bCrying = false;
+	In.CryLoudness = 0.0f;
+	In.bSkinToSkin = true;
+	TestEqual(TEXT("Ruhig auf der Haut: leise Laute"), ChooseChild(In, 30.0f, LastQuiet, bFirstCry, true), FName(TEXT("SFX_Baby_Laute")));
+	TestEqual(TEXT("…aber selten"), ChooseChild(In, 35.0f, LastQuiet, bFirstCry, true), FName());
+	In.bAsleep = true;
+	TestEqual(TEXT("Schlafend: still"), ChooseChild(In, 80.0f, LastQuiet, bFirstCry, true), FName());
+	return true;
+}
+
 #endif
