@@ -124,4 +124,19 @@ bool FGenesisSceneSpeechChildTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSceneSpeechHearingTest, "Genesis.Slice.Speech.NewbornHearing", GenesisSceneSpeechTests::Flags)
+bool FGenesisSceneSpeechHearingTest::RunTest(const FString& Parameters)
+{
+	// Das Ohr des Neugeborenen wird in der ersten Stunde klarer – stetig, nie dumpfer
+	const float AtBirth = AGenesisSceneSpeech::NewbornCutoff(0.0f, 3500.0f, 12000.0f);
+	const float HalfHour = AGenesisSceneSpeech::NewbornCutoff(30.0f, 3500.0f, 12000.0f);
+	const float Hour = AGenesisSceneSpeech::NewbornCutoff(60.0f, 3500.0f, 12000.0f);
+	const float Later = AGenesisSceneSpeech::NewbornCutoff(180.0f, 3500.0f, 12000.0f);
+	TestTrue(TEXT("Bei der Geburt gedämpft"), FMath::IsNearlyEqual(AtBirth, 3500.0f, 1.0f));
+	TestTrue(TEXT("Nach einer halben Stunde dazwischen (logarithmisch: ~6500 Hz)"), HalfHour > 6000.0f && HalfHour < 7000.0f);
+	TestTrue(TEXT("Nach einer Stunde klar"), FMath::IsNearlyEqual(Hour, 12000.0f, 1.0f));
+	TestTrue(TEXT("Danach bleibt es so"), FMath::IsNearlyEqual(Later, Hour, 1.0f));
+	return true;
+}
+
 #endif

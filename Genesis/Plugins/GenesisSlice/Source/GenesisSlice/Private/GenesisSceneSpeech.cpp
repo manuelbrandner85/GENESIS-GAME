@@ -11,6 +11,11 @@
 #include "GenesisLog.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundWave.h"
+#include "Sound/SoundAttenuation.h"
+#include "GenesisMotherRig.h"
+#include "EngineUtils.h"
+#include "GameFramework/PlayerController.h"
+#include "Camera/PlayerCameraManager.h"
 
 namespace GenesisSceneSpeechLogic
 {
@@ -233,6 +238,56 @@ AGenesisSceneSpeech::AGenesisSceneSpeech()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+float AGenesisSceneSpeech::NewbornCutoff(float MinutesSinceBirth, float AtBirthHz, float AfterHourHz)
+{
+	// Auf der logarithmischen Frequenzachse gleichmäßig: Das Ohr hört in Oktaven, nicht in Hertz
+	const float T = FMath::Clamp(MinutesSinceBirth / 60.0f, 0.0f, 1.0f);
+	return FMath::Exp(FMath::Lerp(FMath::Loge(FMath::Max(100.0f, AtBirthHz)), FMath::Loge(FMath::Max(100.0f, AfterHourHz)), T));
+}
+
+bool AGenesisSceneSpeech::SpeakerLocation(FName LineId, FVector& OutLocation) const
+{
+	// Vor der Geburt: keine Richtung. Das Kind hört durch Bauchdecke und Fruchtwasser – von überall zugleich.
+	if (BornAt < 0.0f)
+	{
+		return false;
+	}
+	if (GenesisSceneSpeechLogic::IsMother(LineId) || GenesisSceneSpeechLogic::IsVocalization(LineId))
+	{
+		for (TActorIterator<AGenesisMotherRig> It(GetWorld()); It; ++It)
+		{
+			// Der Mund liegt gut 7 cm unter den Augen (Szene: 1 mm = 1 Einheit)
+			OutLocation = It->GetEyeLocation() - FVector(0.0, 0.0, 70.0);
+			return true;
+		}
+		return false;
+	}
+	if (bHasMidwife)
+	{
+		OutLocation = MidwifeLocation;
+		return true;
+	}
+	// Liegt das Kind auf der Mutter, steht die Hebamme neben dem Bett – nicht mehr vor dem Gesicht des Kindes
+	const UGenesisEarlyLifeSubsystem* EarlyLife = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisEarlyLifeSubsystem>() : nullptr;
+	if (EarlyLife && EarlyLife->HasNewborn() && EarlyLife->GetState().bSkinToSkin)
+	{
+		for (TActorIterator<AGenesisMotherRig> It(GetWorld()); It; ++It)
+		{
+			// Neben dem Bett, stehend: seitlich der Mutter, Kopf etwa einen halben Meter höher als ihrer
+			OutLocation = It->GetEyeLocation() + It->GetActorRightVector() * 650.0 + FVector(0.0, 0.0, 450.0);
+			return true;
+		}
+	}
+	// Sonst ist sie dort, wo das Kind gerade ist – sie hält es, beugt sich darüber
+	const APlayerController* Controller = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	if (const APlayerCameraManager* Camera = Controller ? Controller->PlayerCameraManager.Get() : nullptr)
+	{
+		OutLocation = Camera->GetCameraLocation() + Camera->GetCameraRotation().Vector() * 420.0 + FVector(0.0, 0.0, 120.0);
+		return true;
+	}
+	return false;
+}
+
 bool AGenesisSceneSpeech::IsGirl() const
 {
 	// Aus dem Genom des Kindes: Welcher Satz („Da ist sie" / „Da ist er") fällt, entscheidet die Befruchtung
@@ -329,7 +384,15 @@ void AGenesisSceneSpeech::Tick(float DeltaSeconds)
 	const UGameInstance* GameInstance = GetGameInstance();
 	const UGenesisBirthSubsystem* Birth = GameInstance ? GameInstance->GetSubsystem<UGenesisBirthSubsystem>() : nullptr;
 	const float Muffling = Birth ? FMath::Clamp(Birth->GetPerception().SoundMuffling, 0.0f, 1.0f) : 0.0f;
-	const float Cutoff = FMath::Exp(FMath::Lerp(FMath::Loge(20000.0f), FMath::Loge(WombCutoffHz), Muffling));
+	float Cutoff = FMath::Exp(FMath::Lerp(FMath::Loge(20000.0f), FMath::Loge(WombCutoffHz), Muffling));
+	// Nach der Geburt: das Ohr des Neugeborenen, noch mit Fruchtwasser – es wird in der ersten Stunde klarer
+	const UGenesisEarlyLifeSubsystem* EarlyLife = GameInstance ? GameInstance->GetSubsystem<UGenesisEarlyLifeSubsystem>() : nullptr;
+	const bool bBorn = EarlyLife && EarlyLife->HasNewborn();
+	if (bBorn)
+	{
+		Cutoff = FMath::Min(Cutoff, NewbornCutoff(static_cast<float>(EarlyLife->GetState().MinutesSinceBirth), NewbornCutoffAtBirthHz, NewbornCutoffAfterHourHz));
+	}
+	const bool bFilter = Muffling > 0.02f || bBorn;
 
 	// Der Raum: nachts im Kreißsaal – Lüftung, ferne Schritte, Monitore. Vor der Geburt nur als dumpfes Rauschen
 	if (!Room)
@@ -341,16 +404,16 @@ void AGenesisSceneSpeech::Tick(float DeltaSeconds)
 	}
 	if (Room)
 	{
-		Room->SetLowPassFilterEnabled(Muffling > 0.02f);
+		Room->SetLowPassFilterEnabled(bFilter);
 		Room->SetLowPassFilterFrequency(Cutoff);
 		Room->SetVolumeMultiplier(RoomVolume * FMath::Lerp(1.0f, 0.3f, Muffling));
 	}
 
-	for (UAudioComponent* Component : { Current.Get(), Vocal.Get() })
+	for (UAudioComponent* Component : { Current.Get(), Vocal.Get(), ChildAudio.Get() })
 	{
 		if (Component && Component->IsPlaying())
 		{
-			Component->SetLowPassFilterEnabled(Muffling > 0.02f);
+			Component->SetLowPassFilterEnabled(bFilter);
 			Component->SetLowPassFilterFrequency(Cutoff);
 			Component->SetVolumeMultiplier(FMath::Lerp(1.0f, 0.55f, Muffling));
 		}
@@ -385,10 +448,36 @@ void AGenesisSceneSpeech::Play(FName LineId)
 		UE_LOG(LogGenesis, Warning, TEXT("Sprache fehlt: %s"), *Path);
 		return;
 	}
+	// Nach der Geburt kommt jede Stimme von dort, wo der Mensch ist: Richtung, Entfernung, und in der Ferne
+	// weniger Höhen (Luft dämpft sie). Szene: 1 mm = 1 Einheit – 0,3 m voll laut, bis 6 m leiser werdend.
+	if (!Attenuation)
+	{
+		Attenuation = NewObject<USoundAttenuation>(this);
+		FSoundAttenuationSettings& Settings = Attenuation->Attenuation;
+		Settings.bAttenuate = true;
+		Settings.bSpatialize = true;
+		Settings.DistanceAlgorithm = EAttenuationDistanceModel::NaturalSound;
+		Settings.AttenuationShape = EAttenuationShape::Sphere;
+		Settings.AttenuationShapeExtents = FVector(300.0f, 0.0f, 0.0f);
+		Settings.FalloffDistance = 6000.0f;
+		Settings.bAttenuateWithLPF = true;
+		Settings.LPFRadiusMin = 1000.0f;
+		Settings.LPFRadiusMax = 6000.0f;
+		Settings.LPFFrequencyAtMin = 20000.0f;
+		Settings.LPFFrequencyAtMax = 6000.0f;
+	}
+	FVector Where;
+	const bool bPlaced = SpeakerLocation(LineId, Where);
+	auto Spawn = [this, Sound, bPlaced, &Where](float Volume) -> UAudioComponent*
+	{
+		return bPlaced
+			? UGameplayStatics::SpawnSoundAtLocation(this, Sound, Where, FRotator::ZeroRotator, Volume, 1.0f, 0.0f, Attenuation)
+			: UGameplayStatics::SpawnSound2D(this, Sound, Volume);
+	};
 	if (GenesisSceneSpeechLogic::IsVocalization(LineId))
 	{
 		// Eigener Kanal: liegt über der Rede, unterbricht sie nicht
-		Vocal = UGameplayStatics::SpawnSound2D(this, Sound, 0.85f);
+		Vocal = Spawn(0.85f);
 		BusyVocal = Sound->GetDuration() + 0.5f;
 	}
 	else
@@ -397,10 +486,19 @@ void AGenesisSceneSpeech::Play(FName LineId)
 		{
 			Current->Stop();
 		}
-		Current = UGameplayStatics::SpawnSound2D(this, Sound);
+		Current = Spawn(1.0f);
 		Busy = Sound->GetDuration() + GapSeconds;
 	}
 	LastLine = LineId;
-	UE_LOG(LogGenesis, Display, TEXT("Sprache: %s (%s)"), *LineId.ToString(),
-		GenesisSceneSpeechLogic::IsMother(LineId) ? TEXT("Mutter") : TEXT("Hebamme"));
+	FString Direction = TEXT("ohne Richtung, durch die Bauchdecke");
+	const APlayerController* Controller = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	if (const APlayerCameraManager* Camera = bPlaced && Controller ? Controller->PlayerCameraManager.Get() : nullptr)
+	{
+		// Richtung aus Sicht des Kindes: 0° = vor ihm, positiv = rechts
+		const FVector Local = Camera->GetCameraRotation().UnrotateVector(Where - Camera->GetCameraLocation());
+		const float Azimuth = FMath::RadiansToDegrees(FMath::Atan2(Local.Y, Local.X));
+		Direction = FString::Printf(TEXT("%.0f° %s, %.2f m"), FMath::Abs(Azimuth), Azimuth >= 0.0f ? TEXT("rechts") : TEXT("links"), Local.Size() / 1000.0f);
+	}
+	UE_LOG(LogGenesis, Display, TEXT("Sprache: %s (%s, %s)"), *LineId.ToString(),
+		GenesisSceneSpeechLogic::IsMother(LineId) ? TEXT("Mutter") : TEXT("Hebamme"), *Direction);
 }

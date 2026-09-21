@@ -104,6 +104,23 @@ public:
 	/** Zuletzt gesprochene Zeile – für die Anzeige und die Prüfung. */
 	FName GetLastLine() const { return LastLine; }
 
+	/**
+	 * Das Ohr des Neugeborenen: In den ersten Stunden stecken noch Fruchtwasser und Käseschmiere in Gehörgang
+	 * und Mittelohr (deshalb fällt das Hörscreening in den ersten 24 h häufiger durch). Hohe Töne kommen
+	 * gedämpft an und werden in der ersten Lebensstunde klarer. Grenzfrequenz bei der Geburt / nach 60 min (Hz).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Speech")
+	float NewbornCutoffAtBirthHz = 3500.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Genesis|Speech")
+	float NewbornCutoffAfterHourHz = 12000.0f;
+
+	/** Die Hebamme: wo ihre Stimme herkommt (vom Actor der Hebamme gesetzt, sobald es ihn gibt). */
+	void SetMidwifeLocation(const FVector& Location) { MidwifeLocation = Location; bHasMidwife = true; }
+
+	/** Grenzfrequenz des Hörens beim Kind gerade jetzt (Hz) – für Anzeige und Test. */
+	static float NewbornCutoff(float MinutesSinceBirth, float AtBirthHz, float AfterHourHz);
+
 private:
 	GenesisSceneSpeechLogic::FInputs GatherInputs() const;
 	void Play(FName LineId);
@@ -126,6 +143,15 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAudioComponent> Room;
+
+	/** Wo spricht diese Person gerade? Vor der Geburt ohne Richtung (durch die Bauchdecke). */
+	bool SpeakerLocation(FName LineId, FVector& OutLocation) const;
+
+	UPROPERTY(Transient)
+	TObjectPtr<class USoundAttenuation> Attenuation;
+
+	FVector MidwifeLocation = FVector::ZeroVector;
+	bool bHasMidwife = false;
 
 	GenesisSceneSpeechLogic::FMemory Memory;
 	float Busy = 0.0f;

@@ -464,3 +464,10 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-21: Bewusst kein Schwimmgeräusch im Rennen: In dieser Größe gibt es keinen hörbaren Schall.
 - 2026-09-21: 129 von 129 Tests. Im Spiel aufgenommen und geprüft.
 - **Status: DONE.**
+
+### GENESIS-039 (Teil 3) – Kein Klingeln, die Ohren eines Neugeborenen
+- 2026-09-21: Game Director: „Das komische Klingeln im Kreißsaal weg; die Hebamme soll zu sehen sein; Stimmen und Wahrnehmung für das Baby realistisch."
+- 2026-09-21: Klingeln gemessen und beseitigt. Es hatte zwei Quellen: das 980-Hz-Monitorpiepen der Synthese bei jedem Herzschlag und einen 1002-Hz-Ton in der ersten Raumaufnahme. Neue Raumaufnahme ohne Geräte; der Spielmix nach der Geburt ist frei von reinen Tönen.
+- 2026-09-21: Ohr des Neugeborenen: nach der Geburt über 3,5 kHz gedämpft, in der ersten Stunde klar bis 12 kHz (neuer Test NewbornHearing). Stimmen kommen nach der Geburt aus Richtung und Entfernung der Sprecherin (im Protokoll geprüft).
+- 2026-09-21: 130 von 130 Tests.
+- Offen: Hebamme sichtbar (nächster Schritt).

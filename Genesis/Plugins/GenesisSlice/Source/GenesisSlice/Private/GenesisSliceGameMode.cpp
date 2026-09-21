@@ -181,7 +181,9 @@ void AGenesisSliceGameMode::EnsureSceneSound()
 		// Zwei Orte zugleich: der Mutterleib von innen und der Kreißsaal von außen – vor der Geburt durch
 		// Bauchdecke und Fruchtwasser gedämpft, nach dem ersten Atemzug klar
 		Place(TEXT("WombTone"), EGenesisPlace::Womb, 0.9f, 0.3f, 0.6f, true, FVector::ZeroVector);
-		Place(TEXT("DeliveryRoomTone"), EGenesisPlace::DeliveryRoom, 0.85f, 0.5f, 0.5f, true, FVector(420.0f, 0.0f, 200.0f));
+		// Der Kreißsaal klingt aus einer echten Aufnahme (AGenesisSceneSpeech). Die Synthese des Raums ist hier aus:
+		// Ihr Monitor piepte als reiner 980-Hz-Ton bei jedem Herzschlag der Mutter, dazu Metallklänge aus reinen
+		// Sinustönen – das komische Klingeln, das der Game Director gehört hat. Echte Kreißsäle piepen so nicht.
 
 		// Der eigene Körper (Herzschlag, Atem) – ab der Geburt der des Kindes
 		if (!Has(AGenesisBodySoundActor::StaticClass()))

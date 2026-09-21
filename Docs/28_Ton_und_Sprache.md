@@ -133,3 +133,36 @@ Mutter durchs Gewebe) bleibt.
 - Die Form der Cumuluszellen ist zu regelmäßig (Ellipsoide aus Blender), ohne Fortsätze zur Zona.
 - Die Raumschleife hat die Nahtstelle einer MP3; ein weicher Übergang wäre besser.
 - Die Stimmen und das Schreien warten auf das Ohr des Game Directors.
+## GENESIS-039 (Teil 3) – Kein Klingeln mehr, die Ohren eines Neugeborenen
+
+Game Director: „Das komische Klingeln im Kreißsaal weg. Für das Baby sollen die Stimmen und die Wahrnehmung
+entsprechend da sein, Kreißsaal-Töne realistisch."
+
+**Zwei Quellen des Klingelns, beide gemessen** (`Tools/Audio/check_tones.py`: reine Töne im Spektrum):
+1. Die Synthese des Kreißsaals piepte als reiner 980-Hz-Ton bei jedem Herzschlag der Mutter und hatte
+   Metallklänge aus Sinustönen (2,4–5,6 kHz). Echte Kreißsäle piepen nicht bei jedem Herzschlag. Die Synthese des
+   Raums ist im Spiel abgeschaltet.
+2. Die erste Raumaufnahme trug selbst einen Ton: 1002 Hz, +30 dB über dem Raum. Ich hatte „ferne Monitor-Pieptöne"
+   bestellt. Neu erzeugt ohne Geräte; alle vier Aufnahmen und der fertige Spielmix nach der Geburt sind frei von
+   reinen Tönen, auch mit Musik.
+
+**Das Ohr des Neugeborenen:** In den ersten Stunden stecken noch Fruchtwasser und Käseschmiere in Gehörgang und
+Mittelohr. Deshalb fällt das Hörscreening in den ersten 24 h häufiger durch. Nach der Geburt ist deshalb alles oberhalb
+3,5 kHz gedämpft; in der ersten Lebensstunde wird es auf der Oktavachse gleichmäßig bis 12 kHz klarer
+(Test NewbornHearing).
+
+**Stimmen von dort, wo die Menschen sind:** Vor der Geburt kommen sie ohne Richtung durch die Bauchdecke. Danach
+kommen sie aus Richtung und Entfernung; in der Ferne dämpft die Luft die Höhen. Im Spiel gemessen (Protokoll):
+
+```
+G_M_Bauch_02   Mutter   ohne Richtung, durch die Bauchdecke
+D_H_Da_M       Hebamme  2° links, 0,44 m   (sie hält das Kind)
+D_M_Hallo      Mutter   174° links, 1,06 m (hinter dem Kind)
+S_M_Warm       Mutter   133° rechts, 0,24 m (Kind auf ihrer Brust)
+```
+
+Liegt das Kind auf der Mutter, steht die Hebamme neben dem Bett, nicht mehr vor seinem Gesicht.
+
+**Befund aus dem Bild:** In den ersten Sekunden nach der Geburt sah das Kind einen **leeren Raum** (Schränke, Tür).
+In Wirklichkeit fängt die Hebamme es auf und hebt es hoch – sie ist das Erste, was es sieht. Das kommt als
+Nächstes (sichtbare Hebamme, MetaHuman).
