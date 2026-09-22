@@ -9,6 +9,7 @@ Bauplan: vorn und hinten, links und rechts, oben und unten. In der vierten schl�
 |---|---|
 | Simulation der dritten und vierten Woche (`GenesisEmbryogenesisLogic`) | **PRODUCTION READY**: gegen Lehrbuch und Ultraschalldaten geprüft |
 | Anzeige im Durchlauf (Tag, Länge, Somiten, Herzschlag), Entwicklerseite | **BETA** |
+| Der Körper an Tag 28, nach Referenzen in Blender (Form, innere Organe, Gewebe) | **ALPHA** – siehe „Der Körper" |
 | Szene: die Keimscheibe, das Neuralrohr, das schlagende Herz | **PLAN** (Teil 2) |
 
 ## Die Stufen
@@ -78,15 +79,56 @@ Das ist die erste Kette dieser Art im Spiel: **Wie die Mutter lebt, entscheidet 
 - `Genesis.Embryo.BodyPlanStepIndependent`: gleiches Ergebnis bei jeder Schrittweite.
 - `Genesis.Slice.BodyPlanPace`: Tempo im Durchlauf.
 
+## Der Körper (Tag 28) – nach Referenzen, in Blender
+
+Game Director: „Baue das in Blender live, recherchiere vorher alle Bilder und nutze diese für das 3D-Rendering."
+
+![Tag 28, seitlich](Media/GENESIS-041_Embryo_Tag28_Seite.png)
+
+![Tag 28, von vorn schräg](Media/GENESIS-041_Embryo_Tag28_Dreiviertel.png)
+
+![Tag 28, Rücken: Somiten beiderseits des Neuralrohrs](Media/GENESIS-041_Embryo_Tag28_Ruecken.png)
+
+**Referenzen** (25 Bilder, Wikimedia Commons, Lizenz je Bild in `ArtSource/Reference/Embryo/QUELLEN.md` – nur lokal,
+nicht im Repository): vor allem die Blechschmidt-Rekonstruktionsmodelle echter Embryonen mit 2,5 / 3,4 / 4,2 / 6,3 mm
+Länge (Form in 3D) und ein Präparat mit 4–5 Wochen (Oberfläche). Aus dem Präparat sind die Landmarken im Raster
+abgelesen (Kopfkuppe, Rückenlinie, Herz, Kiemenbögen, Knospen, Schwanz; 6,7 µm je Bildpunkt).
+
+**Aufbau** (`Tools/Blender/Embryogenesis/build_embryo_day28.py`, Lookdev `lookdev_embryo.py`):
+- Die Form entsteht aus weich verschmelzenden Grundformen (Metaballs): der Rumpf in 14 gemessenen Querschnitten
+  zwischen Rücken- und Bauchlinie, Rückenwülste entlang der Somiten, der Kopf aus drei Hirnbläschen, Kiemenbögen als
+  Leisten, Herzwölbung, Leberwulst, Arm- und Beinknospe. Danach gleichmäßig neu vernetzt (9 µm, 700 000 Punkte).
+- Feinformen als Verschiebung: 30 Somitenfurchen (nach hinten kleiner), die kaum erhabene Mittellinie, Ohr- und
+  Linsengrübchen.
+- **Innen liegen die Organe als eigene Körper**, weil der Embryo mit vier Wochen fast durchsichtig ist: Herzschlauch
+  mit Blut (S-Schleife vom Venensinus zum Truncus), Aortenbögen durch die Kiemenbögen, Rückenaorten, Hirnwand um die
+  flüssigkeitsgefüllten Ventrikel, Neuralrohr mit Lumen, 30 Somitenpaare, Leberanlage.
+- **Gewebe nach der Physik im Fruchtwasser:** Die Hülle ist überwiegend durchlässig; der Brechzahlsprung zwischen
+  Gewebe und Fruchtwasser ist winzig (1,38 zu 1,335), deshalb fast kein Glanz. Darunter ein schwach streuendes
+  Mesenchym (mittlere freie Weglänge 1,7 mm) – dunstig, die Organe bleiben sichtbar.
+- Größte Länge 4,6 mm, Kopfbreite 1,6 mm. Belichtung gemessen (Motiv-Median 0,42–0,46, nichts ausgebrannt).
+
+**Eigene Fehler auf dem Weg** (in dieser Reihenfolge gefunden und behoben):
+1. Nur das Neuralrohr als Körper genommen – ein Wurm. Das „C" ist innen gefüllt (Schlund, Herz, Leber).
+2. Kopf aus Füllmasse – ein Kasten. Jetzt drei Hirnbläschen als Kuppen.
+3. Somitenfurchen dreimal zu tief und die Mittellinie als Grat – wieder der „Drachenkamm" des Prototyps.
+4. Glanz und Wachs: gegen Luft gerechnet statt gegen Fruchtwasser, dazu eine undurchsichtige Haut.
+5. Somiten als Perlenkette außerhalb des Körpers; in der Rückenansicht standen sie beiderseits heraus, weil der
+   Querschnitt zum Rücken hin spitz zulief. Jetzt Rückenwülste in voller Körperbreite.
+6. Ein Loch unter dem Kopf (Schlundboden fehlte), Kiemenbögen wie Zähne, das Neuralrohr am Nacken außerhalb der Haut.
+7. Messwerkzeug: 16-Bit-Bilder wurden linear gemessen und wirkten zu dunkel (behoben in `genesis_blender_common`).
+
+Der frühere Prototyp (`build_embryo_body.py`, Röhre mit Ringen) ist damit ersetzt und entfernt.
+
 ## Offen
 
-- **Die Szene fehlt** (Teil 2): Keimscheibe mit Primitivstreifen, die Neuralrinne, die sich schließt, Somitenpaare, die
-  wie Perlen erscheinen, und das Herz, das zu schlagen beginnt. Bis dahin bleibt die Kamera auf der Einnistungsstelle.
-  Ein erster Anlauf für den Körper steht als **Prototyp** in `Tools/Blender/Embryogenesis/build_embryo_body.py`: Die
-  Maße stimmen (0,7 mm an Tag 16 bis 4,6 mm an Tag 28, Somitenzahl, Krümmung zur C-Form, Formschlüssel je Tag), die
-  Form überzeugt aber nicht – die Somiten lesen sich als gezackter Kamm, der Kopf bleibt ein glatter Klumpen. Der
-  nächste Weg steht im Kopf der Datei: die Anatomie aus impliziten Körpern aufbauen und die Topologie danach
-  vereinheitlichen.
+- **Die Szene fehlt** (Teil 2): der Embryo in der Fruchthöhle, mit Dottersack und Dottergang (samt Gefäßen), Amnion
+  und Haftstiel; das Herz, das schlägt. Bis dahin bleibt die Kamera auf der Einnistungsstelle.
+- Der Körper steht für **Tag 28**. Die Tage davor (Keimscheibe, Neuralrinne, erste Somiten) brauchen eigene Formen
+  derselben Bauart, damit die Wochen 3–4 sichtbar werden – dann als Übergänge zwischen den Tagen.
+- In Unreal: Hülle durchscheinend (wie die Hülle des Keims bei der Einnistung), Organe darin undurchsichtig; die
+  Netze sind für Nanite ausgelegt.
+- Feinheiten: Gefäßgeflecht am Kopf, Kardinalvenen, feinere Kiemenfurchen, Nasenplakoden (erst ab Tag 32).
 - Der Herzschlag soll hörbar werden (der Klang liegt im Körperklang-System bereit) und den Spieler von hier an
   begleiten.
 - Die Ernährung der Mutter steht noch als Wert in der Regie (`MotherNutrition`), weil die Mutter noch keine eigene

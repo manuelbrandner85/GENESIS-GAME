@@ -116,14 +116,20 @@ def new_node(tree, node_type, location, **props):
 
 def measure_exposure(path, mask_threshold=0.02):
     """Belichtung messen statt schätzen: Luminanz-Perzentile (Anzeige-Werte 0..1) und Anteil ausgebrannter Pixel im Motiv."""
+    import numpy as np
     image = bpy.data.images.load(path, check_existing=False)
-    pixels = list(image.pixels)
-    lums = []
-    for index in range(0, len(pixels), 4):
-        lum = 0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2]
-        if lum > mask_threshold:
-            lums.append(lum)
+    rgba = np.array(image.pixels[:], dtype=np.float32).reshape(-1, 4)
+    is_float = image.is_float
     bpy.data.images.remove(image)
+    # Was Motiv ist, entscheidet die Maske wie bisher auf den gelesenen Werten. Gemeldet wird aber in
+    # Anzeigewerten (wie das Cover): 16-Bit-PNGs liest Blender linear, 8-Bit als Anzeigewerte – bis
+    # 2026-09-23 wurden 16-Bit-Bilder deshalb linear gemessen und wirkten zu dunkel.
+    mask = (0.2126 * rgba[:, 0] + 0.7152 * rgba[:, 1] + 0.0722 * rgba[:, 2]) > mask_threshold
+    if is_float:
+        c = np.clip(rgba[:, :3], 0.0, None)
+        rgba[:, :3] = np.where(c <= 0.0031308, 12.92 * c, 1.055 * np.power(c, 1.0 / 2.4) - 0.055)
+    lum_all = 0.2126 * rgba[:, 0] + 0.7152 * rgba[:, 1] + 0.0722 * rgba[:, 2]
+    lums = [float(v) for v in lum_all[mask]]
     if not lums:
         print("GENESIS_EXPOSURE", os.path.basename(path), "kein Motiv ueber Schwelle")
         return None
