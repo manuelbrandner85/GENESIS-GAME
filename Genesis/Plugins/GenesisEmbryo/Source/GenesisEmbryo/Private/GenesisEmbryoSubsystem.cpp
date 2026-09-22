@@ -8,6 +8,7 @@
 #include "GenesisConceptionSubsystem.h"
 #include "GenesisDebug.h"
 #include "GenesisEmbryoLogic.h"
+#include "GenesisEmbryogenesisLogic.h"
 #include "GenesisGameplayTags.h"
 #include "GenesisLog.h"
 #include "GenesisSoulMusicSubsystem.h"
@@ -138,7 +139,26 @@ void UGenesisEmbryoSubsystem::AdvanceHours(double Hours)
 
 	const EGenesisEmbryoStage Previous = State.Stage;
 	const EGenesisImplantationPhase PreviousPhase = State.Nidation.Phase;
+	const EGenesisEmbryogenesisStage PreviousBodyPlan = State.Embryogenesis.Stage;
 	const bool bStageChanged = GenesisEmbryoLogic::Advance(State, Tuning, Hours);
+
+	// Ab der Einnistung baut sich der Körper: Keimblätter, Neuralrohr, Herz
+	if (State.Stage == EGenesisEmbryoStage::Implanted)
+	{
+		const float Day = static_cast<float>(State.HoursSinceFusion) / 24.0f;
+		if (GenesisEmbryogenesisLogic::Advance(State.Embryogenesis, EmbryogenesisTuning, Day, MotherNutrition, State.bPlayerEmbryo, State.Seed))
+		{
+			UE_LOG(LogGenesis, Display, TEXT("Embryo: %s (Tag %.1f, %.1f mm, %d Somiten%s)"),
+				*GenesisEmbryogenesisLogic::GetStageName(State.Embryogenesis.Stage), Day, State.Embryogenesis.LengthMm,
+				State.Embryogenesis.Somites,
+				State.Embryogenesis.bHeartBeating ? *FString::Printf(TEXT(", Herz %.0f/min"), State.Embryogenesis.HeartRateBpm) : TEXT(""));
+			if (State.Embryogenesis.Defect != EGenesisNeuralTubeDefect::None && PreviousBodyPlan != State.Embryogenesis.Stage)
+			{
+				UE_LOG(LogGenesis, Warning, TEXT("Embryo: Neuralrohr – %s (Risiko %.2f %%)"),
+					*GenesisEmbryogenesisLogic::GetDefectName(State.Embryogenesis.Defect), 100.0f * State.Embryogenesis.DefectRisk);
+			}
+		}
+	}
 	if (State.Nidation.Phase != PreviousPhase)
 	{
 		UE_LOG(LogGenesis, Display, TEXT("Einnistung: %s (Tag %.1f, Tiefe %.0f µm, Keim %.0f µm, hCG %.1f mIU/ml)"),
@@ -153,7 +173,8 @@ void UGenesisEmbryoSubsystem::AdvanceHours(double Hours)
 
 void UGenesisEmbryoSubsystem::HandleSimulationStep(const FGenesisSimulationStep& Step)
 {
-	if (!HasEmbryo() || State.Stage == EGenesisEmbryoStage::Implanted || State.Stage == EGenesisEmbryoStage::Arrested)
+	// Nach der Einnistung geht es weiter: dritte und vierte Woche (GENESIS-041), bis der Embryo steht
+	if (!HasEmbryo() || State.Stage == EGenesisEmbryoStage::Arrested || IsEmbryogenesisComplete())
 	{
 		return;
 	}
@@ -218,7 +239,7 @@ void UGenesisEmbryoSubsystem::RegisterDebugPage()
 	TWeakObjectPtr<UGenesisEmbryoSubsystem> WeakThis(this);
 	GenesisDebug::RegisterPage({
 		TEXT("Embryo"),
-		TEXT("Embryo – die ersten zwei Wochen"),
+		TEXT("Embryo – die ersten vier Wochen"),
 		[WeakThis](const UWorld*, TArray<FString>& OutLines)
 		{
 			const UGenesisEmbryoSubsystem* Self = WeakThis.Get();
@@ -234,6 +255,17 @@ void UGenesisEmbryoSubsystem::RegisterDebugPage()
 				State.GetCellCount(), State.Cells.Num() > 0 ? State.Cells[0].RadiusUm : 0.0f));
 			OutLines.Add(FString::Printf(TEXT("Kompaktierung %.0f %% | Hohlraum %.0f %% | Zona %.1f µm | Einnistung %.0f %%"),
 				100.0f * State.Compaction, 100.0f * State.Cavity, State.ZonaThicknessUm, 100.0f * State.Implantation));
+			const FGenesisEmbryogenesisState& Plan = State.Embryogenesis;
+			if (Plan.Stage != EGenesisEmbryogenesisStage::None)
+			{
+				OutLines.Add(FString::Printf(TEXT("Körperbau: %s | %.1f mm | %d Somiten | Neuralrohr %.0f %% (vorn offen %.0f %%, hinten %.0f %%)"),
+					*GenesisEmbryogenesisLogic::GetStageName(Plan.Stage), Plan.LengthMm, Plan.Somites,
+					100.0f * Plan.TubeClosure, 100.0f * Plan.RostralNeuropore, 100.0f * Plan.CaudalNeuropore));
+				OutLines.Add(FString::Printf(TEXT("Herz %s | Kiemenbögen %d | Augen %.0f %% | Knospen %.0f %% | Defektrisiko %.2f %% (%s)"),
+					Plan.bHeartBeating ? *FString::Printf(TEXT("%.0f/min"), Plan.HeartRateBpm) : TEXT("noch still"),
+					Plan.PharyngealArches, 100.0f * Plan.OpticVesicles, 100.0f * Plan.LimbBuds,
+					100.0f * Plan.DefectRisk, *GenesisEmbryogenesisLogic::GetDefectName(Plan.Defect)));
+			}
 			OutLines.Add(FString::Printf(TEXT("Qualität %.2f | Fragmentierung %.0f %% | Embryoblast %d Zellen%s"),
 				State.Quality, 100.0f * State.Fragmentation, GenesisEmbryoLogic::CountInnerCellMass(State),
 				State.Stage == EGenesisEmbryoStage::Arrested

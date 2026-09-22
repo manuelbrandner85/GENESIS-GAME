@@ -48,6 +48,7 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 29. [Die Hebamme: Kleidung aus der Stoffsimulation, Arme, Abtrocknen und Zudecken](Docs/29_Die_Hebamme.md)
 30. [Einnistung und Keimscheibe: die zweite Woche](Docs/30_Einnistung.md)
 31. [Die Bildsprache: das Cover als Maßstab](Docs/31_Bildsprache.md)
+32. [Der Bauplan: die dritte und vierte Woche](Docs/32_Der_Bauplan.md)
 
 ## Voraussetzungen
 

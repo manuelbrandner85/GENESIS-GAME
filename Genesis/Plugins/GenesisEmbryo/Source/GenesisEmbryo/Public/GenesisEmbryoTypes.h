@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GenesisTypes.h"
+#include "GenesisEmbryogenesisTypes.h"
 #include "GenesisEmbryoTypes.generated.h"
 
 /**
@@ -220,6 +221,10 @@ struct GENESISEMBRYO_API FGenesisEmbryoState
 	/** Die zweite Woche im Einzelnen (GENESIS-040). */
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo")
 	FGenesisImplantationState Nidation;
+
+	/** Die dritte und vierte Woche: Keimblätter, Neuralrohr, erster Herzschlag (GENESIS-041). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo")
+	FGenesisEmbryogenesisState Embryogenesis;
 
 	/** Zufallsstrom des Keims (deterministisch aus dem Genom). */
 	UPROPERTY() uint64 Seed = 0;

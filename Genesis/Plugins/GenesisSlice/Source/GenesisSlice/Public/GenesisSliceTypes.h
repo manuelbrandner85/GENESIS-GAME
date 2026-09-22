@@ -64,6 +64,12 @@ struct GENESISSLICE_API FGenesisSliceSignals
 
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Slice") bool bConceived = false;
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Slice") bool bImplanted = false;
+
+	/**
+	 * Ende der vierten Woche: Der Embryo hat seinen Bauplan (Neuralrohr zu, Herz schlägt, 30 Somiten).
+	 * Erst dann übernimmt die Körpersimulation die Schwangerschaft (GENESIS-041).
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Slice") bool bBodyPlanDone = false;
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Slice") bool bEmbryoArrested = false;
 
 	/** Schwangerschaftswoche des Kindes. */
@@ -122,6 +128,9 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float CleavageHoursPerSecond = 1.6f;
 	/** Die zweite Woche: sieben Stufen, je ein Satz dazu – 5 h je Sekunde lassen jeden lesen (gut eine halbe Minute). */
 	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float ImplantationHoursPerSecond = 5.0f;
+
+	/** Dritte und vierte Woche (Keimblätter bis Herzschlag): 12 h je Sekunde, gut eine halbe Minute für 15 Tage. */
+	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float BodyPlanHoursPerSecond = 12.0f;
 
 	/** Wie viele Stunden die Regie je Schritt überspringt, solange die erste Woche läuft (alt, nicht mehr benutzt). */
 	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "1", ClampMax = "24")) int32 EmbryoSkipHours = 6;

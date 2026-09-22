@@ -2,6 +2,7 @@
 
 #include "GenesisSliceLogic.h"
 #include "GenesisEmbryoLogic.h"
+#include "GenesisEmbryogenesisLogic.h"
 #include "Engine/FontFace.h"
 #include "Misc/AutomationTest.h"
 
@@ -55,11 +56,17 @@ bool FGenesisSliceOrderTest::RunTest(const FString& Parameters)
 	Phase = Advance(Phase, Signals, Tuning, Path, Ending);
 	TestEqual(TEXT("Nach der Verschmelzung kommt die erste Woche"), static_cast<int32>(Phase), static_cast<int32>(EGenesisSlicePhase::Embryo));
 
-	// Die Einnistung – aber die Schwangerschaft hat noch nicht einmal begonnen
+	// Eingenistet allein reicht nicht: Erst kommen Keimblätter, Neuralrohr und der erste Herzschlag (GENESIS-041)
 	Signals.bImplanted = true;
-	Signals.GestationalWeeks = 1.0f;
+	Signals.GestationalWeeks = 2.0f;
 	Phase = Advance(Phase, Signals, Tuning, Path, Ending);
-	TestEqual(TEXT("Nach der Einnistung kommt die Schwangerschaft"), static_cast<int32>(Phase), static_cast<int32>(EGenesisSlicePhase::Gestation));
+	TestEqual(TEXT("Eingenistet: die ersten Wochen laufen weiter"), static_cast<int32>(Phase), static_cast<int32>(EGenesisSlicePhase::Embryo));
+
+	// Ende der vierten Woche: Der Bauplan steht, die Körpersimulation übernimmt
+	Signals.bBodyPlanDone = true;
+	Signals.GestationalWeeks = 4.0f;
+	Phase = Advance(Phase, Signals, Tuning, Path, Ending);
+	TestEqual(TEXT("Nach dem Bauplan kommt die Schwangerschaft"), static_cast<int32>(Phase), static_cast<int32>(EGenesisSlicePhase::Gestation));
 
 	// Mitten in der Schwangerschaft passiert nichts Neues
 	Signals.GestationalWeeks = 24.0f;
@@ -119,6 +126,7 @@ bool FGenesisSliceArrestTest::RunTest(const FString& Parameters)
 	FGenesisSliceSignals Stillborn;
 	Stillborn.bConceived = true;
 	Stillborn.bImplanted = true;
+	Stillborn.bBodyPlanDone = true;
 	Stillborn.bBorn = true;
 	Stillborn.bAlive = false;
 	EGenesisSliceEnding BirthEnding = EGenesisSliceEnding::None;
@@ -144,6 +152,7 @@ bool FGenesisSliceFirstHourTest::RunTest(const FString& Parameters)
 	FGenesisSliceSignals Restless;
 	Restless.bConceived = true;
 	Restless.bImplanted = true;
+	Restless.bBodyPlanDone = true;
 	Restless.bBorn = true;
 	Restless.bAsleep = false;
 	Restless.MinutesSinceBirth = 40.0f;
@@ -171,6 +180,7 @@ bool FGenesisSliceTermTest::RunTest(const FString& Parameters)
 	FGenesisSliceSignals Signals;
 	Signals.bConceived = true;
 	Signals.bImplanted = true;
+	Signals.bBodyPlanDone = true;
 
 	EGenesisSliceEnding Ending = EGenesisSliceEnding::None;
 	for (const float Weeks : { 8.0f, 20.0f, 30.0f, 36.9f })
@@ -265,6 +275,40 @@ bool FGenesisFrontendTitleFontTest::RunTest(const FString& Parameters)
 	{
 		AddInfo(FString::Printf(TEXT("Titelschrift: %s"), *Face->GetPathName()));
 	}
+	return true;
+}
+
+/**
+ * Die dritte und vierte Woche im Zeitraffer (GENESIS-041): Vom eingenisteten Keim bis zum fertigen Bauplan
+ * sollen es gut dreißig Sekunden sein – lang genug, um den ersten Herzschlag zu erleben, kurz genug, um nicht zu zerren.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSliceBodyPlanPaceTest, "Genesis.Slice.BodyPlanPace", GenesisSliceTests::SliceFlags)
+bool FGenesisSliceBodyPlanPaceTest::RunTest(const FString& Parameters)
+{
+	const FGenesisSliceTuning Slice;
+	const FGenesisEmbryogenesisTuning Tuning;
+	const float HoursPerSecond = GenesisSliceLogic::EmbryoHoursPerSecond(EGenesisEmbryoStage::Implanted, Slice);
+	TestEqual(TEXT("Eigenes Tempo für die dritte und vierte Woche"), HoursPerSecond, Slice.BodyPlanHoursPerSecond);
+
+	FGenesisEmbryogenesisState State;
+	const float Frame = 1.0f / 60.0f;
+	float Seconds = 0.0f;
+	float HeartAt = -1.0f;
+	float Day = 13.0f;
+	while (State.Stage != EGenesisEmbryogenesisStage::Complete && Seconds < 300.0f)
+	{
+		Day += HoursPerSecond * Frame / 24.0f;
+		GenesisEmbryogenesisLogic::Advance(State, Tuning, Day, 0.7f, true, 1);
+		Seconds += Frame;
+		if (HeartAt < 0.0f && State.bHeartBeating)
+		{
+			HeartAt = Seconds;
+		}
+	}
+	AddInfo(FString::Printf(TEXT("Erster Herzschlag nach %.0f s, Bauplan fertig nach %.0f s"), HeartAt, Seconds));
+	TestTrue(TEXT("Der erste Herzschlag kommt nicht sofort"), HeartAt >= 12.0f);
+	TestTrue(TEXT("Und der Bauplan steht in gut einer halben Minute"), Seconds >= 25.0f && Seconds <= 45.0f);
+	TestTrue(TEXT("Am Ende schlägt das Herz"), State.bHeartBeating && State.HeartRateBpm > 100.0f);
 	return true;
 }
 

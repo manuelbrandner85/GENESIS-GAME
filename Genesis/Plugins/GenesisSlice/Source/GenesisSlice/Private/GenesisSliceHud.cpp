@@ -17,6 +17,7 @@
 #include "GenesisMicroscopeCameraRig.h"
 #include "GenesisEmbryoSubsystem.h"
 #include "GenesisEmbryoLogic.h"
+#include "GenesisEmbryogenesisLogic.h"
 #include "GenesisSliceLogic.h"
 #include "CanvasItem.h"
 #include "Engine/Font.h"
@@ -725,7 +726,15 @@ void AGenesisSliceHud::DrawHUD()
 			// Die zweite Woche (GENESIS-040): Ab der Einnistung zählen Größe und hCG, nicht mehr die Zellen
 			const bool bSecondWeek = Keim.Stage >= EGenesisEmbryoStage::Implanting && Keim.Stage != EGenesisEmbryoStage::Arrested;
 			const FGenesisImplantationState& Nid = Keim.Nidation;
-			const FString Clock = bSecondWeek
+			const FGenesisEmbryogenesisState& Plan = Keim.Embryogenesis;
+			// Ab der dritten Woche zählen Länge, Somiten und der Herzschlag (GENESIS-041)
+			const bool bBodyPlan = Plan.Stage != EGenesisEmbryogenesisStage::None;
+			const FString Clock = bBodyPlan
+				? FString::Printf(TEXT("Tag %d · %.1f mm%s%s"),
+					static_cast<int32>(Keim.HoursSinceFusion / 24.0) + 1, Plan.LengthMm,
+					Plan.Somites > 0 ? *FString::Printf(TEXT(" · %d Somitenpaare"), Plan.Somites) : TEXT(""),
+					Plan.bHeartBeating ? *FString::Printf(TEXT(" · Herz %.0f/min"), Plan.HeartRateBpm) : TEXT(""))
+				: bSecondWeek
 				? FString::Printf(TEXT("%.0f hpi · Tag %d · Keim %.2f mm%s"),
 					Keim.HoursSinceFusion, static_cast<int32>(Keim.HoursSinceFusion / 24.0) + 1, Nid.ConceptusDiameterUm / 1000.0f,
 					Nid.HcgMilliIU >= 1.0f ? *FString::Printf(TEXT(" · hCG %.0f mIU/ml"), Nid.HcgMilliIU) : TEXT(""))
@@ -733,8 +742,9 @@ void AGenesisSliceHud::DrawHUD()
 					Keim.HoursSinceFusion, static_cast<int32>(Keim.HoursSinceFusion / 24.0) + 1,
 					Keim.GetCellCount(), Keim.GetCellCount() == 1 ? TEXT("Zelle") : TEXT("Zellen"));
 			DrawCentered(Clock, Canvas->SizeY - 118.0f * Scale, Scale * 1.15f, 0.85f, false);
-			DrawCentered(bSecondWeek ? GenesisEmbryoLogic::DescribeImplantation(Nid.Phase) : GenesisSliceLogic::DescribeEmbryoStage(Keim.Stage),
-				Canvas->SizeY - 88.0f * Scale, Scale * 0.95f, 0.7f, false);
+			const FString Line = bBodyPlan ? GenesisEmbryogenesisLogic::DescribeStage(Plan.Stage)
+				: (bSecondWeek ? GenesisEmbryoLogic::DescribeImplantation(Nid.Phase) : GenesisSliceLogic::DescribeEmbryoStage(Keim.Stage));
+			DrawCentered(Line, Canvas->SizeY - 88.0f * Scale, Scale * 0.95f, 0.7f, false);
 		}
 		return;
 	}

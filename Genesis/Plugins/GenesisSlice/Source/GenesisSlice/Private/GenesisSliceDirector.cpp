@@ -178,6 +178,7 @@ FGenesisSliceSignals UGenesisSliceDirector::ReadSignals() const
 	{
 		const FGenesisEmbryoState& EmbryoState = Embryo->GetState();
 		Signals.bImplanted = EmbryoState.Stage == EGenesisEmbryoStage::Implanted;
+		Signals.bBodyPlanDone = Embryo->IsEmbryogenesisComplete();
 		Signals.bEmbryoArrested = EmbryoState.Stage == EGenesisEmbryoStage::Arrested;
 	}
 

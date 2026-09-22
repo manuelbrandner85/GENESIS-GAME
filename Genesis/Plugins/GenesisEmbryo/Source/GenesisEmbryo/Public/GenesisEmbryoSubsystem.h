@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GenesisEmbryoTypes.h"
+#include "GenesisEmbryogenesisTypes.h"
 #include "GenesisPersistence.h"
 #include "GenesisEmbryoSubsystem.generated.h"
 
@@ -50,6 +51,20 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Genesis|Embryo")
 	FGenesisEmbryoTuning Tuning;
+
+	/** Stellschrauben der dritten und vierten Woche (GENESIS-041). */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Embryo")
+	FGenesisEmbryogenesisTuning EmbryogenesisTuning;
+
+	/**
+	 * Ernährung der Mutter (0..1). Sie entscheidet über das Risiko, dass sich das Neuralrohr nicht schließt (Folat).
+	 * Solange die Mutter keine eigene Person mit Körper ist, steht hier der Wert aus der Regie.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Embryo")
+	float MotherNutrition = 0.7f;
+
+	/** Der Embryo steht: Ende der vierten Woche. Ab hier führt die Körpersimulation die Schwangerschaft weiter. */
+	bool IsEmbryogenesisComplete() const { return State.Embryogenesis.Stage == EGenesisEmbryogenesisStage::Complete; }
 
 	/** Stufenwechsel – für Kamera, Musik und Erzählung. */
 	FGenesisOnEmbryoStage OnStageChanged;

@@ -35,7 +35,8 @@ namespace GenesisSliceLogic
 
 		case EGenesisSlicePhase::Embryo:
 			// Die erste Woche endet mit der Einnistung – ab da führt die Körpersimulation
-			return Signals.bImplanted ? EGenesisSlicePhase::Gestation : EGenesisSlicePhase::Embryo;
+			// Erst wenn der Bauplan steht (Ende der vierten Woche), übernimmt die Körpersimulation
+			return Signals.bBodyPlanDone ? EGenesisSlicePhase::Gestation : EGenesisSlicePhase::Embryo;
 
 		case EGenesisSlicePhase::Gestation:
 			// Neun Monate im Zeitraffer, bis das Kind am Termin ist
@@ -70,7 +71,7 @@ namespace GenesisSliceLogic
 		switch (Phase)
 		{
 		case EGenesisSlicePhase::Conception: return TEXT("Befruchtung");
-		case EGenesisSlicePhase::Embryo: return TEXT("Die ersten zwei Wochen");
+		case EGenesisSlicePhase::Embryo: return TEXT("Die ersten vier Wochen");
 		case EGenesisSlicePhase::Gestation: return TEXT("Schwangerschaft");
 		case EGenesisSlicePhase::Birth: return TEXT("Geburt");
 		case EGenesisSlicePhase::FirstHour: return TEXT("Erste Stunde");
@@ -98,7 +99,7 @@ namespace GenesisSliceLogic
 		switch (Phase)
 		{
 		case EGenesisSlicePhase::Conception: return TEXT("Der Schwarm im Eileiter, eine Eizelle, ein Treffer.");
-		case EGenesisSlicePhase::Embryo: return TEXT("Furchung, Morula, Blastozyste, Schlüpfen, Einnistung, Keimscheibe.");
+		case EGenesisSlicePhase::Embryo: return TEXT("Furchung, Einnistung, Keimblätter, Neuralrohr, der erste Herzschlag.");
 		case EGenesisSlicePhase::Gestation: return TEXT("Neun Monate im Zeitraffer – der Körper wächst.");
 		case EGenesisSlicePhase::Birth: return TEXT("Wehen, Enge, Drehung, Licht, der erste Atemzug.");
 		case EGenesisSlicePhase::FirstHour: return TEXT("Wärme, eine vertraute Stimme, das erste Anlegen.");
@@ -118,8 +119,11 @@ namespace GenesisSliceLogic
 		case EGenesisEmbryoStage::Blastocyst:
 		case EGenesisEmbryoStage::Hatching:
 			return Tuning.CleavageHoursPerSecond;
-		default:
+		case EGenesisEmbryoStage::Implanting:
 			return Tuning.ImplantationHoursPerSecond;
+		default:
+			// Eingenistet: die dritte und vierte Woche (Keimblätter, Neuralrohr, Herzschlag)
+			return Tuning.BodyPlanHoursPerSecond;
 		}
 	}
 
@@ -147,7 +151,7 @@ namespace GenesisSliceLogic
 		case EGenesisEmbryoStage::Implanting:
 			return TEXT("Einnistung – der Trophoblast dringt in die Schleimhaut der Gebärmutter ein.");
 		case EGenesisEmbryoStage::Implanted:
-			return TEXT("Eingenistet.");
+			return TEXT("Eingenistet – jetzt entsteht der Bauplan des Körpers.");
 		case EGenesisEmbryoStage::Arrested:
 			return TEXT("Der Keim teilt sich nicht mehr.");
 		default:
