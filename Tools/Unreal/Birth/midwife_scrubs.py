@@ -62,10 +62,11 @@ float3 E = float3(28.5 * side, -1.5, 106.8);
 float3 d = normalize(W - E);
 float s = dot(P - W, d);
 float hand = step(-Cuff, s) * step(25.0, abs(P.x));
-// Nitril liegt 0,1 mm stark auf der Haut; mit 0,7 mm Abstand gibt es kein Flimmern mit der Haut darunter.
+// Nitril liegt 0,1 mm stark auf der Haut. Die Hülle steht 1,6 mm ab: Mit 0,7 mm schien bei gebeugten Fingern die Haut
+// durch (die Hautgewichte des Körpers dehnen die Knöchel anders als die Hülle).
 // Am Stulpenrand ist der Handschuh zu einem dünnen Wulst aufgerollt.
 float bead = exp(-pow((s + Cuff - 0.45) / 0.45, 2.0)) * 0.16;
-return normalize(N) * (0.07 + bead) * hand;
+return normalize(N) * (0.16 + bead) * hand;
 """
 
 GLOVE_MASK = r"""

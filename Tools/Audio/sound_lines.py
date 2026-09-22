@@ -21,6 +21,9 @@ SOUNDS = [
                                   "not a full cry, very close and intimate."),
     ("SFX_Baby_Laute", False, "A calm newborn baby lying skin to skin on its mother's chest: tiny grunts, soft sighs, small "
                               "sucking and smacking sounds, quiet breathing. Very quiet and intimate."),
+    ("SFX_Tuch_Rubbeln", False, "Very close-up: an experienced midwife briskly but gently rubbing a newborn baby dry with a soft, "
+                                "warm terry cloth towel for several seconds, rhythmic rubbing and rustling of cotton loops against "
+                                "skin, the towel being re-gripped, then a soft slow final pat. No baby crying, no voices."),
     # Ohne Geräte-Piepen: Die erste Fassung ("faint electronic monitor beeps") trug einen 1002-Hz-Ton mit +30 dB –
     # das Klingeln, das der Game Director hörte. Geprüft mit Tools/Audio/check_tones.py.
     ("SFX_Kreisssaal_Nacht", True, "Room tone of a quiet hospital delivery room at night: soft air conditioning and ventilation "

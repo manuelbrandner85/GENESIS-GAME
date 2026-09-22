@@ -53,6 +53,10 @@ public:
 	/** Das Kind liegt auf der Haut der Mutter – die wichtigste Entscheidung der ersten Stunde. */
 	void SetSkinToSkin(bool bEnabled);
 
+	/** Die Hebamme hat das Kind abgetrocknet / mit einem warmen Tuch zugedeckt. */
+	void SetDried(bool bEnabled);
+	void SetCovered(bool bEnabled);
+
 	/** Jemand spricht mit dem Kind. */
 	void SetMotherSpeaking(bool bEnabled);
 

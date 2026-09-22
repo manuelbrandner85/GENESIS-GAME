@@ -1,6 +1,9 @@
 // GENESIS: Der Kreislauf des Lebens
 
 #include "GenesisBirthCameraRig.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "UObject/ConstructorHelpers.h"
 #include "CineCameraComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
@@ -56,6 +59,18 @@ AGenesisBirthCameraRig::AGenesisBirthCameraRig()
 	// In Millimetern gerechnet liegt die Wand direkt vor der Linse – die Standard-Nahgrenze würde sie wegschneiden
 	Camera->bOverride_CustomNearClippingPlane = true;
 	Camera->CustomNearClippingPlane = 1.0f;
+
+	Towel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Towel"));
+	Towel->SetupAttachment(Camera);
+	Towel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Towel->SetVisibility(false);
+	// Ein Tuch auf dem Kopf wirft Schatten auf das Gesicht des Kindes – nicht in den Raum, den es ansieht
+	Towel->SetCastShadow(false);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> TowelMesh(TEXT("/Game/Genesis/Birth/Meshes/SM_GEN_BabyTowel.SM_GEN_BabyTowel"));
+	if (TowelMesh.Succeeded())
+	{
+		Towel->SetStaticMesh(TowelMesh.Object);
+	}
 }
 
 void AGenesisBirthCameraRig::BeginPlay()
@@ -179,8 +194,31 @@ void AGenesisBirthCameraRig::ApplyPerception(const FGenesisBirthState& State, co
 			HeldLook = FQuat::Slerp(ChestBase, FaceRotation, Face) * Look;
 		}
 
-		Camera->SetRelativeLocation(FMath::Lerp(Local, HeldLocation, Lift) + Arc);
-		Camera->SetRelativeRotation(FQuat::Slerp(ExitRotation.Quaternion(), HeldLook, Lift).Rotator());
+		// Abrubbeln: Der kleine Körper geht unter der Hand mit – ein paar Millimeter vor und zurück, ein wenig Drehung
+		const float Rub = FMath::Clamp(DryingRub, 0.0f, 1.0f);
+		RubPhase += DeltaSeconds * 1.6f;
+		const float Stroke = FMath::Sin(RubPhase * 2.0f * PI);
+		const FVector RubOffset(3.0f * Rub * Stroke, 0.0f, 0.8f * Rub * FMath::Abs(Stroke));
+		const FQuat RubRoll = FRotator(0.0f, 0.0f, 1.2f * Rub * Stroke).Quaternion();
+
+		Camera->SetRelativeLocation(FMath::Lerp(Local, HeldLocation, Lift) + Arc + RubOffset * Lift);
+		Camera->SetRelativeRotation((FQuat::Slerp(ExitRotation.Quaternion(), HeldLook, Lift) * RubRoll).Rotator());
+	}
+
+	// Das Tuch: beim Abrubbeln liegt es weiter hinten auf dem Rücken und fährt mit der Hand hin und her,
+	// zugedeckt reicht es über den Hinterkopf bis an die Stirn – dann sieht das Kind oben im Bild seinen Rand.
+	if (Towel)
+	{
+		const float Cover = FMath::Clamp(TowelCover, 0.0f, 1.0f);
+		const float Rub = FMath::Clamp(DryingRub, 0.0f, 1.0f);
+		const bool bShow = Lift > 0.99f && (Rub > 0.01f || Cover > 0.01f);
+		Towel->SetVisibility(bShow);
+		if (bShow)
+		{
+			const FVector Drying(-70.0f + 25.0f * FMath::Sin(RubPhase * 2.0f * PI), 0.0f, 6.0f);
+			const FVector Lowering(0.0f, 0.0f, 90.0f * (1.0f - FMath::SmoothStep(0.0f, 0.7f, Cover)));
+			Towel->SetRelativeLocation(Rub > 0.01f && Cover <= 0.01f ? Drying : Lowering);
+		}
 	}
 
 	// 4. Belichtung: dunkel im Kanal, grell beim Durchtritt. Der Wechsel ist ein Sprung, kein Verlauf.

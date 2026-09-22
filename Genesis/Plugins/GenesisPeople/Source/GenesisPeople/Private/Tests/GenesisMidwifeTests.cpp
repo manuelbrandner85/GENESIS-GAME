@@ -15,7 +15,10 @@ bool FGenesisMidwifeTaskTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Geboren: sie hält das Kind"), TaskFor(true, false, 0.0f, 7.0f, Progress), EGenesisMidwifeTask::Holding);
 	TestEqual(TEXT("Beim Auflegen: sie reicht es hinüber"), TaskFor(true, true, 3.5f, 7.0f, Progress), EGenesisMidwifeTask::Handing);
 	TestTrue(TEXT("…zur Hälfte"), FMath::IsNearlyEqual(Progress, 0.5f, 0.01f));
-	TestEqual(TEXT("Danach sieht sie zu"), TaskFor(true, true, 8.0f, 7.0f, Progress), EGenesisMidwifeTask::Watching);
+	TestEqual(TEXT("Auf der Brust rubbelt sie es trocken"), TaskFor(true, true, 8.0f, 7.0f, Progress, 14.0f, 4.0f), EGenesisMidwifeTask::Drying);
+	TestEqual(TEXT("Dann deckt sie es zu"), TaskFor(true, true, 22.0f, 7.0f, Progress, 14.0f, 4.0f), EGenesisMidwifeTask::Covering);
+	TestTrue(TEXT("…zur Hälfte"), FMath::IsNearlyEqual(Progress, 0.25f, 0.01f));
+	TestEqual(TEXT("Danach sieht sie zu"), TaskFor(true, true, 26.0f, 7.0f, Progress, 14.0f, 4.0f), EGenesisMidwifeTask::Watching);
 
 	// Sie hält das Kind: am Fußende des Bettes, der Mutter zugewandt, das Kind in ihren Händen vor ihr;
 	// es schaut zu ihr hoch (ChildForward zeigt vom Kind zu ihrem Gesicht)
@@ -32,13 +35,24 @@ bool FGenesisMidwifeTaskTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Sie ist der Mutter zugewandt"), FVector::DotProduct(Hold.Facing, FVector(-1.0, 0.0, 0.0)) > 0.99);
 	TestTrue(TEXT("Sie schaut das Kind an"), Hold.LookAt.Equals(In.ChildEye, 1.0));
 	TestTrue(TEXT("Die Hände sind am Kind"), Hold.HandsOnChild > 0.99f && FVector::Dist(Hold.RightHand, In.ChildEye) < 150.0);
-	TestTrue(TEXT("Sie beugt sich vor"), Hold.LeanDegPerVertebra > 5.0f);
+	TestTrue(TEXT("Sie neigt sich dem Kind zu"), Hold.LeanDegPerVertebra > 1.0f && Hold.LeanDegPerVertebra < 5.0f);
 
 	// Nach dem Auflegen: neben dem Bett, Hände frei, Blick beim Kind
 	In.Task = EGenesisMidwifeTask::Watching;
 	const FGenesisMidwifeStance Watch = Compute(In);
 	TestTrue(TEXT("Neben dem Bett"), FVector::Dist2D(Watch.Feet, In.Bedside) < 1.0);
 	TestTrue(TEXT("Hände frei"), Watch.HandsOnChild < 0.01f);
+
+	// Beim Abtrocknen: neben dem Bett, beide Hände am Kind, über das Kind gebeugt – und die Hand bewegt sich
+	In.Task = EGenesisMidwifeTask::Drying;
+	In.Time = 0.0f;
+	const FGenesisMidwifeStance DryA = Compute(In);
+	In.Time = 0.15f;
+	const FGenesisMidwifeStance DryB = Compute(In);
+	TestTrue(TEXT("Beim Abtrocknen neben dem Bett"), FVector::Dist2D(DryA.Feet, In.Bedside) < 1.0);
+	TestTrue(TEXT("Hände am Kind"), DryA.HandsOnChild > 0.99f && FVector::Dist(DryA.RightHand, In.ChildEye) < 250.0);
+	TestTrue(TEXT("Sie rubbelt (die Hand bewegt sich)"), FVector::Dist(DryA.RightHand, DryB.RightHand) > 20.0);
+	TestTrue(TEXT("Über das Kind gebeugt"), DryA.LeanDegPerVertebra > Watch.LeanDegPerVertebra + 3.0f);
 
 	// Beim Hinüberreichen lässt sie erst am Ende los
 	In.Task = EGenesisMidwifeTask::Handing;

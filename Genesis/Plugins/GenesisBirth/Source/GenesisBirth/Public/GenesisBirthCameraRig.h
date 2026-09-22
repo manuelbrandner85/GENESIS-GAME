@@ -138,8 +138,21 @@ public:
 	float MidwifeHoldBlend = 0.0f;
 	FTransform MidwifeHeldView = FTransform::Identity;
 
+	/**
+	 * Die Hebamme rubbelt das Kind auf der Brust trocken (0..1, von der Regie). Das Kind spürt es als sanftes,
+	 * rhythmisches Hin und Her – der ganze kleine Körper geht unter der Hand mit.
+	 */
+	float DryingRub = 0.0f;
+
+	/** Das warme Tuch über Rücken und Hinterkopf (0..1, von der Regie: 0 = kein Tuch, 1 = zugedeckt). */
+	float TowelCover = 0.0f;
+
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UCineCameraComponent> Camera;
+
+	/** Das Tuch im Raum der Kamera (Tools/Blender/Birth/build_baby_towel.py): Vom Kind aus nur der vordere Rand, oben im Bild. */
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<class UStaticMeshComponent> Towel;
 
 private:
 	void ApplyPerception(const FGenesisBirthState& State, const FGenesisBirthPerception& Perception, float DeltaSeconds);
@@ -151,4 +164,5 @@ private:
 	/** 0 = in den Händen der Hebamme am Fußende, 1 = auf der Brust. */
 	float ChestBlend = 0.0f;
 	float BreathPhase = 0.0f;
+	float RubPhase = 0.0f;
 };

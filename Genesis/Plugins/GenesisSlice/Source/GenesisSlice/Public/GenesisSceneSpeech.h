@@ -44,6 +44,9 @@ namespace GenesisSceneSpeechLogic
 		float CryLoudness = 0.0f;
 		/** Die ersten Atemzüge (Stufe FirstBreaths) – der erste Schrei. */
 		bool bFirstBreaths = false;
+		/** Die Hebamme rubbelt das Kind gerade trocken / es liegt zugedeckt. */
+		bool bBeingDried = false;
+		bool bCovered = false;
 	};
 
 	/**
@@ -152,6 +155,11 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAudioComponent> Room;
+
+	/** Das Tuch beim Abrubbeln – ganz nah, am eigenen Körper, eigener Kanal. */
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> Care;
+	bool bWasDrying = false;
 
 	/** Wo spricht diese Person gerade? Vor der Geburt ohne Richtung (durch die Bauchdecke). */
 	bool SpeakerLocation(FName LineId, FVector& OutLocation) const;

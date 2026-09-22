@@ -2,6 +2,7 @@
 
 #include "GenesisMidwifeRig.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
 #include "GenesisMotherLogic.h"
 #include "GenesisMotherRig.h"
@@ -12,6 +13,8 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
+
+static TAutoConsoleVariable<int32> CVarMidwifeDebug(TEXT("genesis.Debug.MidwifeArms"), 0, TEXT("1 = Handziele der Hebamme protokollieren"));
 
 namespace
 {
@@ -31,7 +34,8 @@ namespace
 
 namespace GenesisMidwifeLogic
 {
-	EGenesisMidwifeTask TaskFor(bool bBorn, bool bOnChest, float SecondsOnChest, float HandingSeconds, float& OutProgress)
+	EGenesisMidwifeTask TaskFor(bool bBorn, bool bOnChest, float SecondsOnChest, float HandingSeconds, float& OutProgress,
+		float DryingSeconds, float CoveringSeconds)
 	{
 		OutProgress = 0.0f;
 		if (!bBorn)
@@ -42,8 +46,24 @@ namespace GenesisMidwifeLogic
 		{
 			return EGenesisMidwifeTask::Holding;
 		}
-		OutProgress = FMath::Clamp(SecondsOnChest / FMath::Max(0.1f, HandingSeconds), 0.0f, 1.0f);
-		return OutProgress < 1.0f ? EGenesisMidwifeTask::Handing : EGenesisMidwifeTask::Watching;
+		// Auf die Brust legen, abrubbeln, zudecken – in dieser Reihenfolge, wie in jedem Kreißsaal
+		float T = SecondsOnChest;
+		const struct { EGenesisMidwifeTask Task; float Seconds; } Steps[] = {
+			{ EGenesisMidwifeTask::Handing, HandingSeconds },
+			{ EGenesisMidwifeTask::Drying, DryingSeconds },
+			{ EGenesisMidwifeTask::Covering, CoveringSeconds } };
+		for (const auto& Step : Steps)
+		{
+			const float Seconds = FMath::Max(0.1f, Step.Seconds);
+			if (T < Seconds)
+			{
+				OutProgress = FMath::Clamp(T / Seconds, 0.0f, 1.0f);
+				return Step.Task;
+			}
+			T -= Seconds;
+		}
+		OutProgress = 1.0f;
+		return EGenesisMidwifeTask::Watching;
 	}
 
 	FGenesisMidwifeStance Compute(const FInputs& In, float FaceDistanceMm, float EyeHeightMm)
@@ -78,7 +98,7 @@ namespace GenesisMidwifeLogic
 			Out.RightHand = HoldRight;
 			Out.LeftHand = HoldLeft;
 			Out.HandsOnChild = 1.0f;
-			Out.LeanDegPerVertebra = 7.0f;
+			Out.LeanDegPerVertebra = 2.5f;
 			break;
 
 		case EGenesisMidwifeTask::Handing:
@@ -93,7 +113,37 @@ namespace GenesisMidwifeLogic
 			Out.LeftHand = HoldLeft;
 			// Am Ende lässt sie los – die Mutter hält das Kind
 			Out.HandsOnChild = 1.0f - FMath::SmoothStep(0.75f, 1.0f, In.HandingProgress);
-			Out.LeanDegPerVertebra = FMath::Lerp(7.0f, 5.0f, Walk);
+			Out.LeanDegPerVertebra = FMath::Lerp(2.5f, 5.0f, Walk);
+			break;
+		}
+
+		case EGenesisMidwifeTask::Drying:
+		case EGenesisMidwifeTask::Covering:
+		{
+			// Neben dem Bett, über das Kind gebeugt. Das Kind liegt bäuchlings, der Körper Richtung Bauch der Mutter
+			// (+X), der Rücken oben. Rechte Hand mit dem Tuch auf dem Rücken, die linke am Hinterkopf.
+			Out.Feet = FVector(In.Bedside.X, In.Bedside.Y, In.FloorZ);
+			Out.Facing = MidwifeFlat(In.ChildEye - Out.Feet, FVector::ForwardVector);
+			Out.LookAt = In.ChildEye;
+			const FVector Back = In.ChildEye + FVector(110.0, 0.0, 55.0);
+			const FVector Head = In.ChildEye + FVector(-25.0, 0.0, 70.0);
+			if (In.Task == EGenesisMidwifeTask::Drying)
+			{
+				// Zügig, aber sanft: gut anderthalb Striche je Sekunde über den Rücken, die Hand am Kopf reibt mit
+				const float Stroke = FMath::Sin(In.Time * 2.0f * PI * 1.6f);
+				Out.RightHand = Back + FVector(40.0 * Stroke, 0.0, 0.0);
+				Out.LeftHand = Head + FVector(0.0, 15.0 * FMath::Sin(In.Time * 2.0f * PI * 1.6f + 1.3f), 0.0);
+				Out.LeanDegPerVertebra = 9.0f;
+			}
+			else
+			{
+				// Das Tuch kommt von oben: Hände über dem Kind, dann legen sie es über Rücken und Kopf und lassen los
+				const float Lay = FMath::SmoothStep(0.0f, 0.7f, In.TaskProgress);
+				Out.RightHand = FMath::Lerp(Back + FVector(0.0, 0.0, 180.0), Back, Lay);
+				Out.LeftHand = FMath::Lerp(Head + FVector(0.0, 0.0, 180.0), Head, Lay);
+				Out.LeanDegPerVertebra = 8.0f;
+			}
+			Out.HandsOnChild = In.Task == EGenesisMidwifeTask::Covering ? 1.0f - FMath::SmoothStep(0.8f, 1.0f, In.TaskProgress) : 1.0f;
 			break;
 		}
 
@@ -121,8 +171,9 @@ AGenesisMidwifeRig::AGenesisMidwifeRig()
 	Posture.SpineSettleDeg = 4.0f;
 	Posture.HeadShare = 0.8f;
 	Posture.HeadTiltDeg = 5.0f;
-	Posture.ElbowPoleRight = FVector(-30.0, -10.0, -30.0);
-	Posture.ElbowPoleLeft = FVector(30.0, -10.0, -30.0);
+	// Die Ellenbogen hängen nach unten und etwas nach außen, nah am Körper – nicht seitlich hochgestellt
+	Posture.ElbowPoleRight = FVector(-18.0, -12.0, -45.0);
+	Posture.ElbowPoleLeft = FVector(18.0, -12.0, -45.0);
 }
 
 void AGenesisMidwifeRig::BeginPlay()
@@ -195,46 +246,77 @@ void AGenesisMidwifeRig::Configure()
 
 void AGenesisMidwifeRig::Dress()
 {
-	// Die Shorts des Standard-Kleidungsstücks bleiben – umgefärbt sind sie der obere Teil der Hose. Der MetaHuman-Körper
-	// hat unter ihnen keine Haut (dort ausgeschnitten, damit nichts durchsticht); die Hosenbeine setzen am Saum an.
-	auto Layer = [this](const TCHAR* Name, const TCHAR* MaterialPath) -> USkeletalMeshComponent*
+	// Kasackhose und Clogs sind eigene Kleidungsstücke (Tools/Blender/Birth/build_scrub_trousers.py: Schnitt aus ihrem
+	// Körper gemessen, Stoff physikalisch fallen gelassen, an ihr Skelett gebunden). Die Shorts des Standard-Kleidungs-
+	// stücks liegen darunter und werden ausgeblendet – die Hose bedeckt Hüfte und Schritt selbst.
+	UMaterialInterface* Hidden = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Genesis/People/Materials/M_GEN_Hidden.M_GEN_Hidden"));
+	TArray<USkeletalMeshComponent*> Parts;
+	MidwifeActor->GetComponents<USkeletalMeshComponent>(Parts);
+	for (USkeletalMeshComponent* Part : Parts)
 	{
-		UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, MaterialPath);
-		if (!Material || !Body->GetSkeletalMeshAsset())
+		if (!Hidden || Part == Body || Part == Face || Part == Trousers || Part == Clogs || Part == Gloves)
 		{
-			UE_LOG(LogGenesis, Warning, TEXT("Hebamme: %s fehlt (%s)"), Name, MaterialPath);
+			continue;
+		}
+		const TArray<FName> Slots = Part->GetMaterialSlotNames();
+		for (int32 Slot = 0; Slot < Part->GetNumMaterials(); ++Slot)
+		{
+			const UMaterialInterface* Material = Part->GetMaterial(Slot);
+			const FString Name = (Slots.IsValidIndex(Slot) ? Slots[Slot].ToString() : FString()) + (Material ? Material->GetName() : FString());
+			if (Name.Contains(TEXT("Short")))
+			{
+				Part->SetMaterial(Slot, Hidden);
+			}
+		}
+	}
+
+	auto Attach = [this](const TCHAR* Name, USkeletalMesh* Asset, UMaterialInterface* Material, float BoundsScale) -> USkeletalMeshComponent*
+	{
+		if (!Asset || !Body->GetSkeletalMeshAsset())
+		{
+			UE_LOG(LogGenesis, Warning, TEXT("Hebamme: %s fehlt"), Name);
 			return nullptr;
 		}
 		USkeletalMeshComponent* Mesh = NewObject<USkeletalMeshComponent>(MidwifeActor, Name);
-		Mesh->SetSkeletalMesh(Body->GetSkeletalMeshAsset());
+		Mesh->SetSkeletalMesh(Asset);
 		Mesh->SetupAttachment(Body);
 		Mesh->RegisterComponent();
 		Mesh->SetLeaderPoseComponent(Body);
-		// Der Stoff steht bis zu 8 cm vom Körper ab – die Sichtbarkeitsgrenzen müssen das mit abdecken
-		Mesh->SetBoundsScale(1.2f);
+		Mesh->SetBoundsScale(BoundsScale);
 		Mesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
-		UMaterialInstanceDynamic* Instance = UMaterialInstanceDynamic::Create(Material, Mesh);
-		for (int32 Slot = 0; Slot < Mesh->GetNumMaterials(); ++Slot)
+		if (Material)
 		{
-			Mesh->SetMaterial(Slot, Instance);
+			UMaterialInstanceDynamic* Instance = UMaterialInstanceDynamic::Create(Material, Mesh);
+			for (int32 Slot = 0; Slot < Mesh->GetNumMaterials(); ++Slot)
+			{
+				Mesh->SetMaterial(Slot, Instance);
+			}
 		}
 		return Mesh;
 	};
 	if (!Trousers)
 	{
-		Trousers = Layer(TEXT("ScrubTrousers"), TEXT("/Game/Genesis/People/Materials/M_GEN_ScrubTrousers.M_GEN_ScrubTrousers"));
+		Trousers = Attach(TEXT("ScrubTrousers"), LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Genesis/People/Midwife/SK_GEN_MidwifeTrousers.SK_GEN_MidwifeTrousers")),
+			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Genesis/People/Materials/M_GEN_ScrubFabric.M_GEN_ScrubFabric")), 1.0f);
 		if (Trousers)
 		{
 			if (UMaterialInstanceDynamic* Fabric = Cast<UMaterialInstanceDynamic>(Trousers->GetMaterial(0)))
 			{
-				// Das Oberteil der Hose (MetaHuman-Stoff mit Webtextur) wirkt bei gleicher Farbe etwas heller – angeglichen am Saum
-				Fabric->SetVectorParameterValue(TEXT("Color"), ScrubsColor * 1.12f);
+				// Kasack und Hose sind ein Satz: dieselbe Farbe
+				Fabric->SetVectorParameterValue(TEXT("Color"), ScrubsColor);
 			}
 		}
 	}
+	if (!Clogs)
+	{
+		Clogs = Attach(TEXT("Clogs"), LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Genesis/People/Midwife/SK_GEN_MidwifeClogs.SK_GEN_MidwifeClogs")),
+			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Genesis/People/Materials/M_GEN_ClogPolymer.M_GEN_ClogPolymer")), 1.0f);
+	}
+	// Die Handschuhe bleiben eine Hülle auf dem Körper (0,1 mm Nitril folgt der Haut exakt)
 	if (!Gloves)
 	{
-		Gloves = Layer(TEXT("NitrileGloves"), TEXT("/Game/Genesis/People/Materials/M_GEN_NitrileGloves.M_GEN_NitrileGloves"));
+		Gloves = Attach(TEXT("NitrileGloves"), Body->GetSkeletalMeshAsset(),
+			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Genesis/People/Materials/M_GEN_NitrileGloves.M_GEN_NitrileGloves")), 1.1f);
 	}
 }
 
@@ -280,19 +362,27 @@ void AGenesisMidwifeRig::Tick(float DeltaSeconds)
 	OnChestSeconds = bOnChest ? OnChestSeconds + DeltaSeconds : 0.0f;
 	BornSeconds = bBorn ? BornSeconds + DeltaSeconds : 0.0f;
 	float Progress = 0.0f;
-	Task = GenesisMidwifeLogic::TaskFor(bBorn, bOnChest, OnChestSeconds, HandingSeconds, Progress);
+	Task = GenesisMidwifeLogic::TaskFor(bBorn, bOnChest, OnChestSeconds, HandingSeconds, Progress, DryingSeconds, CoveringSeconds);
+	TaskProgress = Progress;
 
 	// Wo sie das Kind hält: gut 38 cm vor ihren Augen, etwas unter dem Kinn – das Kind liegt in ihren Händen
 	// und schaut zu ihr hoch. Genau auf diesen Abstand sieht ein Neugeborenes am schärfsten.
 	const FVector MyEye = GetEyeLocation();
-	const FVector HeldEye = MyEye + SmoothedFacing * HoldDistanceMm - FVector(0.0, 0.0, HoldBelowEyesMm);
+	FVector Shoulders = MyEye - FVector(0.0, 0.0, 150.0);
+	if (Body && Body->GetBoneIndex(TEXT("upperarm_l")) != INDEX_NONE && Body->GetBoneIndex(TEXT("upperarm_r")) != INDEX_NONE)
+	{
+		Shoulders = 0.5 * (Body->GetBoneLocation(TEXT("upperarm_l")) + Body->GetBoneLocation(TEXT("upperarm_r")));
+	}
+	const FVector HeldEye = Shoulders + SmoothedFacing * HoldForwardOfShouldersMm - FVector(0.0, 0.0, HoldBelowShouldersMm);
 	HeldView = FTransform(FRotationMatrix::MakeFromXZ(MyEye - HeldEye, FVector::UpVector).ToQuat(), HeldEye);
 	// Sie nimmt es in der ersten Sekunde auf und hebt es in zwei Sekunden zu sich hoch
 	HoldBlend = Task == EGenesisMidwifeTask::Attending ? 0.0f : FMath::SmoothStep(0.8f, 3.0f, BornSeconds);
 
 	GenesisMidwifeLogic::FInputs In;
 	In.Task = Task;
-	In.HandingProgress = Progress;
+	In.HandingProgress = Task == EGenesisMidwifeTask::Handing ? Progress : 1.0f;
+	In.TaskProgress = Progress;
+	In.Time = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
 	const bool bHeldByHer = Task == EGenesisMidwifeTask::Holding;
 	In.ChildEye = bHeldByHer ? HeldEye : ChildEye;
 	In.ChildForward = bHeldByHer ? HeldView.GetRotation().GetForwardVector() : ChildView.GetForwardVector();
@@ -313,8 +403,16 @@ void AGenesisMidwifeRig::Tick(float DeltaSeconds)
 	const float Alpha = 1.0f - FMath::Exp(-DeltaSeconds / 0.6f);
 	SmoothedFeet = FMath::Lerp(SmoothedFeet, Stance.Feet, Alpha);
 	SmoothedFacing = FMath::Lerp(SmoothedFacing, Stance.Facing, Alpha).GetSafeNormal2D();
+	// Niemand steht still wie eine Statue: Das Gewicht wandert langsam zwischen den Füßen (ein paar Millimeter
+	// seitlich, ein Grad Drehung), unregelmäßig – Rauschen statt Sinus, damit sich nichts sichtbar wiederholt.
+	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+	const FVector Side = FVector::CrossProduct(FVector::UpVector, SmoothedFacing).GetSafeNormal();
+	const float Shift = FMath::PerlinNoise1D(Now * 0.11f + 3.7f);
+	const FVector Sway = Side * (14.0f * Shift) + SmoothedFacing * (5.0f * FMath::PerlinNoise1D(Now * 0.09f + 11.3f));
+	const FRotator Turn(0.0f, 1.8f * FMath::PerlinNoise1D(Now * 0.07f + 5.1f), 0.0f);
 	// MetaHuman: vorn ist +Y des Körpers
-	MidwifeActor->SetActorLocationAndRotation(SmoothedFeet, FRotationMatrix::MakeFromYZ(SmoothedFacing, FVector::UpVector).Rotator());
+	// Sie steht auf 28 mm Clog-Sohle
+	MidwifeActor->SetActorLocationAndRotation(SmoothedFeet + Sway + FVector(0.0, 0.0, SoleMm), (FRotationMatrix::MakeFromYZ(SmoothedFacing, FVector::UpVector).Rotator() + Turn));
 
 	GenesisMotherLogic::Advance(State, Tuning, FGenesisMotherInputs(), DeltaSeconds);
 	if (UGenesisMotherAnimInstance* Anim = GetAnim())
@@ -325,8 +423,28 @@ void AGenesisMidwifeRig::Tick(float DeltaSeconds)
 		const FTransform Component = Body->GetComponentTransform();
 		FGenesisMotherPoseInputs& Inputs = Anim->PoseInputs;
 		Inputs.LookTarget = Component.InverseTransformPosition(Stance.LookAt);
-		Inputs.RightHandTarget = FMath::Lerp(MidwifeRestRightHand, Component.InverseTransformPosition(Stance.RightHand), Stance.HandsOnChild);
-		Inputs.LeftHandTarget = FMath::Lerp(MidwifeRestLeftHand, Component.InverseTransformPosition(Stance.LeftHand), Stance.HandsOnChild);
+		// Hände ohne Kind: Beim Zusehen liegen die behandschuhten Hände locker ineinander vor dem Bauch – so stehen
+		// Hebammen am Bett, die Hände sauber und bereit. Unter den Wehen hängen sie entspannt.
+		const bool bClasped = Task == EGenesisMidwifeTask::Watching || Task == EGenesisMidwifeTask::Covering;
+		const FVector FreeRight = bClasped ? FVector(-5.0, 20.0, 99.0) : MidwifeRestRightHand;
+		const FVector FreeLeft = bClasped ? FVector(5.0, 21.0, 97.0) : MidwifeRestLeftHand;
+		// Lebende Hände zittern nicht, aber sie stehen nie ganz still: wenige Millimeter, langsam, jede für sich
+		const float Drift = Stance.HandsOnChild > 0.5f ? 0.35f : 0.9f;
+		auto Noise = [Now](float Seed) { return FVector(FMath::PerlinNoise1D(Now * 0.31f + Seed), FMath::PerlinNoise1D(Now * 0.27f + Seed * 1.7f),
+			FMath::PerlinNoise1D(Now * 0.23f + Seed * 2.3f)); };
+		Inputs.RightHandTarget = FMath::Lerp(FreeRight, Component.InverseTransformPosition(Stance.RightHand), Stance.HandsOnChild) + Noise(1.3f) * Drift;
+		Inputs.LeftHandTarget = FMath::Lerp(FreeLeft, Component.InverseTransformPosition(Stance.LeftHand), Stance.HandsOnChild) + Noise(7.9f) * Drift;
+		if (CVarMidwifeDebug.GetValueOnGameThread() > 0 && Body)
+		{
+			const int32 Shoulder = Body->GetBoneIndex(TEXT("upperarm_r"));
+			const FVector ShoulderCS = Shoulder != INDEX_NONE ? Body->GetBoneTransform(Shoulder, FTransform::Identity).GetLocation() : FVector::ZeroVector;
+			UE_LOG(LogGenesis, Display, TEXT("Hebamme: Aufgabe %d, Hand rechts (cm) %s, Schulter %s, Abstand %.1f cm, Kind-Auge Welt %s, eigenes Auge %s"),
+				(int32)Task, *Inputs.RightHandTarget.ToString(), *ShoulderCS.ToString(), FVector::Dist(Inputs.RightHandTarget, ShoulderCS),
+				*In.ChildEye.ToString(), *GetEyeLocation().ToString());
+		}
+		// Finger: um das Kind geschmiegt, beim Rubbeln halb offen (das Tuch in der Hand), sonst entspannt
+		Inputs.HandCurl = Task == EGenesisMidwifeTask::Holding || Task == EGenesisMidwifeTask::Handing ? 1.0f
+			: (Task == EGenesisMidwifeTask::Drying ? 0.55f : (bClasped ? 0.45f : 0.15f));
 		Inputs.ArmBlend = 1.0f;
 		Inputs.BreathLift = GenesisMotherLogic::GetBreathLift(State, Tuning);
 		Inputs.BlinkClosure = GenesisMotherLogic::GetBlinkClosure(State, Tuning);
@@ -355,7 +473,7 @@ bool AGenesisMidwifeRig::IsSpeaking() const
  */
 static FAutoConsoleCommandWithWorldAndArgs GenesisViewMidwifeCommand(
 	TEXT("genesis.Debug.ViewMidwife"),
-	TEXT("genesis.Debug.ViewMidwife [Abstand mm] [Höhe mm] [Winkel °] – Prüfkamera auf die Hebamme"),
+	TEXT("genesis.Debug.ViewMidwife [Abstand mm] [Höhe mm] [Winkel °] [Zielhöhe mm] – Prüfkamera auf die Hebamme"),
 	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
 	{
 		APlayerController* Controller = World ? World->GetFirstPlayerController() : nullptr;
@@ -372,7 +490,8 @@ static FAutoConsoleCommandWithWorldAndArgs GenesisViewMidwifeCommand(
 		// MetaHuman: vorn ist +Y des Actors
 		const FVector Front = Midwife->GetActorRightVector().RotateAngleAxis(Angle, FVector::UpVector);
 		const FVector Eye = Feet + Front * Distance + FVector(0.0, 0.0, Height);
-		const FVector Target = Feet + FVector(0.0, 0.0, 850.0);
+		const float TargetHeight = Args.Num() > 3 ? FCString::Atof(*Args[3]) : 850.0f;
+		const FVector Target = Feet + FVector(0.0, 0.0, TargetHeight);
 		ACameraActor* Camera = World->SpawnActor<ACameraActor>(Eye, (Target - Eye).Rotation());
 		if (Camera)
 		{

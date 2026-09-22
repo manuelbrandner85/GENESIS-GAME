@@ -49,8 +49,12 @@ namespace GenesisEarlyLifeLogic
 			// Nach dem Newtonschen Abkühlungsgesetz: Die Änderung folgt dem Gefälle, nicht der Uhr.
 			// Deshalb fällt die Temperatur anfangs steil und flacht dann ab – und das Aufwärmen dauert länger,
 			// je näher das Kind der Hauttemperatur der Mutter kommt.
-			const float Ambient = State.bSkinToSkin ? Tuning.TargetTemperature : Tuning.RoomTemperature;
-			const float Rate = State.bSkinToSkin ? Tuning.SkinContactRatePerMinute : Tuning.CoolingRatePerMinute;
+			// Nass verdunstet Fruchtwasser auf der Haut; abgetrocknet und zugedeckt liegt es wie unter der Decke der Mutter.
+			const float ChestTarget = Tuning.TargetTemperature
+				- (State.bDried ? 0.0f : Tuning.WetOnChestPenalty) - (State.bCovered ? 0.0f : Tuning.UncoveredOnChestPenalty);
+			const float Ambient = State.bSkinToSkin ? ChestTarget : Tuning.RoomTemperature;
+			const float Rate = State.bSkinToSkin ? Tuning.SkinContactRatePerMinute
+				: Tuning.CoolingRatePerMinute * (State.bDried ? Tuning.DriedCoolingFactor : 1.0f);
 			State.BodyTemperature += (Ambient - State.BodyTemperature) * (1.0f - FMath::Exp(-Rate * Delta));
 
 			// 2. Ruhe: Wärme und Stimme beruhigen, Kälte und Hunger tun das Gegenteil

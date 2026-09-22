@@ -113,6 +113,9 @@ namespace GenesisSceneSpeechLogic
 			const FName Breathing = Variant(TEXT("D_H_Atmung"), In.bGirl);
 			if (T >= 2.5f && !Memory.Said.Contains(Announce)) Pick = Announce;
 			else if (Memory.Said.Contains(Announce) && SinceSaid(Memory, Announce) > 1.0f) Pick = Once(TEXT("D_M_Hallo"));
+			// Die Hebamme spricht mit dem Kind, während sie es abrubbelt – das hat nur diese 14 s, deshalb vor den
+			// Sätzen der Mutter auf der Haut (gemessen: danach ging es hinter „Hallo" und „Du bist ja ganz warm" verloren)
+			if (Pick.IsNone() && In.bBeingDried) Pick = Once(TEXT("D_H_Trocken"));
 			if (Pick.IsNone() && In.bAsleep) Pick = Once(TEXT("Z_M_Schlaf"));
 			if (Pick.IsNone() && In.bCrying && In.bSkinToSkin && Memory.Said.Contains(TEXT("S_M_Warm"))) Pick = Rested(TEXT("S_M_Beruhigen"), 25.0f);
 			if (Pick.IsNone() && bEyeContactStarts)
@@ -121,6 +124,7 @@ namespace GenesisSceneSpeechLogic
 				if (Pick.IsNone()) Pick = Once(TEXT("E_M_Blick_02"));
 			}
 			if (Pick.IsNone() && (bSkinStarts || In.bSkinToSkin)) Pick = Once(TEXT("S_M_Warm"));
+			if (Pick.IsNone() && In.bCovered) Pick = Once(TEXT("D_H_Tuch"));
 			if (Pick.IsNone() && !In.bSkinToSkin && Memory.Said.Contains(TEXT("D_M_Hallo")) && T >= 12.0f) Pick = Once(ToChest);
 			if (Pick.IsNone() && In.bSkinToSkin && SinceSaid(Memory, TEXT("S_M_Warm")) > 15.0f) Pick = Once(Breathing);
 			if (Pick.IsNone() && In.bSkinToSkin && SinceSaid(Memory, Breathing) > 20.0f) Pick = Once(TEXT("S_M_Geschafft"));
@@ -340,7 +344,12 @@ GenesisSceneSpeechLogic::FInputs AGenesisSceneSpeech::GatherInputs() const
 			In.bAsleep = Child.Stage == EGenesisNewbornStage::FirstSleep;
 			In.CryLoudness = Child.GetCryLoudness();
 			In.bFirstBreaths = Child.Stage == EGenesisNewbornStage::FirstBreaths;
+			In.bCovered = Child.bCovered;
 		}
+	}
+	for (TActorIterator<AGenesisMidwifeRig> It(GetWorld()); It; ++It)
+	{
+		In.bBeingDried |= In.bSkinToSkin && It->GetTask() == EGenesisMidwifeTask::Drying;
 	}
 	In.SecondsSinceBirth = BornAt >= 0.0f ? Memory.Now - BornAt : -1.0f;
 	In.bGirl = IsGirl();
@@ -383,6 +392,21 @@ void AGenesisSceneSpeech::Tick(float DeltaSeconds)
 		LastChildSound = NAME_None;
 	}
 
+	// Das Tuch: Frottee, das über den Rücken rubbelt – ganz nah, am eigenen Körper. Hört auf, wenn sie aufhört.
+	if (In.bBeingDried && !bWasDrying)
+	{
+		if (USoundWave* Rub = Cast<USoundWave>(FSoftObjectPath(TEXT("/Game/Genesis/Audio/Sounds/SFX_Tuch_Rubbeln.SFX_Tuch_Rubbeln")).TryLoad()))
+		{
+			Care = UGameplayStatics::SpawnSound2D(this, Rub, 0.8f);
+			UE_LOG(LogGenesis, Display, TEXT("Kind: wird abgetrocknet (SFX_Tuch_Rubbeln)"));
+		}
+	}
+	else if (!In.bBeingDried && bWasDrying && Care && Care->IsPlaying())
+	{
+		Care->FadeOut(0.8f, 0.0f);
+	}
+	bWasDrying = In.bBeingDried;
+
 	// Vor der Geburt hört das Kind alles durch Bauchdecke und Fruchtwasser – nur die Tiefen kommen durch
 	const UGameInstance* GameInstance = GetGameInstance();
 	const UGenesisBirthSubsystem* Birth = GameInstance ? GameInstance->GetSubsystem<UGenesisBirthSubsystem>() : nullptr;
@@ -412,7 +436,7 @@ void AGenesisSceneSpeech::Tick(float DeltaSeconds)
 		Room->SetVolumeMultiplier(RoomVolume * FMath::Lerp(1.0f, 0.3f, Muffling));
 	}
 
-	for (UAudioComponent* Component : { Current.Get(), Vocal.Get(), ChildAudio.Get() })
+	for (UAudioComponent* Component : { Current.Get(), Vocal.Get(), ChildAudio.Get(), Care.Get() })
 	{
 		if (Component && Component->IsPlaying())
 		{

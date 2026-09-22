@@ -83,6 +83,96 @@ namespace
 	}
 }
 
+namespace
+{
+	FVector BoneLocation(FCSPose<FCompactPose>& Pose, const FCompactPoseBoneIndex& Index)
+	{
+		return Index.IsValid() ? Pose.GetComponentSpaceTransform(Index).GetLocation() : FVector::ZeroVector;
+	}
+}
+
+static void CurlHand(FCSPose<FCompactPose>& Pose, const FBoneContainer& Bones, const TCHAR* Side, const FGenesisMotherPosture& Posture, float Curl)
+{
+	const FCompactPoseBoneIndex Hand = FindBone(Bones, FName(FString::Printf(TEXT("hand_%s"), Side)));
+	const FCompactPoseBoneIndex Index1 = FindBone(Bones, FName(FString::Printf(TEXT("index_01_%s"), Side)));
+	const FCompactPoseBoneIndex Pinky1 = FindBone(Bones, FName(FString::Printf(TEXT("pinky_01_%s"), Side)));
+	const FCompactPoseBoneIndex Middle1 = FindBone(Bones, FName(FString::Printf(TEXT("middle_01_%s"), Side)));
+	const FCompactPoseBoneIndex Thumb3 = FindBone(Bones, FName(FString::Printf(TEXT("thumb_03_%s"), Side)));
+	if (!Hand.IsValid() || !Index1.IsValid() || !Pinky1.IsValid() || !Middle1.IsValid())
+	{
+		return;
+	}
+	// Handfläche: senkrecht auf der Ebene aus Zeige- und Kleinfingeransatz; zur Seite, auf der der Daumen liegt
+	const FVector Wrist = BoneLocation(Pose, Hand);
+	const FVector Across = BoneLocation(Pose, Pinky1) - BoneLocation(Pose, Index1);
+	const FVector Along = BoneLocation(Pose, Middle1) - Wrist;
+	FVector Palm = FVector::CrossProduct(Along, Across).GetSafeNormal();
+	if (Thumb3.IsValid() && FVector::DotProduct(BoneLocation(Pose, Thumb3) - Wrist, Palm) < 0.0f)
+	{
+		Palm = -Palm;
+	}
+	const FVector Angles = FMath::Lerp(Posture.RelaxedFingerDeg, Posture.CradleFingerDeg, Curl);
+	const TCHAR* Fingers[] = { TEXT("index"), TEXT("middle"), TEXT("ring"), TEXT("pinky") };
+	// Zeige- und Kleinfinger rücken zur Mitte, Ring- und Mittelfinger kaum
+	const float Close[] = { 1.0f, 0.2f, -0.4f, -1.0f };
+	for (int32 Finger = 0; Finger < 4; ++Finger)
+	{
+		// Außen beugen sich die Finger etwas mehr – so liegt eine Hand, die etwas Rundes hält
+		const float Spread = 1.0f + 0.08f * Finger;
+		for (int32 Joint = 0; Joint < 3; ++Joint)
+		{
+			const FCompactPoseBoneIndex Bone = FindBone(Bones, FName(FString::Printf(TEXT("%s_%02d_%s"), Fingers[Finger], Joint + 1, Side)));
+			const FCompactPoseBoneIndex Next = Joint < 2
+				? FindBone(Bones, FName(FString::Printf(TEXT("%s_%02d_%s"), Fingers[Finger], Joint + 2, Side))) : FCompactPoseBoneIndex(INDEX_NONE);
+			if (!Bone.IsValid())
+			{
+				continue;
+			}
+			const FVector Start = BoneLocation(Pose, Bone);
+			const FVector Direction = Next.IsValid() ? (BoneLocation(Pose, Next) - Start).GetSafeNormal() : Along.GetSafeNormal();
+			const FVector Axis = FVector::CrossProduct(Direction, Palm).GetSafeNormal();
+			if (Axis.IsNearlyZero())
+			{
+				continue;
+			}
+			// Beugen: die Fingerspitze zur Handfläche hin
+			const float Degrees = (Joint == 0 ? Angles.X : (Joint == 1 ? Angles.Y : Angles.Z)) * Spread;
+			FQuat Bend(Axis, -FMath::DegreesToRadians(Degrees));
+			if (FVector::DotProduct(Bend.RotateVector(Direction), Palm) < 0.0f)
+			{
+				Bend = FQuat(Axis, FMath::DegreesToRadians(Degrees));
+			}
+			FQuat Rotation = Bend;
+			if (Joint == 0)
+			{
+				Rotation = FQuat(Palm, FMath::DegreesToRadians(Posture.FingerCloseDeg * Close[Finger]) * (FVector::DotProduct(Across, FVector::CrossProduct(Palm, Direction)) > 0.0f ? 1.0f : -1.0f)) * Bend;
+			}
+			RotateBone(Pose, Bone, Rotation);
+		}
+	}
+	// Daumen: in Grund- und Endgelenk leicht zur Handfläche
+	for (int32 Joint = 1; Joint <= 3; ++Joint)
+	{
+		const FCompactPoseBoneIndex Bone = FindBone(Bones, FName(FString::Printf(TEXT("thumb_%02d_%s"), Joint, Side)));
+		const FCompactPoseBoneIndex Next = Joint < 3 ? FindBone(Bones, FName(FString::Printf(TEXT("thumb_%02d_%s"), Joint + 1, Side))) : FCompactPoseBoneIndex(INDEX_NONE);
+		if (!Bone.IsValid() || !Next.IsValid())
+		{
+			continue;
+		}
+		const FVector Direction = (BoneLocation(Pose, Next) - BoneLocation(Pose, Bone)).GetSafeNormal();
+		const FVector Axis = FVector::CrossProduct(Direction, Palm).GetSafeNormal();
+		if (!Axis.IsNearlyZero())
+		{
+			FQuat Bend(Axis, -FMath::DegreesToRadians(Posture.ThumbDeg));
+			if (FVector::DotProduct(Bend.RotateVector(Direction), Palm) < 0.0f)
+			{
+				Bend = FQuat(Axis, FMath::DegreesToRadians(Posture.ThumbDeg));
+			}
+			RotateBone(Pose, Bone, Bend);
+		}
+	}
+}
+
 void FGenesisMotherAnimInstanceProxy::PreUpdate(UAnimInstance* InAnimInstance, float DeltaSeconds)
 {
 	FAnimInstanceProxy::PreUpdate(InAnimInstance, DeltaSeconds);
@@ -166,6 +256,12 @@ bool FGenesisMotherAnimInstanceProxy::Evaluate(FPoseContext& Output)
 	const float ArmBlend = FMath::Clamp(Inputs.ArmBlend, 0.0f, 1.0f);
 	SolveArm(Pose, Bones, TEXT("r"), Inputs.RightHandTarget, Posture.ElbowPoleRight, Posture.RightHandOffset, ArmBlend);
 	SolveArm(Pose, Bones, TEXT("l"), Inputs.LeftHandTarget, Posture.ElbowPoleLeft, Posture.LeftHandOffset, ArmBlend);
+
+	// 4b. Hände: Die Finger beugen sich in allen drei Gelenken, rücken zusammen, der Daumen liegt an
+	for (const TCHAR* Side : { TEXT("l"), TEXT("r") })
+	{
+		CurlHand(Pose, Bones, Side, Posture, FMath::Clamp(Inputs.HandCurl, 0.0f, 1.0f));
+	}
 
 	FCSPose<FCompactPose>::ConvertComponentPosesToLocalPoses(MoveTemp(Pose), Output.Pose);
 

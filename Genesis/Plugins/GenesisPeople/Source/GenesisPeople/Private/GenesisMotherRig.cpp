@@ -325,6 +325,8 @@ void AGenesisMotherRig::UpdatePose(float DeltaSeconds)
 		Pose.BreathLift = GenesisMotherLogic::GetBreathLift(State, Tuning);
 		Pose.BlinkClosure = GenesisMotherLogic::GetBlinkClosure(State, Tuning);
 		Pose.Smile = State.Smile;
+		// Hält sie das Kind, umfassen ihre Finger seinen Rücken; sonst liegen sie entspannt
+		Pose.HandCurl = 0.8f * HoldBlend;
 		LipSync.Evaluate(GetWorld()->GetAudioTimeSeconds(), Pose.SpeechCurves);
 	}
 }

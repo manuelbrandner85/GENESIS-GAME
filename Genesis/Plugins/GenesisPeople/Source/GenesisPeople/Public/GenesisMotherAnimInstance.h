@@ -53,6 +53,18 @@ struct GENESISPEOPLE_API FGenesisMotherPosture
 	/** Zusätzliche Drehung der Hände (Komponentenraum), damit die Handflächen am Kind liegen. */
 	UPROPERTY(EditAnywhere, Category = "Arms") FRotator RightHandOffset = FRotator(0.0, 0.0, 0.0);
 	UPROPERTY(EditAnywhere, Category = "Arms") FRotator LeftHandOffset = FRotator(0.0, 0.0, 0.0);
+
+	/**
+	 * Finger: Eine lebende Hand ist nie gestreckt. Entspannt stehen Grund-, Mittel- und Endgelenk etwa 15/25/10° gebeugt;
+	 * hält sie ein Kind, schmiegen sie sich um Kopf und Rücken (bis ~35/40/20°). Gestreckte, gespreizte Finger – die
+	 * Referenzpose des Skeletts – wirken sofort wie eine Puppe. Werte für HandCurl = 1; bei 0 die entspannte Hand.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Hands") FVector RelaxedFingerDeg = FVector(14.0, 24.0, 10.0);
+	UPROPERTY(EditAnywhere, Category = "Hands") FVector CradleFingerDeg = FVector(32.0, 38.0, 18.0);
+	/** Der Daumen liegt weich an, nicht abgespreizt. */
+	UPROPERTY(EditAnywhere, Category = "Hands") float ThumbDeg = 14.0f;
+	/** Die Finger rücken zusammen (Grad je Finger zur Mitte) – die Referenzpose spreizt sie. */
+	UPROPERTY(EditAnywhere, Category = "Hands") float FingerCloseDeg = 5.0f;
 };
 
 /** Was die Pose in diesem Bild braucht – alles im Komponentenraum des Körpers (cm). */
@@ -74,6 +86,9 @@ struct GENESISPEOPLE_API FGenesisMotherPoseInputs
 	UPROPERTY(EditAnywhere, Category = "Pose") float BreathLift = 0.0f;
 	UPROPERTY(EditAnywhere, Category = "Pose") float BlinkClosure = 0.0f;
 	UPROPERTY(EditAnywhere, Category = "Pose") float Smile = 0.1f;
+
+	/** 0 = entspannte Hand, 1 = die Hände umfassen das Kind. */
+	UPROPERTY(EditAnywhere, Category = "Pose") float HandCurl = 0.0f;
 
 	/**
 	 * Sprechen: Rohsteuerungen des Gesichts (CTRL_expressions_*) aus der Lippensynchron-Spur der gerade

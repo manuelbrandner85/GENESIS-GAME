@@ -139,4 +139,27 @@ bool FGenesisSceneSpeechHearingTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSceneSpeechCareTest, "Genesis.Slice.Speech.DryingAndCovering", GenesisSceneSpeechTests::Flags)
+bool FGenesisSceneSpeechCareTest::RunTest(const FString& Parameters)
+{
+	using namespace GenesisSceneSpeechTests;
+	// Auf der Brust ab 15 s, abgerubbelt von 22 bis 36 s, dann zugedeckt
+	const TArray<FName> Said = Run([](GenesisSceneSpeechLogic::FInputs& In, float T)
+	{
+		In.Stage = EGenesisLaborStage::Delivered;
+		In.bNewborn = true;
+		In.SecondsSinceBirth = T;
+		In.bSkinToSkin = T > 15.0f;
+		In.bBeingDried = T > 22.0f && T < 36.0f;
+		In.bCovered = T > 40.0f;
+	}, 80.0f);
+	AddInfo(FString::Printf(TEXT("%s"), *FString::JoinBy(Said, TEXT(", "), [](FName N) { return N.ToString(); })));
+	const int32 Dry = Said.IndexOfByKey(FName(TEXT("D_H_Trocken")));
+	const int32 Towel = Said.IndexOfByKey(FName(TEXT("D_H_Tuch")));
+	TestTrue(TEXT("Beim Abrubbeln spricht die Hebamme mit dem Kind"), Dry != INDEX_NONE);
+	TestTrue(TEXT("Dann kommt das warme Tuch"), Towel != INDEX_NONE && Towel > Dry);
+	TestTrue(TEXT("Die Mutter begrüßt ihr Kind zuerst"), Said.IndexOfByKey(FName(TEXT("D_M_Hallo"))) < Dry);
+	return true;
+}
+
 #endif

@@ -28,8 +28,11 @@ bool FGenesisEarlyLifeWarmthTest::RunTest(const FString& Parameters)
 	FGenesisNewbornState Alone = MakeNewborn(3);
 	GenesisEarlyLifeLogic::Advance(Alone, Tuning, 20.0);
 
+	// So wie im Kreißsaal: auf die Haut, abgetrocknet, zugedeckt
 	FGenesisNewbornState Held = MakeNewborn(3);
 	Held.bSkinToSkin = true;
+	Held.bDried = true;
+	Held.bCovered = true;
 	GenesisEarlyLifeLogic::Advance(Held, Tuning, 20.0);
 
 	AddInfo(FString::Printf(TEXT("Nach 20 min: allein %.1f °C (%s), auf der Haut %.1f °C (%s)"),
@@ -44,12 +47,43 @@ bool FGenesisEarlyLifeWarmthTest::RunTest(const FString& Parameters)
 	// Wieder aufgewärmt kommt das Kind zurück – das dauert länger als das Auskühlen,
 	// weil die Erwärmung dem kleiner werdenden Gefälle zur Mutter folgt
 	Alone.bSkinToSkin = true;
+	Alone.bDried = true;
+	Alone.bCovered = true;
 	GenesisEarlyLifeLogic::Advance(Alone, Tuning, 45.0);
 	AddInfo(FString::Printf(TEXT("Nach dem Aufwärmen: %.1f °C, %s"), Alone.BodyTemperature, *GenesisEarlyLifeLogic::GetStageName(Alone.Stage)));
 	TestTrue(TEXT("Aufwärmen hilft"), Alone.BodyTemperature > 36.0f);
 	AddInfo(FString::Printf(TEXT("Auskühlen ging schneller als Aufwärmen: 20 min hinunter, 45 min hinauf")));
 	TestTrue(TEXT("Das Kind ist nicht mehr unterkühlt"), Alone.Stage != EGenesisNewbornStage::Hypothermic);
 
+	return true;
+}
+
+/**
+ * Abtrocknen und Zudecken: Nass verliert ein Neugeborenes über die Verdunstung am meisten Wärme. Die Hebamme rubbelt
+ * es deshalb gleich mit einem warmen Tuch ab und deckt es mit einem zweiten zu – das macht den Unterschied.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisEarlyLifeDryingTest, "Genesis.EarlyLife.DryingAndCoveringKeepWarm", EarlyLifeFlags)
+
+bool FGenesisEarlyLifeDryingTest::RunTest(const FString& Parameters)
+{
+	const FGenesisEarlyLifeTuning Tuning;
+	FGenesisNewbornState Wet = MakeNewborn(5);
+	FGenesisNewbornState Dry = MakeNewborn(5);
+	Dry.bDried = true;
+	GenesisEarlyLifeLogic::Advance(Wet, Tuning, 10.0);
+	GenesisEarlyLifeLogic::Advance(Dry, Tuning, 10.0);
+	AddInfo(FString::Printf(TEXT("10 min allein im Raum: nass %.2f °C, abgetrocknet %.2f °C"), Wet.BodyTemperature, Dry.BodyTemperature));
+	TestTrue(TEXT("Abgetrocknet kühlt es deutlich langsamer aus"), Dry.BodyTemperature > Wet.BodyTemperature + 0.6f);
+
+	FGenesisNewbornState ChestWet = MakeNewborn(6);
+	FGenesisNewbornState ChestDry = MakeNewborn(6);
+	ChestWet.bSkinToSkin = ChestDry.bSkinToSkin = true;
+	ChestDry.bDried = ChestDry.bCovered = true;
+	GenesisEarlyLifeLogic::Advance(ChestWet, Tuning, 30.0);
+	GenesisEarlyLifeLogic::Advance(ChestDry, Tuning, 30.0);
+	AddInfo(FString::Printf(TEXT("30 min auf der Brust: nass und frei %.2f °C, trocken und zugedeckt %.2f °C"), ChestWet.BodyTemperature, ChestDry.BodyTemperature));
+	TestTrue(TEXT("Auch auf der Brust wärmt erst das Tuch ganz"), ChestDry.BodyTemperature > ChestWet.BodyTemperature + 0.5f);
+	TestTrue(TEXT("Trocken und zugedeckt bei Körpertemperatur"), ChestDry.BodyTemperature > 36.7f);
 	return true;
 }
 

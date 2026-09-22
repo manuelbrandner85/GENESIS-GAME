@@ -81,8 +81,17 @@ struct GENESISEARLYLIFE_API FGenesisNewbornState
 	/** Körpertemperatur in °C. Ein Neugeborenes verliert ohne Hilfe bis zu 0,3 °C je Minute. */
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") float BodyTemperature = 37.2f;
 
-	/** true, sobald das Kind abgetrocknet und zugedeckt auf der Haut der Mutter liegt. */
+	/** true, sobald das Kind auf der Haut der Mutter liegt. */
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") bool bSkinToSkin = false;
+
+	/**
+	 * Abgetrocknet? Ein Kind kommt nass zur Welt: Fruchtwasser verdunstet auf der Haut, und die Verdunstung ist in
+	 * den ersten Minuten sein größter Wärmeverlust. Deshalb rubbelt die Hebamme es gleich mit einem warmen Tuch ab.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") bool bDried = false;
+
+	/** Mit einem zweiten, trockenen und angewärmten Tuch zugedeckt (Rücken und Kopf nicht mehr frei). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") bool bCovered = false;
 
 	/** true, solange jemand mit dem Kind spricht. */
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|EarlyLife") bool bMotherSpeaking = false;
@@ -151,6 +160,19 @@ struct GENESISEARLYLIFE_API FGenesisEarlyLifeTuning
 
 	/** Hauttemperatur der Mutter (°C) – mehr als sie kann das Kind nicht bekommen. */
 	UPROPERTY(EditAnywhere, Category = "Temperature") float TargetTemperature = 37.0f;
+
+	/**
+	 * Abgetrocknet kühlt ein Kind in der Luft des Raums nur noch etwa halb so schnell: Die Verdunstung fällt weg,
+	 * es bleiben Abstrahlung und Luftzug. (Faktor auf CoolingRatePerMinute.)
+	 */
+	UPROPERTY(EditAnywhere, Category = "Temperature") float DriedCoolingFactor = 0.55f;
+
+	/**
+	 * Auf der Brust wärmt der Bauch der Mutter, aber der Rücken liegt frei: nass verdunstet dort weiter Wasser,
+	 * unbedeckt geht Wärme an die Raumluft. Um so viel bleibt das Kind dann unter der Hauttemperatur der Mutter (°C).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Temperature") float WetOnChestPenalty = 0.7f;
+	UPROPERTY(EditAnywhere, Category = "Temperature") float UncoveredOnChestPenalty = 0.3f;
 
 	/** Unter dieser Temperatur gilt das Kind als unterkühlt (°C). */
 	UPROPERTY(EditAnywhere, Category = "Temperature") float HypothermiaTemperature = 35.5f;

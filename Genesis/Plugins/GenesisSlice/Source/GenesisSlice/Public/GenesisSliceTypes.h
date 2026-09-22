@@ -177,8 +177,10 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	 * Das ist keine Entscheidung des Spielers, sondern das, was in einem Kreißsaal ohnehin geschieht –
 	 * solange es keine Eingabe gibt, handelt die Welt. Mit `genesis.Newborn.SkinToSkin 0` lässt sich
 	 * das Gegenteil erzwingen, und dann kühlt das Kind aus.
+	 * Leitlinie (AWMF, WHO): Ein gesundes Kind kommt sofort auf die Mutter und wird dort abgetrocknet – eine halbe
+	 * Minute in den Händen der Hebamme, nicht zwei (so lange nass in der Luft kühlt es spürbar aus).
 	 */
-	UPROPERTY(EditAnywhere, Category = "Slice") float SkinContactAfterMinutes = 2.0f;
+	UPROPERTY(EditAnywhere, Category = "Slice") float SkinContactAfterMinutes = 0.5f;
 
 	/**
 	 * Um wie viele Minuten jede gerufene Minute die Versorgung vorzieht.

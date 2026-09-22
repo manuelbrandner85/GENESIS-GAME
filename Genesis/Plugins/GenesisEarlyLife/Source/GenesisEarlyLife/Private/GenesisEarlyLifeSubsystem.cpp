@@ -203,6 +203,24 @@ void UGenesisEarlyLifeSubsystem::SetSkinToSkin(bool bEnabled)
 	UE_LOG(LogGenesis, Display, TEXT("Erste Stunde: Kind %s auf der Haut der Mutter."), bEnabled ? TEXT("liegt") : TEXT("liegt nicht mehr"));
 }
 
+void UGenesisEarlyLifeSubsystem::SetDried(bool bEnabled)
+{
+	if (HasNewborn() && State.bDried != bEnabled)
+	{
+		State.bDried = bEnabled;
+		UE_LOG(LogGenesis, Display, TEXT("Erste Stunde: Kind %s."), bEnabled ? TEXT("abgetrocknet") : TEXT("nass"));
+	}
+}
+
+void UGenesisEarlyLifeSubsystem::SetCovered(bool bEnabled)
+{
+	if (HasNewborn() && State.bCovered != bEnabled)
+	{
+		State.bCovered = bEnabled;
+		UE_LOG(LogGenesis, Display, TEXT("Erste Stunde: Kind %s."), bEnabled ? TEXT("zugedeckt") : TEXT("aufgedeckt"));
+	}
+}
+
 void UGenesisEarlyLifeSubsystem::SetMotherSpeaking(bool bEnabled)
 {
 	if (HasNewborn())

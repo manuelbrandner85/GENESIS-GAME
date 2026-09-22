@@ -23,6 +23,13 @@ enum class EGenesisMidwifeTask : uint8
 	Holding,
 	/** Sie legt es der Mutter auf die Brust und geht dabei an die Seite des Bettes. */
 	Handing,
+	/**
+	 * Auf der Brust rubbelt sie es mit einem warmen Tuch trocken – Rücken und Kopf. Das ist nicht Nebensache:
+	 * Nass verliert ein Neugeborenes über die Verdunstung mehr Wärme als auf jedem anderen Weg.
+	 */
+	Drying,
+	/** Das nasse Tuch weg, ein zweites, trockenes und angewärmtes darüber – bis über den Hinterkopf. */
+	Covering,
 	/** Es liegt auf der Mutter: Sie steht neben dem Bett und sieht zu. */
 	Watching
 };
@@ -59,6 +66,10 @@ namespace GenesisMidwifeLogic
 		FVector Bedside = FVector::ZeroVector;
 		FVector MotherEye = FVector::ZeroVector;
 		float FloorZ = 0.0f;
+		/** Laufende Zeit (s) – für den Rhythmus des Abrubbelns. */
+		float Time = 0.0f;
+		/** 0..1 Fortschritt der Aufgabe (Zudecken). */
+		float TaskProgress = 0.0f;
 	};
 
 	/**
@@ -69,7 +80,8 @@ namespace GenesisMidwifeLogic
 	GENESISPEOPLE_API FGenesisMidwifeStance Compute(const FInputs& In, float FaceDistanceMm = 420.0f, float EyeHeightMm = 1540.0f);
 
 	/** Die Aufgabe aus dem Zustand: noch nicht geboren, geboren, auf der Haut seit wie vielen Sekunden. */
-	GENESISPEOPLE_API EGenesisMidwifeTask TaskFor(bool bBorn, bool bOnChest, float SecondsOnChest, float HandingSeconds, float& OutProgress);
+	GENESISPEOPLE_API EGenesisMidwifeTask TaskFor(bool bBorn, bool bOnChest, float SecondsOnChest, float HandingSeconds, float& OutProgress,
+		float DryingSeconds = 14.0f, float CoveringSeconds = 4.0f);
 }
 
 /**
@@ -128,18 +140,38 @@ public:
 
 	EGenesisMidwifeTask GetTask() const { return Task; }
 
+	/** 0..1 innerhalb der laufenden Aufgabe (Hinüberreichen, Abtrocknen, Zudecken). */
+	float GetTaskProgress() const { return TaskProgress; }
+
+	/** Wie lange sie das Kind abrubbelt (s) – die Aufnahme des Rubbelns ist gut 13 s lang – und wie lange das Zudecken dauert. */
+	UPROPERTY(EditAnywhere, Category = "Midwife")
+	float DryingSeconds = 14.0f;
+
+	/** Sohle der Clogs (mm): Um so viel steht sie höher als barfuß. */
+	UPROPERTY(EditAnywhere, Category = "Midwife")
+	float SoleMm = 28.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Midwife")
+	float CoveringSeconds = 4.0f;
+
 	/** Wo und wie das Kind in ihren Händen liegt (Welt): Augen und Blick zu ihrem Gesicht. */
 	FTransform GetHeldView() const { return HeldView; }
 
 	/** 0 = das Kind liegt noch dort, wo es herauskam; 1 = sie hat es zu sich hochgehoben. */
 	float GetHoldBlend() const { return HoldBlend; }
 
-	/** Abstand des gehaltenen Kindes vor ihren Augen und unter ihnen (mm). */
+	/**
+	 * Wo das Kind in ihren Händen liegt, gemessen von der Mitte ihrer Schultern: vorn und darunter (mm). So hält man ein
+	 * Neugeborenes zum Ansehen – auf den Unterarmen vor der unteren Brust, die Ellenbogen gut 80–90° gebeugt, der Kopf
+	 * neigt sich hinunter. Von Auge zu Auge sind es dann gut 25 cm, genau der Abstand, auf den ein Neugeborenes scharf sieht.
+	 * Gemessen an ihren Augen (38 cm davor) lagen die Hände 57 cm vor der Schulter – länger als ihr Arm: Die Arme standen
+	 * durchgestreckt nach vorn wie bei einer Schlafwandlerin.
+	 */
 	UPROPERTY(EditAnywhere, Category = "Midwife")
-	float HoldDistanceMm = 380.0f;
+	float HoldForwardOfShouldersMm = 300.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Midwife")
-	float HoldBelowEyesMm = 170.0f;
+	float HoldBelowShouldersMm = 60.0f;
 
 private:
 	void Configure();
@@ -156,6 +188,7 @@ private:
 	 */
 	UPROPERTY(Transient) TObjectPtr<USkeletalMeshComponent> Trousers;
 	UPROPERTY(Transient) TObjectPtr<USkeletalMeshComponent> Gloves;
+	UPROPERTY(Transient) TObjectPtr<USkeletalMeshComponent> Clogs;
 	void Dress();
 
 	FGenesisMotherState State;
@@ -169,6 +202,7 @@ private:
 	float BornSeconds = 0.0f;
 	FTransform HeldView = FTransform::Identity;
 	float HoldBlend = 0.0f;
+	float TaskProgress = 0.0f;
 	FVector SmoothedFeet = FVector::ZeroVector;
 	FVector SmoothedFacing = FVector::ForwardVector;
 	bool bPlaced = false;

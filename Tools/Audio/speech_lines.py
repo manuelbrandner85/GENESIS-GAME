@@ -58,6 +58,9 @@ LINES = [
     ("D_H_Brust_M", "H", "[gently]", "Ich lege ihn Ihnen direkt auf die Brust. Haut an Haut bleibt er am besten warm."),
     ("D_H_Atmung_F", "H", "[calm, reassuring]", "Sie atmet gut. Und schauen Sie – sie wird schon ganz rosig."),
     ("D_H_Atmung_M", "H", "[calm, reassuring]", "Er atmet gut. Und schauen Sie – er wird schon ganz rosig."),
+    # Versorgung auf der Brust: Abtrocknen mit einem warmen Tuch, dann ein zweites, trockenes darüber (sie spricht mit dem Kind)
+    ("D_H_Trocken", "H", "[softly, in a warm, slightly raised sing-song voice talking to a newborn, while rubbing it dry]", "So, du Kleines – jetzt rubbel ich dich erst mal schön trocken."),
+    ("D_H_Tuch", "H", "[gently, contented]", "Und ein warmes Tuch drüber. So liegst du gut."),
     # Haut an Haut
     ("S_M_Warm", "M", "[softly, tender, close to the baby]", "Schhh … ich bin da. Du bist ja ganz warm."),
     ("S_M_Geschafft", "M", "[whispering, tender, exhausted]", "Wir haben's geschafft, du und ich."),

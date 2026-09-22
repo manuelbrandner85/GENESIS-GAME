@@ -363,7 +363,7 @@ void UGenesisSliceDirector::DrivePhase(float DeltaSeconds)
 			// aber **wer ruft, wird früher geholt**. Ein Kind, das schreit, bekommt schneller Hilfe
 			// als eines, das still daliegt; das ist der einzige Hebel, den ein Neugeborenes hat.
 			const float Called = EarlyLife->HasNewborn() ? EarlyLife->GetState().CalledMinutes : 0.0f;
-			const float CareAfter = FMath::Max(0.4f, Tuning.SkinContactAfterMinutes - Called * Tuning.CallShortensCare);
+			const float CareAfter = FMath::Max(0.2f, Tuning.SkinContactAfterMinutes - Called * Tuning.CallShortensCare);
 
 			if (!bCareGiven && EarlyLife->HasNewborn()
 				&& EarlyLife->GetState().MinutesSinceBirth >= CareAfter)

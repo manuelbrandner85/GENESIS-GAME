@@ -299,6 +299,21 @@ void AGenesisSliceGameMode::Tick(float DeltaSeconds)
 					Midwife->SetChild(EarlyLife->HasNewborn(), bOnChest, It->Camera->GetComponentLocation(), It->Camera->GetComponentQuat());
 					It->MidwifeHoldBlend = Midwife->GetHoldBlend();
 					It->MidwifeHeldView = Midwife->GetHeldView();
+					// Auf der Brust: abrubbeln, dann zudecken. Das Kind spürt es, sieht den Rand des Tuchs – und es
+					// hält warm: Abgetrocknet fällt die Verdunstung weg, zugedeckt liegt der Rücken nicht mehr frei.
+					const EGenesisMidwifeTask Care = Midwife->GetTask();
+					const float Step = Midwife->GetTaskProgress();
+					It->DryingRub = Care == EGenesisMidwifeTask::Drying
+						? FMath::SmoothStep(0.0f, 0.08f, Step) * (1.0f - FMath::SmoothStep(0.92f, 1.0f, Step)) : 0.0f;
+					It->TowelCover = Care == EGenesisMidwifeTask::Covering ? Step : (Care == EGenesisMidwifeTask::Watching && bOnChest ? 1.0f : 0.0f);
+					if (bOnChest && (Care == EGenesisMidwifeTask::Covering || Care == EGenesisMidwifeTask::Watching))
+					{
+						EarlyLife->SetDried(true);
+					}
+					if (bOnChest && Care == EGenesisMidwifeTask::Watching)
+					{
+						EarlyLife->SetCovered(true);
+					}
 					// Ihre Stimme kommt von dort, wo sie ist
 					for (TActorIterator<AGenesisSceneSpeech> Speech(GetWorld()); Speech; ++Speech)
 					{
