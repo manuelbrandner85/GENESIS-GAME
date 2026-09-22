@@ -15,14 +15,14 @@
 
 namespace
 {
-	const FName LeftEyeBone(TEXT("FACIAL_L_Eye"));
-	const FName RightEyeBone(TEXT("FACIAL_R_Eye"));
+	const FName MidwifeLeftEye(TEXT("FACIAL_L_Eye"));
+	const FName MidwifeRightEye(TEXT("FACIAL_R_Eye"));
 
 	/** Hände locker an den Seiten (Komponentenraum des Körpers, cm) – nicht die A-Pose der Referenz. */
-	const FVector RestRightHand(-21.0, 4.0, 86.0);
-	const FVector RestLeftHand(21.0, 4.0, 86.0);
+	const FVector MidwifeRestRightHand(-21.0, 4.0, 86.0);
+	const FVector MidwifeRestLeftHand(21.0, 4.0, 86.0);
 
-	FVector Flat(const FVector& Vector, const FVector& Fallback)
+	FVector MidwifeFlat(const FVector& Vector, const FVector& Fallback)
 	{
 		const FVector Horizontal(Vector.X, Vector.Y, 0.0);
 		return Horizontal.IsNearlyZero() ? Fallback : Horizontal.GetSafeNormal();
@@ -49,7 +49,7 @@ namespace GenesisMidwifeLogic
 	FGenesisMidwifeStance Compute(const FInputs& In, float FaceDistanceMm, float EyeHeightMm)
 	{
 		FGenesisMidwifeStance Out;
-		const FVector ChildForward = Flat(In.ChildForward, FVector::ForwardVector);
+		const FVector ChildForward = MidwifeFlat(In.ChildForward, FVector::ForwardVector);
 
 		// Sie fängt das Kind am Fußende des Bettes auf und bleibt dort stehen, der Mutter zugewandt. Sie hebt
 		// es zu sich hoch (die Kamera des Kindes folgt ihren Händen, GetHeldView) – nicht umgekehrt.
@@ -65,7 +65,7 @@ namespace GenesisMidwifeLogic
 		{
 		case EGenesisMidwifeTask::Attending:
 			Out.Feet = FVector(In.FootOfBed.X, In.FootOfBed.Y, In.FloorZ);
-			Out.Facing = Flat(In.MotherEye - Out.Feet, FVector::ForwardVector);
+			Out.Facing = MidwifeFlat(In.MotherEye - Out.Feet, FVector::ForwardVector);
 			// Unter der Geburt gilt ihr Blick dem Damm, nicht dem Gesicht der Mutter
 			Out.LookAt = In.MotherEye - FVector(0.0, 0.0, 500.0) + (Out.Feet - In.MotherEye) * 0.35;
 			Out.LeanDegPerVertebra = 4.0f;
@@ -73,7 +73,7 @@ namespace GenesisMidwifeLogic
 
 		case EGenesisMidwifeTask::Holding:
 			Out.Feet = HoldFeet;
-			Out.Facing = Flat(In.MotherEye - HoldFeet, -ChildForward);
+			Out.Facing = MidwifeFlat(In.MotherEye - HoldFeet, -ChildForward);
 			Out.LookAt = In.ChildEye;
 			Out.RightHand = HoldRight;
 			Out.LeftHand = HoldLeft;
@@ -87,7 +87,7 @@ namespace GenesisMidwifeLogic
 			const float Walk = FMath::SmoothStep(0.0f, 1.0f, In.HandingProgress);
 			const FVector Side = FVector(In.Bedside.X, In.Bedside.Y, In.FloorZ);
 			Out.Feet = FMath::Lerp(HoldFeet, Side, Walk);
-			Out.Facing = Flat(In.ChildEye - Out.Feet, -ChildForward);
+			Out.Facing = MidwifeFlat(In.ChildEye - Out.Feet, -ChildForward);
 			Out.LookAt = In.ChildEye;
 			Out.RightHand = HoldRight;
 			Out.LeftHand = HoldLeft;
@@ -100,7 +100,7 @@ namespace GenesisMidwifeLogic
 		case EGenesisMidwifeTask::Watching:
 		default:
 			Out.Feet = FVector(In.Bedside.X, In.Bedside.Y, In.FloorZ);
-			Out.Facing = Flat(In.MotherEye - Out.Feet, FVector::ForwardVector);
+			Out.Facing = MidwifeFlat(In.MotherEye - Out.Feet, FVector::ForwardVector);
 			Out.LookAt = In.ChildEye;
 			Out.LeanDegPerVertebra = 2.5f;
 			break;
@@ -255,8 +255,8 @@ FVector AGenesisMidwifeRig::GetEyeLocation() const
 {
 	if (Face)
 	{
-		const int32 Left = Face->GetBoneIndex(LeftEyeBone);
-		const int32 Right = Face->GetBoneIndex(RightEyeBone);
+		const int32 Left = Face->GetBoneIndex(MidwifeLeftEye);
+		const int32 Right = Face->GetBoneIndex(MidwifeRightEye);
 		if (Left != INDEX_NONE && Right != INDEX_NONE)
 		{
 			return 0.5 * (Face->GetBoneTransform(Left).GetLocation() + Face->GetBoneTransform(Right).GetLocation());
@@ -325,8 +325,8 @@ void AGenesisMidwifeRig::Tick(float DeltaSeconds)
 		const FTransform Component = Body->GetComponentTransform();
 		FGenesisMotherPoseInputs& Inputs = Anim->PoseInputs;
 		Inputs.LookTarget = Component.InverseTransformPosition(Stance.LookAt);
-		Inputs.RightHandTarget = FMath::Lerp(RestRightHand, Component.InverseTransformPosition(Stance.RightHand), Stance.HandsOnChild);
-		Inputs.LeftHandTarget = FMath::Lerp(RestLeftHand, Component.InverseTransformPosition(Stance.LeftHand), Stance.HandsOnChild);
+		Inputs.RightHandTarget = FMath::Lerp(MidwifeRestRightHand, Component.InverseTransformPosition(Stance.RightHand), Stance.HandsOnChild);
+		Inputs.LeftHandTarget = FMath::Lerp(MidwifeRestLeftHand, Component.InverseTransformPosition(Stance.LeftHand), Stance.HandsOnChild);
 		Inputs.ArmBlend = 1.0f;
 		Inputs.BreathLift = GenesisMotherLogic::GetBreathLift(State, Tuning);
 		Inputs.BlinkClosure = GenesisMotherLogic::GetBlinkClosure(State, Tuning);
