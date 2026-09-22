@@ -188,6 +188,20 @@ bool FGenesisMotherAnimInstanceProxy::Evaluate(FPoseContext& Output)
 		Output.Curve.Set(FName(FString::Printf(TEXT("CTRL_expressions_mouthCornerPull%s"), Side)), Smile);
 		Output.Curve.Set(FName(FString::Printf(TEXT("CTRL_expressions_eyeCheekRaise%s"), Side)), Smile * 0.6f);
 	}
+
+	// 6. Sprechen: Die Spur der gesprochenen Zeile bewegt Kiefer, Lippen und Zunge. Das Lächeln bleibt darunter
+	//    erhalten – wer lächelnd spricht, zieht die Mundwinkel weiter hoch, auch zwischen den Silben.
+	for (const TPair<FName, float>& Speech : Inputs.SpeechCurves)
+	{
+		float Value = Speech.Value;
+		const FString Name = Speech.Key.ToString();
+		if (Name.StartsWith(TEXT("CTRL_expressions_mouthCornerPull")) || Name.StartsWith(TEXT("CTRL_expressions_eyeCheekRaise")))
+		{
+			const float Own = Name.Contains(TEXT("Cheek")) ? Smile * 0.6f : Smile;
+			Value = FMath::Max(Own, Value);
+		}
+		Output.Curve.Set(Speech.Key, FMath::Clamp(Value, -1.0f, 1.0f));
+	}
 	return true;
 }
 

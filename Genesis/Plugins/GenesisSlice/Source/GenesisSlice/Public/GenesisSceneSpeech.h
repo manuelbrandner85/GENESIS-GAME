@@ -104,6 +104,9 @@ public:
 	/** Zuletzt gesprochene Zeile – für die Anzeige und die Prüfung. */
 	FName GetLastLine() const { return LastLine; }
 
+	/** Zum Prüfen (Konsole genesis.Speech.Say <Zeile>): spricht die Zeile sofort, mit Richtung und Mund. */
+	void Say(FName LineId) { Play(LineId); }
+
 	/**
 	 * Das Ohr des Neugeborenen: In den ersten Stunden stecken noch Fruchtwasser und Käseschmiere in Gehörgang
 	 * und Mittelohr (deshalb fällt das Hörscreening in den ersten 24 h häufiger durch). Hohe Töne kommen
@@ -124,6 +127,12 @@ public:
 private:
 	GenesisSceneSpeechLogic::FInputs GatherInputs() const;
 	void Play(FName LineId);
+
+	/** Die Figur, die LineId spricht, bewegt den Mund nach Track (nullptr = sie verstummt). */
+	void SpeakerSpeak(FName LineId, const class UGenesisLipSyncTrack* Track);
+
+	/** Zeile auf dem Redekanal (nicht die Laute) – um beim Unterbrechen den richtigen Mund anzuhalten. */
+	FName CurrentLine;
 	bool IsGirl() const;
 
 	UPROPERTY(Transient)

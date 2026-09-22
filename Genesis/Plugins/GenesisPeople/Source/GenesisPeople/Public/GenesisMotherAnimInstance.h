@@ -74,6 +74,12 @@ struct GENESISPEOPLE_API FGenesisMotherPoseInputs
 	UPROPERTY(EditAnywhere, Category = "Pose") float BreathLift = 0.0f;
 	UPROPERTY(EditAnywhere, Category = "Pose") float BlinkClosure = 0.0f;
 	UPROPERTY(EditAnywhere, Category = "Pose") float Smile = 0.1f;
+
+	/**
+	 * Sprechen: Rohsteuerungen des Gesichts (CTRL_expressions_*) aus der Lippensynchron-Spur der gerade
+	 * gesprochenen Zeile – Kiefer, Lippen, Zunge, dazu Brauen und Wangen, die beim Sprechen mitgehen. Leer = still.
+	 */
+	UPROPERTY(Transient) TMap<FName, float> SpeechCurves;
 };
 
 class UGenesisMotherAnimInstance;

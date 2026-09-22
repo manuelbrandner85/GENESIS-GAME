@@ -17,6 +17,7 @@
 #include "GenesisMusicActor.h"
 #include "GenesisVoiceActor.h"
 #include "GenesisSceneSpeech.h"
+#include "GenesisMidwifeRig.h"
 #include "CineCameraComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
@@ -213,6 +214,36 @@ void AGenesisSliceGameMode::EnsureSceneSound()
 		// Die Mutter spricht jetzt echte Sätze (AGenesisSceneSpeech). Ihre bisherige Stimme aus Silben ohne Worte
 		// liefe sonst gleichzeitig darüber – zwei Mütter in einem Raum.
 		(void)bMother;
+		// Die Hebamme: MetaHuman-Figur (BP_Midwife, wie die Mutter außerhalb von Git) und ihr Rig – zur Laufzeit,
+		// damit kein Neuaufbau der Karte sie verliert
+		if (!Has(AGenesisMidwifeRig::StaticClass()))
+		{
+			UClass* MidwifeClass = LoadClass<AActor>(nullptr, TEXT("/Game/Genesis/Characters/Midwife/Built/Midwife/BP_Midwife.BP_Midwife_C"));
+			AGenesisMotherRig* MotherRig = nullptr;
+			for (TActorIterator<AGenesisMotherRig> It(World); It; ++It)
+			{
+				MotherRig = *It;
+				break;
+			}
+			if (MidwifeClass)
+			{
+				AGenesisMidwifeRig* Rig = World->SpawnActorDeferred<AGenesisMidwifeRig>(AGenesisMidwifeRig::StaticClass(), FTransform::Identity);
+				const FTransform Start(FRotator::ZeroRotator, Rig->FootOfBed, FVector(10.0));
+				// Die Figur ist in cm gebaut, die Szene in mm – Faktor 10 wie bei der Mutter
+				Rig->MidwifeActor = World->SpawnActor<AActor>(MidwifeClass, Start);
+				if (Rig->MidwifeActor)
+				{
+					Rig->MidwifeActor->SetActorScale3D(FVector(10.0));
+				}
+				Rig->Mother = MotherRig;
+				Rig->FinishSpawning(FTransform::Identity);
+				UE_LOG(LogGenesis, Display, TEXT("Hebamme im Kreißsaal: %s"), Rig->MidwifeActor ? TEXT("ja") : TEXT("Figur fehlt"));
+			}
+			else
+			{
+				UE_LOG(LogGenesis, Warning, TEXT("Hebamme: BP_Midwife nicht gefunden (Tools/Unreal/Birth/midwife_create.py im Editor ausführen)."));
+			}
+		}
 		if (!Has(AGenesisSceneSpeech::StaticClass()))
 		{
 			World->SpawnActor<AGenesisSceneSpeech>(FVector::ZeroVector, FRotator::ZeroRotator);
@@ -259,6 +290,21 @@ void AGenesisSliceGameMode::Tick(float DeltaSeconds)
 				It->EnFaceBlend = Mother->GetEnFaceBlend();
 				It->EnFaceView = Mother->GetEnFaceChildTransform();
 				bEyeContact = Mother->HasEyeContact();
+			}
+			// Die Hebamme: fängt das Kind auf, hält es vor sich, legt es der Mutter auf die Brust
+			if (It->Camera)
+			{
+				for (TActorIterator<AGenesisMidwifeRig> Midwife(GetWorld()); Midwife; ++Midwife)
+				{
+					Midwife->SetChild(EarlyLife->HasNewborn(), bOnChest, It->Camera->GetComponentLocation(), It->Camera->GetComponentQuat());
+					It->MidwifeHoldBlend = Midwife->GetHoldBlend();
+					It->MidwifeHeldView = Midwife->GetHeldView();
+					// Ihre Stimme kommt von dort, wo sie ist
+					for (TActorIterator<AGenesisSceneSpeech> Speech(GetWorld()); Speech; ++Speech)
+					{
+						Speech->SetMidwifeLocation(Midwife->GetEyeLocation() - FVector(0.0, 0.0, 70.0));
+					}
+				}
 			}
 		}
 		if (EarlyLife->HasNewborn())

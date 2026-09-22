@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "GenesisMotherAnimInstance.h"
 #include "GenesisMotherTypes.h"
+#include "GenesisLipSync.h"
 #include "GenesisMotherRig.generated.h"
 
 class USkeletalMeshComponent;
@@ -69,6 +70,12 @@ public:
 	/** Von der Regie in jedem Bild gesetzt. */
 	void SetChild(bool bOnChest, bool bSeeksFace, const FVector& EyeLocation, const FQuat& ViewRotation);
 
+	/** Sie spricht: Die Lippensynchron-Spur der Zeile läuft ab jetzt mit der Audio-Uhr der Welt – zeitgleich mit ihrer Stimme. */
+	void Speak(const class UGenesisLipSyncTrack* Track);
+
+	/** Spricht sie gerade? (Für Prüfung und Anzeige.) */
+	bool IsSpeaking() const;
+
 	/**
 	 * Wo die Augen des Kindes liegen, wenn es bäuchlings auf ihrer Brust liegt – im Komponentenraum
 	 * ihres Körpers (cm, MetaHuman-Referenzpose): etwas rechts der Mitte, oberhalb der Brust, die Wange
@@ -103,6 +110,7 @@ public:
 	FVector GetEyeLocation() const;
 
 private:
+	UPROPERTY(Transient) FGenesisLipSyncPlayer LipSync;
 	void Configure();
 	void UpdatePose(float DeltaSeconds);
 	UGenesisMotherAnimInstance* GetMotherAnim() const;

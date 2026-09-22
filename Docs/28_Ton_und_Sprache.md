@@ -166,3 +166,64 @@ Liegt das Kind auf der Mutter, steht die Hebamme neben dem Bett, nicht mehr vor 
 **Befund aus dem Bild:** In den ersten Sekunden nach der Geburt sah das Kind einen **leeren Raum** (Schränke, Tür).
 In Wirklichkeit fängt die Hebamme es auf und hebt es hoch – sie ist das Erste, was es sieht. Das kommt als
 Nächstes (sichtbare Hebamme, MetaHuman).
+## GENESIS-039 (Teil 4) – Die Hebamme: sichtbar, lippensynchron, richtig gekleidet
+
+Game Director: „Die Hebamme soll zu sehen sein, wenn sie das Baby holt. Die Stimme soll synchron mit der
+Lippenbewegung sein, die Hebamme soll echte Kreißsaal-Kleidung tragen, auch Handschuhe, und sich so verhalten."
+
+**Sie ist das Erste, was das Kind sieht.** `AGenesisMidwifeRig` (GenesisPeople) macht aus einer MetaHuman-Figur
+(`BP_Midwife`, im MetaHuman Creator gebaut, nicht im öffentlichen Repo) die Hebamme. Was sie tut, ergibt sich aus
+dem Verlauf der Geburt, nicht aus einem Drehbuch:
+- Unter den Wehen steht sie am Fußende des Bettes.
+- Ist das Kind geboren, fängt sie es auf und hebt es zu sich hoch, gut 38 cm vor ihr Gesicht. Die Kamera des Kindes
+  liegt dann in ihren Händen und schaut zu ihr hoch.
+- Dann legt sie es der Mutter auf die Brust und tritt neben das Bett.
+
+Ihre Stimme kommt aus ihrem Mund.
+
+**Lippensynchron, gemessen.** Unreal 5.8 bringt ein neuronales Modell mit, das aus Sprache Gesichtsbewegung
+macht (StreamingADA, dasselbe wie in MetaHuman Animator). Es läuft **im Editor über jede Aufnahme**
+(`Tools/Unreal/Audio/bake_lipsync.py` → `UGenesisLipSyncLibrary::BakeLipSync`):
+- 81 Gesichtsregler bei 50 Bildern/s werden auf die RigLogic-Rohsteuerungen umgerechnet.
+- Das Ergebnis ist je Zeile eine Spur `/Game/Genesis/Audio/LipSync/LS_<Zeile>`.
+
+Im Spiel läuft die Spur ab dem Moment, in dem die Stimme startet, auf derselben Audio-Uhr. Das heißt: kein
+neuronales Netz zur Laufzeit, keine Rechenzeit, jedes Mal dieselbe Bewegung.
+- Kiefer, Lippenschluss bei m/b/p, gespitzte Lippen bei o/u und die Zunge bewegen sich.
+- Brauen und Wangen gehen mit.
+- Lidschlag und Blick bleiben bei der Figur.
+- Wer unterbrochen wird, schließt auch den Mund.
+
+Messung über alle 32 Zeilen: Der Kiefer öffnet sich im Median **20 ms vor** dem Lautstärkeanstieg. So ist es auch
+beim Menschen, denn der Mund formt die Silbe, bevor sie hörbar wird. Die Ausreißer (±200 ms) sind Flüsterzeilen.
+
+| still | spricht |
+|---|---|
+| ![](Media/GENESIS-039_Hebamme_still.png) | ![](Media/GENESIS-039_Hebamme_spricht.png) |
+
+**Kleidung wie im deutschen Kreißsaal.** Dazu gehören:
+- Kasack und lange Hose in Blaugrün
+- blaue **Nitril-Untersuchungshandschuhe**, die gut 6 cm über das Handgelenk reichen, mit aufgerolltem Rand
+- Unterarme frei („bare below the elbows")
+- kurzes Haar, kein Schmuck
+
+Haube, Mundschutz und Kittel gibt es bei einer normalen Geburt nicht; sie gehören zum Kaiserschnitt im OP. Der
+MetaHuman Creator kennt als Kleidung nur T-Shirt und Shorts. Hose und Handschuhe sind deshalb **zweite Hüllen auf dem
+Körper-Mesh**, die seiner Pose folgen (`Tools/Unreal/Birth/midwife_scrubs.py`). Das Material wählt über die Lage in
+der Referenzpose Beine bzw. Hände aus, gemessen am Skelett der Hebamme:
+- Die Hosenbeine werden zu geraden, weiten Röhren um die Beinachse mit Falten über dem Knöchel.
+- Die Handschuhe liegen 0,7 mm über der Haut.
+
+Die Shorts bleiben, umgefärbt, als oberer Teil der Hose. Der MetaHuman-Körper hat unter ihnen keine Haut; beim
+ersten Versuch ohne Shorts klaffte dort ein Loch.
+
+![](Media/GENESIS-039_Hebamme_Kleidung.png)
+
+**Befund aus dem Bild:** Über dem Kopf der Hebamme hing ein „hautfarbener Schlauch". Es war das Geburtstuch vom
+Deckenhaken, rotbraun und genau über dem Fußende, also dort, wo sie steht. Es hängt jetzt über den Knien der Frau,
+wo sie es halb sitzend greifen kann, und ist ungefärbte Baumwolle.
+
+**Offen:**
+- Die Hebamme trocknet das Kind noch nicht mit einem warmen Tuch ab und deckt es auf der Brust noch nicht zu.
+- Ihre Arme halten ein Kind, das man von außen nicht sieht (das Kind ist die Kamera).
+- Der Kasack ist ein T-Shirt-Schnitt mit Rundhals statt V-Ausschnitt.

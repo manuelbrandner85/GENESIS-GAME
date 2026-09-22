@@ -13,7 +13,10 @@
 #include "Sound/SoundWave.h"
 #include "Sound/SoundAttenuation.h"
 #include "GenesisMotherRig.h"
+#include "GenesisMidwifeRig.h"
+#include "GenesisLipSync.h"
 #include "EngineUtils.h"
+#include "HAL/IConsoleManager.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
 
@@ -484,12 +487,25 @@ void AGenesisSceneSpeech::Play(FName LineId)
 	{
 		if (Current)
 		{
+			if (Current->IsPlaying() && !CurrentLine.IsNone())
+			{
+				// Wer unterbrochen wird, hört auf zu sprechen – auch mit dem Mund
+				SpeakerSpeak(CurrentLine, nullptr);
+			}
 			Current->Stop();
 		}
 		Current = Spawn(1.0f);
+		CurrentLine = LineId;
 		Busy = Sound->GetDuration() + GapSeconds;
 	}
 	LastLine = LineId;
+	// Der Mund spricht mit: die Lippensynchron-Spur der Zeile (aus derselben Aufnahme erzeugt) an der Figur,
+	// die spricht – ab jetzt, auf der Audio-Uhr, nach der auch der Ton läuft.
+	const FString TrackPath = FString::Printf(TEXT("/Game/Genesis/Audio/LipSync/LS_%s.LS_%s"), *LineId.ToString(), *LineId.ToString());
+	if (const UGenesisLipSyncTrack* Track = Cast<UGenesisLipSyncTrack>(FSoftObjectPath(TrackPath).TryLoad()))
+	{
+		SpeakerSpeak(LineId, Track);
+	}
 	FString Direction = TEXT("ohne Richtung, durch die Bauchdecke");
 	const APlayerController* Controller = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
 	if (const APlayerCameraManager* Camera = bPlaced && Controller ? Controller->PlayerCameraManager.Get() : nullptr)
@@ -502,3 +518,36 @@ void AGenesisSceneSpeech::Play(FName LineId)
 	UE_LOG(LogGenesis, Display, TEXT("Sprache: %s (%s, %s)"), *LineId.ToString(),
 		GenesisSceneSpeechLogic::IsMother(LineId) ? TEXT("Mutter") : TEXT("Hebamme"), *Direction);
 }
+
+void AGenesisSceneSpeech::SpeakerSpeak(FName LineId, const UGenesisLipSyncTrack* Track)
+{
+	if (GenesisSceneSpeechLogic::IsMother(LineId))
+	{
+		for (TActorIterator<AGenesisMotherRig> It(GetWorld()); It; ++It)
+		{
+			It->Speak(Track);
+		}
+	}
+	else
+	{
+		for (TActorIterator<AGenesisMidwifeRig> It(GetWorld()); It; ++It)
+		{
+			It->Speak(Track);
+		}
+	}
+}
+
+static FAutoConsoleCommandWithWorldAndArgs GenesisSpeechSayCommand(
+	TEXT("genesis.Speech.Say"),
+	TEXT("genesis.Speech.Say <Zeile> – spricht eine Zeile sofort (z. B. D_H_Da_F), zum Prüfen von Richtung und Lippen."),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+	{
+		if (!World || Args.Num() < 1)
+		{
+			return;
+		}
+		for (TActorIterator<AGenesisSceneSpeech> It(World); It; ++It)
+		{
+			It->Say(FName(*Args[0]));
+		}
+	}));

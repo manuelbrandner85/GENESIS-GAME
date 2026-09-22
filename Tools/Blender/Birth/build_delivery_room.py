@@ -546,8 +546,10 @@ def build_equipment():
     cylinder("Clock", (x1 - 20.0, 250.0, FLOOR + 2350.0), (x1 - 60.0, 250.0, FLOOR + 2350.0), 150.0, "ClockFace", segments=64)
     cylinder("ClockRim", (x1 - 18.0, 250.0, FLOOR + 2350.0), (x1 - 66.0, 250.0, FLOOR + 2350.0), 158.0, "DeviceGrey", segments=64)
 
-    # Geburtsseil: ein fest verknotetes Tuch von einem Deckenhaken über dem Fußende
-    rx, ry = 700.0, 0.0
+    # Geburtsseil: ein fest verknotetes Tuch von einem Deckenhaken über den Knien der Frau – dort, wo sie es
+    # halb sitzend greifen und sich daran hochziehen kann. Nicht über dem Fußende: Dort steht die Hebamme,
+    # und ein Tuch vor ihrem Gesicht hing genau im ersten Bild, das das Kind von ihr sieht.
+    rx, ry = 150.0, 0.0
     cylinder("RopeHook", (rx, ry, CEILING), (rx, ry, CEILING - 60.0), 15.0, "Steel", segments=16)
     top = Vector((rx, ry, CEILING - 60.0))
     points = [top + Vector((20.0 * math.sin(i * 0.9), 15.0 * math.cos(i * 0.7), -i * 130.0)) for i in range(11)]

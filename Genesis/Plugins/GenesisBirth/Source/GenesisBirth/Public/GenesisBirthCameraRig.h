@@ -130,6 +130,14 @@ public:
 	float EnFaceBlend = 0.0f;
 	FTransform EnFaceView = FTransform::Identity;
 
+	/**
+	 * Die Hebamme hat das Kind aufgefangen und zu sich hochgehoben (0..1, von der Regie). Die Kamera liegt dann
+	 * in ihren Händen (MidwifeHeldView, Welt): gut 38 cm vor ihrem Gesicht, der Blick zu ihr hoch. Von dort aus
+	 * legt sie das Kind der Mutter auf die Brust.
+	 */
+	float MidwifeHoldBlend = 0.0f;
+	FTransform MidwifeHeldView = FTransform::Identity;
+
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UCineCameraComponent> Camera;
 

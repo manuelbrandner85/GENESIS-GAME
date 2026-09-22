@@ -112,8 +112,6 @@ void AGenesisBirthCameraRig::ApplyPerception(const FGenesisBirthState& State, co
 	const float Beat = FMath::Pow(FMath::Max(0.0f, FMath::Sin(HeartPhase * 2.0f * PI)), 8.0f);
 	const float BeatAmplitude = FMath::Lerp(0.4f, 1.6f, 1.0f - Perception.Oxygen);
 
-	const FVector Local(Depth + Push, Beat * BeatAmplitude * 0.5f, Beat * BeatAmplitude);
-
 	// 3. Drehung: Das Kind dreht sich im Becken, um mit dem schmalsten Durchmesser durchzupassen
 	float Roll = FMath::Lerp(0.0f, 88.0f, State.Rotation) + SmoothedPressure * 3.0f;
 	// Nach der Geburt: Die Hebamme nimmt das Kind auf und hält es mit dem Gesicht nach oben. Die
@@ -125,7 +123,22 @@ void AGenesisBirthCameraRig::ApplyPerception(const FGenesisBirthState& State, co
 		Roll = FMath::Lerp(Roll, 8.0f, Righting);
 	}
 	// Dazu der eigene Blick: Das Kind wendet sich der Stimme zu, soweit es das kann
-	const FRotator ExitRotation(-4.0f * SmoothedPressure + LookOffsetDegrees.Y, LookOffsetDegrees.X, Roll);
+	FRotator ExitRotation(-4.0f * SmoothedPressure + LookOffsetDegrees.Y, LookOffsetDegrees.X, Roll);
+	FVector Local(Depth + Push, Beat * BeatAmplitude * 0.5f, Beat * BeatAmplitude);
+
+	// 3a. In den Händen der Hebamme: Sie fängt das Kind auf und hebt es zu sich hoch. Ohne sie lag das Kind nach
+	// der Geburt tief am Fußende und sah einen leeren Raum – in Wirklichkeit ist ihr Gesicht das Erste, was es sieht.
+	const float Held = FMath::SmoothStep(0.0f, 1.0f, FMath::Clamp(MidwifeHoldBlend, 0.0f, 1.0f));
+	if (State.IsBorn() && Held > KINDA_SMALL_NUMBER)
+	{
+		const FVector HeldLocation = GetActorTransform().InverseTransformPosition(MidwifeHeldView.GetLocation());
+		const FQuat HeldRotation = GetActorQuat().Inverse() * MidwifeHeldView.GetRotation()
+			* FRotator(LookOffsetDegrees.Y, LookOffsetDegrees.X, 0.0f).Quaternion();
+		// Ein kleiner Bogen nach oben beim Hochheben, dazu der eigene Herzschlag
+		const FVector Arc(0.0f, 0.0f, 80.0f * FMath::Sin(Held * PI));
+		Local = FMath::Lerp(Local, HeldLocation + FVector(0.0f, 0.0f, Beat * BeatAmplitude * 0.3f), Held) + Arc;
+		ExitRotation = FQuat::Slerp(ExitRotation.Quaternion(), HeldRotation, Held).Rotator();
+	}
 
 	// 3b. Auf die Brust. Die Hebamme hebt das Kind in einem Bogen über den Bauch – nicht auf
 	// gerader Linie, und nicht in einem Schnitt: Der Weg ist das Erste, was das Kind vom Raum sieht.

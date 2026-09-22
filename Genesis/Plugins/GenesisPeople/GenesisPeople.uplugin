@@ -1,9 +1,9 @@
-{
+﻿{
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "0.1.0",
 	"FriendlyName": "Genesis People",
-	"Description": "Die Menschen um das Kind: Haltung, Atem, Lidschlag und Blick der Mutter – prozedural auf einem MetaHuman-Skelett, ohne Animations-Blueprint.",
+	"Description": "Die Menschen um das Kind: Haltung, Atem, Lidschlag und Blick der Mutter â€“ prozedural auf einem MetaHuman-Skelett, ohne Animations-Blueprint.",
 	"Category": "Genesis",
 	"CreatedBy": "GENESIS Team",
 	"CanContainContent": false,
@@ -17,6 +17,8 @@
 		}
 	],
 	"Plugins": [
-		{ "Name": "GenesisCore", "Enabled": true }
+		{ "Name": "GenesisCore", "Enabled": true },
+		{ "Name": "StreamingADA", "Enabled": true },
+		{ "Name": "MetaHumanCoreTech", "Enabled": true }
 	]
 }

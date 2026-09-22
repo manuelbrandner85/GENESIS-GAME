@@ -325,5 +325,19 @@ void AGenesisMotherRig::UpdatePose(float DeltaSeconds)
 		Pose.BreathLift = GenesisMotherLogic::GetBreathLift(State, Tuning);
 		Pose.BlinkClosure = GenesisMotherLogic::GetBlinkClosure(State, Tuning);
 		Pose.Smile = State.Smile;
+		LipSync.Evaluate(GetWorld()->GetAudioTimeSeconds(), Pose.SpeechCurves);
 	}
+}
+
+void AGenesisMotherRig::Speak(const UGenesisLipSyncTrack* Track)
+{
+	if (const UWorld* World = GetWorld())
+	{
+		LipSync.Start(Track, World->GetAudioTimeSeconds());
+	}
+}
+
+bool AGenesisMotherRig::IsSpeaking() const
+{
+	return GetWorld() && LipSync.IsSpeaking(GetWorld()->GetAudioTimeSeconds());
 }
