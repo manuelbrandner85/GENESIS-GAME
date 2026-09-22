@@ -24,7 +24,7 @@ import sys
 
 import bmesh
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 
@@ -377,7 +377,7 @@ def simulate(pants, colliders, frames=45):
     log("Stoff simuliert: %d Bilder" % frames)
 
 
-def keep_outside(cloth, skin, gap):
+def keep_outside(cloth, skin, gap, z_min=None):
     """
     Kein Punkt des Stoffes liegt näher als gap an der Haut oder in ihr – sonst sticht die Haut durch. Nach dem Glätten
     (Unterteilung) zog die Falte im Schritt den Stoff einige Millimeter in die Oberschenkel.
@@ -389,6 +389,8 @@ def keep_outside(cloth, skin, gap):
     bm.free()
     moved = 0
     for v in cloth.data.vertices:
+        if z_min is not None and v.co.z < z_min:
+            continue
         location, normal, _, dist = tree.find_nearest(v.co, 0.03)
         if location is None:
             continue
@@ -399,20 +401,16 @@ def keep_outside(cloth, skin, gap):
     log("Stoff aus der Haut gehoben: %d Punkte" % moved)
 
 
-def tuck_under_shirt(pants, outfit):
+def tuck_under_shirt(pants, cover):
     """
-    Der Bund liegt unter dem Kasack: Wo das T-Shirt die Hose überdeckt, bleibt jeder Punkt der Hose 4 mm innerhalb
-    der Shirt-Fläche (Strahl von außen zur Körpermitte). Sonst sticht die Hose an der Hüfte durch den Saum.
+    Der Bund liegt unter dem Kasack: Wo der Kasack (cover, gleiche Koordinaten wie die Hose) die Hose überdeckt, bleibt
+    jeder Punkt der Hose 4 mm innerhalb seiner Fläche (Strahl von außen zur Körpermitte). Sonst sticht sie durch den Saum.
     """
-    shirt = world_copy(outfit, "ShirtShape", keep=lambda f: f.material_index % 2 == 0)
-    shirt.location.z += SOLE
-    apply_transform(shirt)
     bm = bmesh.new()
-    bm.from_mesh(shirt.data)
+    bm.from_mesh(cover.data)
     tree = BVHTree.FromBMesh(bm)
     hem = min(v.co.z for v in bm.verts)
     bm.free()
-    bpy.data.objects.remove(shirt)
     moved = 0
     for v in pants.data.vertices:
         if v.co.z < hem - 0.002:
@@ -460,8 +458,9 @@ def skin(target, sources, armature, legs_from=None, legs_top=0.76, blend=0.05):
         activate(target)
         bpy.ops.object.datalayout_transfer(modifier=dt.name)
         bpy.ops.object.modifier_apply(modifier=dt.name)
-    if legs_from is not None:
-        target.vertex_groups.remove(target.vertex_groups["_Beine"])
+    for helper in ("_Beine",):
+        if target.vertex_groups.get(helper):
+            target.vertex_groups.remove(target.vertex_groups[helper])
     activate(target)
     bpy.ops.object.vertex_group_normalize_all(lock_active=False)
     bpy.ops.object.vertex_group_limit_total(limit=8)
@@ -483,11 +482,12 @@ def preview(objects):
     scene.display.shading.show_cavity = True
     scene.display.shading.show_shadows = True
     scene.render.resolution_x, scene.render.resolution_y = 900, 1200
-    colors = {"Body": (0.75, 0.55, 0.45, 1), "Outfit": (0.1, 0.5, 0.55, 1), "Trousers": (0.12, 0.45, 0.5, 1), "Clogs": (0.9, 0.9, 0.92, 1)}
+    colors = {"Body": (0.75, 0.55, 0.45, 1), "Outfit": (0.1, 0.5, 0.55, 1), "Trousers": (0.12, 0.45, 0.5, 1), "Clogs": (0.9, 0.9, 0.92, 1), "Tunic": (0.12, 0.45, 0.5, 1)}
     for obj in objects:
         obj.color = next((c for k, c in colors.items() if k in obj.name), (0.6, 0.6, 0.6, 1))
     for name, (loc, target) in {"front": ((0.0, -2.2, 0.6), (0.0, 0.0, 0.5)), "side": ((2.2, 0.0, 0.6), (0.0, 0.0, 0.5)),
-                                "back": ((-1.2, 1.9, 0.5), (0.0, 0.0, 0.45)), "hem": ((0.5, -0.9, 0.25), (0.08, 0.0, 0.12))}.items():
+                                "back": ((-1.2, 1.9, 0.5), (0.0, 0.0, 0.45)), "hem": ((0.5, -0.9, 0.25), (0.08, 0.0, 0.12)),
+                                "top": ((0.35, -1.6, 1.35), (0.0, 0.0, 1.12)), "topside": ((1.8, -0.4, 1.2), (0.0, 0.0, 1.05))}.items():
         cam = bpy.data.objects.new(name, bpy.data.cameras.new(name))
         scene.collection.objects.link(cam)
         cam.location = loc
@@ -497,6 +497,185 @@ def preview(objects):
         scene.render.filepath = os.path.join(SRC, "preview_%s.png" % name)
         bpy.ops.render.render(write_still=True)
         log("Vorschau", scene.render.filepath)
+
+
+TUNIC_HEM_Z = 0.785      # Kasack bis über die Hüfte – der Hosenbund liegt darunter
+
+
+def build_tunic(outfit):
+    """
+    Kasack (Rundhals, Schlupfform) = das T-Shirt des MetaHuman, verlängert. Schultern, Ärmel und Kragen bleiben dessen
+    Geometrie mit allen Hilfsknochen-Gewichten – sie verformen sich beim Heben der Arme richtig (ein eigener Schnitt aus
+    Ringen riss dort auf; ein angesetzter Schoß wirkte wie ein Gürtel). Der eingerollte Saum wird abgeschnitten, beide
+    Stofflagen laufen gerade bis über die Hüfte weiter und werden unten zu einem neuen Saum geschlossen. Jeder neue Punkt
+    trägt die Gewichte des Saumpunkts, von dem er ausgeht. Dazu die aufgesetzte Brusttasche links.
+    Enthält MetaHuman-Geometrie: Das Ergebnis bleibt außerhalb des öffentlichen Repos.
+    """
+    tunic = outfit.copy()
+    tunic.data = outfit.data.copy()
+    tunic.name = "SK_GEN_MidwifeTunic"
+    bpy.context.scene.collection.objects.link(tunic)
+    world = tunic.matrix_world.copy()
+    tunic.parent = None
+    tunic.data.transform(world)
+    tunic.matrix_world = Matrix.Identity(4)
+    for mod in list(tunic.modifiers):
+        tunic.modifiers.remove(mod)
+
+    shorts = world_copy(outfit, "ShortsShape", keep=lambda f: f.material_index % 2 == 1)
+    sb = bmesh.new()
+    sb.from_mesh(shorts.data)
+    for v in sb.verts:
+        v.co += v.normal * 0.02            # die Hose liegt 2 cm über den Shorts
+    shorts_tree = BVHTree.FromBMesh(sb)
+    sb.free()
+    bpy.data.objects.remove(shorts)
+
+    bm = bmesh.new()
+    bm.from_mesh(tunic.data)
+    deform = bm.verts.layers.deform.active
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index % 2 == 1], context="FACES")
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0002)
+    hem = min(v.co.z for v in bm.verts)
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.calc_center_median().z < hem + 0.014], context="FACES")
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+
+    # Randschleifen unten (außen und innen)
+    boundary = [e for e in bm.edges if e.is_boundary]
+    loops, seen = [], set()
+    for start in boundary:
+        if start in seen:
+            continue
+        chain, stack = [], [start]
+        while stack:
+            e = stack.pop()
+            if e in seen:
+                continue
+            seen.add(e)
+            chain.append(e)
+            for v in e.verts:
+                stack.extend(x for x in v.link_edges if x.is_boundary and x not in seen)
+        loops.append(chain)
+    loops = [l for l in loops if sum((e.verts[0].co.z + e.verts[1].co.z) / 2 for e in l) / len(l) < hem + 0.06]
+    front = min(v.co.y for v in bm.verts if abs(v.co.x) < 0.01 and v.co.z < 1.0)
+    back = max(v.co.y for v in bm.verts if abs(v.co.x) < 0.01 and v.co.z < 1.0)
+    cy = 0.5 * (front + back)
+
+    def ordered(loop):
+        verts = {v for e in loop for v in e.verts}
+        return sorted(verts, key=lambda v: math.atan2(v.co.y - cy, v.co.x))
+
+    rings = []
+    for loop in loops:
+        verts = ordered(loop)
+        radius = sum(math.hypot(v.co.x, v.co.y - cy) for v in verts) / len(verts)
+        rings.append((radius, verts))
+    rings.sort(key=lambda r: -r[0])          # außen zuerst
+    log("Kasack: %d Saumschleifen (Radien %s)" % (len(rings), ", ".join("%.3f" % r for r, _ in rings)))
+    outer, inner = rings[0][1], rings[-1][1]
+    z0 = max(v.co.z for v in outer)
+    zs = []
+    z = z0 - 0.010
+    while z > TUNIC_HEM_Z:
+        zs.append(z)
+        z -= 0.010
+    zs.append(TUNIC_HEM_Z)
+
+    def extend(start, inward):
+        columns = []
+        previous = [math.hypot(v.co.x, v.co.y - cy) for v in start]
+        rows = [start]
+        for z in zs:
+            row = []
+            for k, v in enumerate(start):
+                angle = math.atan2(v.co.y - cy, v.co.x)
+                need = surface_radius(shorts_tree, Vector((0.0, cy, z)), angle, z, 0.40) + 0.012 - inward
+                # sanft aus dem Saum heraus: höchstens 3 mm je Zentimeter nach außen, nie enger (der Stoff fällt gerade)
+                r = max(previous[k], min(need, previous[k] + 0.003))
+                previous[k] = r
+                nv = bm.verts.new((r * math.cos(angle), cy + r * math.sin(angle), z))
+                if deform is not None:
+                    for group, weight in v[deform].items():
+                        nv[deform][group] = weight
+                row.append(nv)
+            rows.append(row)
+        for a, b in zip(rows[:-1], rows[1:]):
+            for k in range(len(a)):
+                k2 = (k + 1) % len(a)
+                try:
+                    bm.faces.new((a[k], a[k2], b[k2], b[k]))
+                except ValueError:
+                    pass
+        return rows[-1]
+
+    bottom_outer = extend(outer, 0.0)
+    bottom_inner = extend(inner, 0.0025) if inner is not outer else None
+    if bottom_inner is not None and len(bottom_inner) == len(bottom_outer):
+        for k in range(len(bottom_outer)):
+            k2 = (k + 1) % len(bottom_outer)
+            try:
+                bm.faces.new((bottom_outer[k], bottom_outer[k2], bottom_inner[k2], bottom_inner[k]))
+            except ValueError:
+                pass
+    elif bottom_inner is not None:
+        edges = [e for e in bm.edges if e.is_boundary and max(v.co.z for v in e.verts) < TUNIC_HEM_Z + 0.001]
+        bmesh.ops.bridge_loops(bm, edges=edges)
+
+    # Brusttasche links (+X = ihre linke Seite), 3 mm vor dem Stoff
+    tree = BVHTree.FromBMesh(bm)
+    pocket = []
+    for i in range(9):
+        row = []
+        for k in range(9):
+            x = 0.045 + 0.11 * k / 8
+            z = 1.085 + 0.13 * i / 8
+            hit = tree.ray_cast(Vector((x, -0.40, z)), Vector((0.0, 1.0, 0.0)), 0.8)
+            src = hit[0]
+            row.append(bm.verts.new((x, (src.y - 0.003) if src is not None else -0.12, z)))
+        pocket.append(row)
+    for i in range(8):
+        for k in range(8):
+            bm.faces.new((pocket[i][k], pocket[i][k + 1], pocket[i + 1][k + 1], pocket[i + 1][k]))
+    for f in bm.faces:
+        f.material_index = 0
+        f.smooth = True
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    pocket_count = 81
+    bm.to_mesh(tunic.data)
+    bm.free()
+    # Die Tasche (die letzten Punkte) bekommt ihre Gewichte später vom Stoff darunter
+    group = tunic.vertex_groups.new(name="_Tasche")
+    count = len(tunic.data.vertices)
+    group.add(list(range(count - pocket_count, count)), 1.0, "REPLACE")
+    while len(tunic.data.materials) > 1:
+        tunic.data.materials.pop()
+    log("Kasack: aus dem T-Shirt verlängert bis %.3f m (Saum war %.3f m), %d Punkte" % (TUNIC_HEM_Z, hem, len(tunic.data.vertices)))
+    return tunic
+
+
+def bind_tunic(tunic, outfit, armature):
+    """Der Kasack trägt die Gewichte des T-Shirts schon; nur die Tasche übernimmt sie vom Stoff darunter."""
+    dt = tunic.modifiers.new("Tasche", "DATA_TRANSFER")
+    dt.object = outfit
+    dt.use_vert_data = True
+    dt.data_types_verts = {"VGROUP_WEIGHTS"}
+    dt.vert_mapping = "POLYINTERP_NEAREST"
+    dt.layers_vgroup_select_src = "ALL"
+    dt.layers_vgroup_select_dst = "NAME"
+    dt.mix_mode = "REPLACE"
+    dt.vertex_group = "_Tasche"
+    activate(tunic)
+    bpy.ops.object.datalayout_transfer(modifier=dt.name)
+    bpy.ops.object.modifier_apply(modifier=dt.name)
+    tunic.vertex_groups.remove(tunic.vertex_groups["_Tasche"])
+    bpy.ops.object.vertex_group_normalize_all(lock_active=False)
+    world = tunic.matrix_world.copy()
+    tunic.parent = armature
+    tunic.matrix_parent_inverse = armature.matrix_world.inverted()
+    tunic.matrix_world = world
+    mod = tunic.modifiers.new("Skelett", "ARMATURE")
+    mod.object = armature
 
 
 def main():
@@ -514,7 +693,12 @@ def main():
     trousers.location.z += SOLE
     apply_transform(trousers)
     simulate(trousers, [legs, clogs, shorts])
-    tuck_under_shirt(trousers, outfit)
+
+    # Kasack: das verlängerte T-Shirt des MetaHuman; der Bund der Hose liegt darunter
+    tunic = build_tunic(outfit)
+    tunic.location.z += SOLE
+    apply_transform(tunic)
+    tuck_under_shirt(trousers, tunic)
     # Die Naht zwischen Bein und Becken glätten: Ein echter Hosenschnitt hat dort keine Kante
     band = trousers.vertex_groups.new(name="_Naht")
     for v in trousers.data.vertices:
@@ -542,17 +726,20 @@ def main():
             poly.use_smooth = True
     # Die Frau steht auf 28 mm Sohle: Hose und Clogs sitzen darauf; das Skelett hebt die Regie im Spiel
     # (Hebamme 28 mm höher) – hier wieder zurück in die Referenzpose des Skeletts
-    for obj in (trousers, clogs):
+    for obj in (trousers, clogs, tunic):
         obj.location.z -= SOLE
         apply_transform(obj)
     for obj in (legs, shorts):
         bpy.data.objects.remove(obj)
     skin(trousers, [outfit], armature, legs_from=body)
     skin(clogs, [body], armature)
+    bind_tunic(tunic, outfit, armature)
     if "preview" in ARGS:
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SRC, "scrubs_preview.blend"))
-        preview([body, outfit, trousers, clogs])
-    for obj in (trousers, clogs):
+        # Der Kasack ersetzt das T-Shirt
+        outfit.hide_render = True
+        preview([body, trousers, clogs, tunic])
+    for obj in (trousers, clogs, tunic):
         bpy.ops.object.select_all(action="DESELECT")
         obj.select_set(True)
         armature.select_set(True)

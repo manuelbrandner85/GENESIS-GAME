@@ -1,6 +1,6 @@
-# GENESIS – übernimmt Kasackhose und Clogs der Hebamme (Tools/Blender/Birth/build_scrub_trousers.py) als Skeletal Meshes
+# GENESIS – übernimmt Kasack, Kasackhose und Clogs der Hebamme (Tools/Blender/Birth/build_scrub_trousers.py) als Skeletal Meshes
 # auf dem Skelett ihres Körpers und legt die Materialien an.
-#   /Game/Genesis/People/Midwife/SK_GEN_MidwifeTrousers, SK_GEN_MidwifeClogs
+#   /Game/Genesis/People/Midwife/SK_GEN_MidwifeTrousers, SK_GEN_MidwifeClogs, SK_GEN_MidwifeTunic
 #   /Game/Genesis/People/Materials/M_GEN_ScrubFabric, M_GEN_ClogPolymer, M_GEN_Hidden
 # Die Meshes enthalten keine MetaHuman-Geometrie (eigene Modelle), nur ihre Hautgewichte für das Skelett.
 #   UnrealEditor-Cmd.exe Genesis.uproject -run=pythonscript -script="Tools/Unreal/Birth/midwife_import_clothes.py" -unattended -nosplash
@@ -10,6 +10,7 @@ import unreal
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 SRC = os.path.join(REPO, "ArtSource", "Generated", "Birth", "Midwife")
 DEST = "/Game/Genesis/People/Midwife"
+PRIVATE = "/Game/Genesis/Characters/Midwife/Scrubs"
 MATS = "/Game/Genesis/People/Materials"
 BODY = "/Game/Genesis/Characters/Midwife/Built/Midwife/Body/SKM_MHC_Midwife_BodyMesh"
 eal = unreal.EditorAssetLibrary
@@ -111,7 +112,7 @@ def hidden():
     eal.save_loaded_asset(m)
 
 
-def import_skeletal(name, skeleton, material):
+def import_skeletal(name, skeleton, material, dest=DEST):
     unreal.SystemLibrary.execute_console_command(None, "Interchange.FeatureFlags.Import.FBX false")
     options = unreal.FbxImportUI()
     options.set_editor_property("import_mesh", True)
@@ -130,14 +131,14 @@ def import_skeletal(name, skeleton, material):
     data.set_editor_property("normal_import_method", unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS)
     task = unreal.AssetImportTask()
     task.set_editor_property("filename", os.path.join(SRC, name + ".fbx"))
-    task.set_editor_property("destination_path", DEST)
+    task.set_editor_property("destination_path", dest)
     task.set_editor_property("destination_name", name)
     task.set_editor_property("replace_existing", True)
     task.set_editor_property("automated", True)
     task.set_editor_property("save", True)
     task.set_editor_property("options", options)
     tools.import_asset_tasks([task])
-    mesh = eal.load_asset(DEST + "/" + name)
+    mesh = eal.load_asset(dest + "/" + name)
     if not mesh:
         unreal.log_error("GENESIS: Import fehlgeschlagen: %s" % name)
         return
@@ -149,7 +150,7 @@ def import_skeletal(name, skeleton, material):
     log("%s: %s, Skelett %s" % (name, mesh.get_path_name(), mesh.skeleton.get_path_name()))
 
 
-for folder in (DEST, MATS):
+for folder in (DEST, MATS, PRIVATE):
     if not eal.does_directory_exist(folder):
         eal.make_directory(folder)
 body = unreal.load_asset(BODY)
@@ -157,3 +158,5 @@ skeleton = body.skeleton
 hidden()
 import_skeletal("SK_GEN_MidwifeTrousers", skeleton, fabric())
 import_skeletal("SK_GEN_MidwifeClogs", skeleton, polymer())
+# Der Kasack ist das verlängerte T-Shirt des MetaHuman (dessen Geometrie) – nicht ins öffentliche Repo, zu den Figuren
+import_skeletal("SK_GEN_MidwifeTunic", skeleton, eal.load_asset(MATS + "/M_GEN_ScrubFabric"), dest=PRIVATE)

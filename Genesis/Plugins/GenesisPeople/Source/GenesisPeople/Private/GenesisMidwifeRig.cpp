@@ -248,15 +248,15 @@ void AGenesisMidwifeRig::Configure()
 
 void AGenesisMidwifeRig::Dress()
 {
-	// Kasackhose und Clogs sind eigene Kleidungsstücke (Tools/Blender/Birth/build_scrub_trousers.py: Schnitt aus ihrem
-	// Körper gemessen, Stoff physikalisch fallen gelassen, an ihr Skelett gebunden). Die Shorts des Standard-Kleidungs-
-	// stücks liegen darunter und werden ausgeblendet – die Hose bedeckt Hüfte und Schritt selbst.
+	// Kasack, Kasackhose und Clogs sind eigene Kleidungsstücke (Tools/Blender/Birth/build_scrub_trousers.py: Schnitt aus
+	// ihrem Körper gemessen, Stoff physikalisch fallen gelassen, an ihr Skelett gebunden). Das Standard-Kleidungsstück des
+	// MetaHuman ist ganz ausgeblendet: Der Kasack ist dessen T-Shirt, verlängert; die Hose bedeckt Hüfte und Schritt.
 	UMaterialInterface* Hidden = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Genesis/People/Materials/M_GEN_Hidden.M_GEN_Hidden"));
 	TArray<USkeletalMeshComponent*> Parts;
 	MidwifeActor->GetComponents<USkeletalMeshComponent>(Parts);
 	for (USkeletalMeshComponent* Part : Parts)
 	{
-		if (!Hidden || Part == Body || Part == Face || Part == Trousers || Part == Clogs || Part == Gloves)
+		if (!Hidden || Part == Body || Part == Face || Part == Trousers || Part == Clogs || Part == Gloves || Part == Tunic)
 		{
 			continue;
 		}
@@ -265,7 +265,7 @@ void AGenesisMidwifeRig::Dress()
 		{
 			const UMaterialInterface* Material = Part->GetMaterial(Slot);
 			const FString Name = (Slots.IsValidIndex(Slot) ? Slots[Slot].ToString() : FString()) + (Material ? Material->GetName() : FString());
-			if (Name.Contains(TEXT("Short")))
+			if (Name.Contains(TEXT("Short")) || Name.Contains(TEXT("Shirt")))
 			{
 				Part->SetMaterial(Slot, Hidden);
 			}
@@ -305,6 +305,18 @@ void AGenesisMidwifeRig::Dress()
 			if (UMaterialInstanceDynamic* Fabric = Cast<UMaterialInstanceDynamic>(Trousers->GetMaterial(0)))
 			{
 				// Kasack und Hose sind ein Satz: dieselbe Farbe
+				Fabric->SetVectorParameterValue(TEXT("Color"), ScrubsColor);
+			}
+		}
+	}
+	if (!Tunic)
+	{
+		Tunic = Attach(TEXT("ScrubTunic"), LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Genesis/Characters/Midwife/Scrubs/SK_GEN_MidwifeTunic.SK_GEN_MidwifeTunic")),
+			LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Genesis/People/Materials/M_GEN_ScrubFabric.M_GEN_ScrubFabric")), 1.0f);
+		if (Tunic)
+		{
+			if (UMaterialInstanceDynamic* Fabric = Cast<UMaterialInstanceDynamic>(Tunic->GetMaterial(0)))
+			{
 				Fabric->SetVectorParameterValue(TEXT("Color"), ScrubsColor);
 			}
 		}

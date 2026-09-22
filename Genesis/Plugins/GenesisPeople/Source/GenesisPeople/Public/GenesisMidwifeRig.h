@@ -189,6 +189,7 @@ private:
 	UPROPERTY(Transient) TObjectPtr<USkeletalMeshComponent> Trousers;
 	UPROPERTY(Transient) TObjectPtr<USkeletalMeshComponent> Gloves;
 	UPROPERTY(Transient) TObjectPtr<USkeletalMeshComponent> Clogs;
+	UPROPERTY(Transient) TObjectPtr<USkeletalMeshComponent> Tunic;
 	void Dress();
 
 	FGenesisMotherState State;

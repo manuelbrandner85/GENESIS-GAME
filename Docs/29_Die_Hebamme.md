@@ -30,8 +30,25 @@ Hülle auf dem Körper – eine glatte Röhre ohne Gewicht, mit einer Stufe am S
 (Arbeitsschutz: geschlossene Ferse, keine Löcher), aus der konvexen Hülle ihres Fußes mit hoher Zehenkappe und 28 mm Sohle.
 Sie steht entsprechend 28 mm höher.
 
-**Handschuhe** bleiben eine Hülle auf der Haut (0,1 mm Nitril folgt der Hand exakt); der Abstand ist jetzt 1,6 mm, bei
-0,7 mm schien an gebeugten Fingern die Haut durch.
+**Kasack** (GENESIS-039 Teil 7): Rundhals-Schlupfkasack bis über die Hüfte, gerader Schnitt, Brusttasche links – in
+Deutschland neben dem V-Ausschnitt die übliche Form. Er ist das T-Shirt des MetaHuman, verlängert: Der eingerollte Saum wird
+abgeschnitten, beide Stofflagen laufen gerade bis über die Hüfte weiter und werden unten zu einem neuen Saum geschlossen;
+jeder neue Punkt trägt die Hautgewichte des Saumpunkts, von dem er ausgeht. Schultern und Ärmel bleiben die des MetaHuman –
+sie hängen an dessen Hilfsknochen (`upperarm_fwd_l`, `upperarm_bicep_l` …) und verformen sich beim Heben der Arme richtig.
+Der Weg dahin (verworfen, jeweils im Bild geprüft):
+- ein eigener Schnitt aus Ringen mit V-Ausschnitt und angesetzten Ärmeln: sah in der Ruhepose gut aus, riss aber auf, sobald
+  sie den Arm hob (Armloch klaffte, Ärmel löste sich von der Schulter);
+- ein angesetzter Schoß unter dem T-Shirt: wirkte wie ein Gürtel.
+Weil der Kasack MetaHuman-Geometrie enthält, liegt er wie die Figuren außerhalb des öffentlichen Repos
+(`/Game/Genesis/Characters/Midwife/Scrubs`).
+
+| Kasack | Arm gehoben | verworfen: eigener Ringschnitt reißt |
+|---|---|---|
+| ![](Media/GENESIS-039_Kasack.png) | ![](Media/GENESIS-039_Kasack_Arm_gehoben.png) | ![](Media/GENESIS-039_Kasack_Ringschnitt_reisst.png) |
+
+**Handschuhe** bleiben eine Hülle auf der Haut (0,1 mm Nitril folgt der Hand exakt), 1,2 mm über der Haut, an den Fingern
+1,8 mm. Die Richtung ist die animierte Normale: Mit der Normale der Referenzpose drehte der Abstand beim Beugen der Finger
+nicht mit, und die Haut schien an den Knöcheln durch.
 
 | Stoffsimulation (Blender) | im Spiel | Saum und Clogs |
 |---|---|---|
@@ -114,5 +131,5 @@ Gemessen im fertigen Spiel, Full HD nativ, RTX 5070, Kreißsaal (`stat unit` / `
 ## Offen
 
 - Das Kind selbst ist nicht zu sehen (es ist die Kamera); von außen hält sie „nichts".
-- Kasack als T-Shirt-Schnitt mit Rundhals statt V-Ausschnitt; die Shorts liegen unsichtbar unter der Hose.
+- Kein V-Ausschnitt (Rundhals ist eine übliche Form); der Stoff des Kasacks hat noch keine feine Webstruktur.
 - Die Hose ist in der Ruhepose simuliert; beim Gehen falten sich die Beine nur über die Hautgewichte (keine Laufzeit-Simulation).

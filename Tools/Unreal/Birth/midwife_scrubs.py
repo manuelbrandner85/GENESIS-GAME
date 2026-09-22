@@ -66,7 +66,10 @@ float hand = step(-Cuff, s) * step(25.0, abs(P.x));
 // durch (die Hautgewichte des Körpers dehnen die Knöchel anders als die Hülle).
 // Am Stulpenrand ist der Handschuh zu einem dünnen Wulst aufgerollt.
 float bead = exp(-pow((s + Cuff - 0.45) / 0.45, 2.0)) * 0.16;
-return normalize(N) * (0.16 + bead) * hand;
+// Der Abstand in cm; die Richtung liefert der Graph (animierte Normale), denn die Normale der Referenzpose dreht sich
+// nicht mit, wenn sich die Finger beugen – dann rutschte die Hülle in den Finger statt auf ihm zu liegen
+float finger = smoothstep(4.0, 7.0, s);
+return (0.12 + 0.06 * finger + bead) * hand;
 """
 
 GLOVE_MASK = r"""
@@ -202,11 +205,20 @@ def build_gloves():
     material = fresh("M_GEN_NitrileGloves")
     pos, nrm = overlay_base(material)
     cuff = scalar(material, -1600, 300, "CuffCm", 6.5)
-    wpo = custom(material, -1200, 0, GLOVE_WPO, [("P", pos), ("N", nrm), ("Cuff", cuff)],
-                 unreal.CustomMaterialOutputType.CMOT_FLOAT3, "Handschuh: über der Haut")
+    amount = custom(material, -1200, 0, GLOVE_WPO, [("P", pos), ("N", nrm), ("Cuff", cuff)],
+                    unreal.CustomMaterialOutputType.CMOT_FLOAT1, "Handschuh: Abstand zur Haut (cm)")
     mask = custom(material, -1200, 500, GLOVE_MASK, [("P", pos), ("Cuff", cuff)],
                   unreal.CustomMaterialOutputType.CMOT_FLOAT1, "Handschuh: Maske")
-    finish_wpo(material, wpo)
+    # Richtung: die animierte Normale (Welt); Länge: cm × Weltmaßstab der Figur (Kreißsaal: 10 Einheiten je cm)
+    normal = node(material, unreal.MaterialExpressionVertexNormalWS, -1200, 250)
+    scale = scalar(material, -1200, 380, "UnitsPerCm", 10.0)
+    length = node(material, unreal.MaterialExpressionMultiply, -900, 150)
+    link(amount, "", length, "A")
+    link(scale, "", length, "B")
+    offset = node(material, unreal.MaterialExpressionMultiply, -600, 200)
+    link(normal, "", offset, "A")
+    link(length, "", offset, "B")
+    mel.connect_material_property(offset, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
     finish_mask(material, mask)
     # Nitril „violet blue": sRGB etwa (70, 100, 200) -> linear. Halbmatt, glänzt an Knöcheln und Fingerkuppen.
     mel.connect_material_property(vector(material, -600, -300, "Color", (0.058, 0.120, 0.56)), "", unreal.MaterialProperty.MP_BASE_COLOR)
