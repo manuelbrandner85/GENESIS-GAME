@@ -510,3 +510,6 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 
 ### GENESIS-045 (Teil 2) – Die Szenen unter dem Maßstab des Covers
 - 2026-09-22: Gemeinsame Farbstimmung auf allen drei Karten (Tiefen kühl, Lichter golden, Sättigung 0,98). Danach gemessen: Der Kreißsaal liegt in der Leuchtdichte genau auf dem Cover (0,28), die Gebärmutter lag bei 0,54 – gleichmäßig hell, ohne dunklen Halt. Behoben nicht mit Farbe, sondern mit Physik: engerer Lichtkegel des Endoskops (16°/38°) und leicht bläuliche Streuung der Uterusflüssigkeit. Jetzt 0,40, das Licht fällt zum Bildrand ab. Offen: der Kreißsaal hat ausgebrannte Deckenfelder (11,9 % der Fläche) und keinen kühlen Anteil. Doc 31 mit allen Messwerten; 141 von 141 Tests.
+
+### GENESIS-045 (Teil 3) – Der Kreißsaal, gedimmt wie bei einer echten Geburt
+- 2026-09-22: Deckenfelder von 720 auf 430 lm gedimmt, warme Wandleuchte von 800 auf 1250 lm, Dämmerlicht am Fenster von 540 auf 700 cd. Erst hatte das Dimmen der Leuchten **keine** Wirkung (Leuchtdichte 0,275 vorher wie nachher): Die hellen Felder sind zugleich selbstleuchtende Flächen, die Lumen als Lichtquelle heranzieht – Material und Leuchte müssen zusammen geändert werden. Danach 0,245 Leuchtdichte, Tiefen von 0,5 % auf 2,0 % (Cover: 3,1 %), das Gesicht der Mutter modelliert statt flach. Docs 31 und 24.

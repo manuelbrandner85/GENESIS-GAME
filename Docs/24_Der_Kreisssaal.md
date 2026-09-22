@@ -100,3 +100,14 @@ selbstleuchtende Flächen mit Leuchtdichte in cd/m², Isolierglas und streuende 
 - **Die Füße** sind vereinfacht (keine Zehen). Sie stehen am Bildrand und sind unscharf.
 - **Die Befruchtung dauert im Spiel inzwischen über eine Minute** – Folge der richtigen Zeitlupe aus
   GENESIS-030, in der der Spieler nichts tun kann. Das ist ein Tempoproblem für den nächsten Block.
+
+## Nachtrag GENESIS-045: gedimmt wie bei einer echten Geburt
+
+Das Licht folgt jetzt der Bildsprache des Covers (Docs/31): Deckenfelder 430 lm je Feld (vorher 720), warme Wandleuchte
+1250 lm bei 2700 K (vorher 800), Dämmerlicht am Fenster 700 cd bei 8000 K (vorher 540). Gemessen sank die Leuchtdichte
+des Bildes von 0,275 auf 0,245, die echten Tiefen stiegen von 0,5 % auf 2,0 % der Fläche.
+
+**Wichtig für jede künftige Änderung am Licht dieses Raums:** Die Leuchten sind doppelt vorhanden – als Rechtecklicht
+*und* als selbstleuchtende Fläche im Material (Lumen nutzt leuchtende Flächen als Lichtquelle). Wer nur die Leuchte
+ändert, ändert am Bild fast nichts. Beide Werte stehen in `Tools/Unreal/Birth/delivery_room.py` (EMISSIVE und die
+rect_light-Aufrufe); `Tools/Unreal/Birth/room_light.py` stimmt beide in der vorhandenen Karte ab.

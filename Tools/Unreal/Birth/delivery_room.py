@@ -62,9 +62,11 @@ SURFACES = {
 
 # Selbstleuchtend: (Farbe, Leuchtdichte in cd/m²). Werte aus Lichtstrom und Fläche gerechnet.
 EMISSIVE = {
-    "Sky": ((0.72, 0.82, 1.10), 320.0),           # Himmel in der Dämmerung, kurz nach Sonnenuntergang
-    "LedPanel": ((1.00, 0.96, 0.90), 640.0),      # 3600 lm auf 20 % gedimmt, 0,36 m²: 720/(π·0,36)
-    "LampWarm": ((1.00, 0.78, 0.52), 7700.0),     # 800 lm auf 660 × 50 mm Diffusor
+    # Leuchtdichte und Lichtstrom der zugehörigen Leuchte müssen zusammenpassen: Lumen zieht die leuchtende
+    # Fläche selbst als Lichtquelle heran. Wer nur die Leuchte dimmt, ändert am Bild fast nichts (gemessen).
+    "Sky": ((0.72, 0.82, 1.10), 415.0),           # Dämmerhimmel, zum Fensterlicht von 700 cd passend
+    "LedPanel": ((1.00, 0.96, 0.90), 382.0),      # 430 lm je Feld auf 0,36 m²: 430/(π·0,36)
+    "LampWarm": ((1.00, 0.78, 0.52), 12000.0),    # 1250 lm auf 660 × 50 mm Diffusor
     "HeaterGlow": ((1.00, 0.28, 0.08), 25.0),     # Heizstab eines Wärmestrahlers: kaum sichtbar dunkelrot
     "ScreenGreen": ((0.35, 1.00, 0.55), 180.0),   # CTG-Bildschirm
     "ScreenAmber": ((1.00, 0.70, 0.30), 180.0),
@@ -355,14 +357,16 @@ def build(actors, import_mesh):
     # Bildschirme das Bild. Mit Tageslicht (~6800 cd) war die Wand gegenüber dem Fenster so hell,
     # dass das CTG darin unterging – gemessen: Bildmedian 0,79.
     rect_light(actors, "Daylight_Window", (WINDOW_CENTER[0], WINDOW_CENTER[1] + 5.0, WINDOW_CENTER[2]), (0.0, 90.0, 0.0),
-               WINDOW_SIZE[0], WINDOW_SIZE[1], 540.0, unreal.LightUnits.CANDELAS, 8000.0, attenuation=9000.0)
+               WINDOW_SIZE[0], WINDOW_SIZE[1], 700.0, unreal.LightUnits.CANDELAS, 8000.0, attenuation=9000.0)
 
-    # Gedimmte LED-Felder (4000 K, je 720 lm)
+    # Gedimmte LED-Felder (4000 K, je 430 lm). Vorher 720 lm: Im Blick des Kindes brannten sie auf 11,9 % der
+    # Bildfläche aus, und der Raum hatte keinen kühlen Anteil mehr. Eine Hebamme dimmt zur Geburt genauso –
+    # die warme Wandleuchte trägt den Raum, das Dämmerlicht am Fenster bleibt die kühle Gegenseite (Docs/31).
     for index, (cx, cy) in enumerate(LED_PANELS):
         rect_light(actors, "CeilingPanel_%d" % index, (cx, cy, CEILING - 8.0), (-90.0, 0.0, 0.0),
-                   590.0, 590.0, 720.0, unreal.LightUnits.LUMENS, 4000.0)
+                   590.0, 590.0, 430.0, unreal.LightUnits.LUMENS, 4000.0)
 
-    # Warme Wandleuchte über dem Kopfende (2700 K, 800 lm), leuchtet in den Raum und an die Decke
+    # Warme Wandleuchte über dem Kopfende (2700 K, 1250 lm), leuchtet in den Raum und an die Decke
     rect_light(actors, "WallLamp_Warm", (-1915.0, 0.0, FLOOR + 1970.0), (10.0, 0.0, 0.0),
-               660.0, 50.0, 800.0, unreal.LightUnits.LUMENS, 2700.0)
+               660.0, 50.0, 1250.0, unreal.LightUnits.LUMENS, 2700.0)
     log("Kreißsaal gesetzt")

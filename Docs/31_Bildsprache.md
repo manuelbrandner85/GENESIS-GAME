@@ -13,7 +13,7 @@ Entscheidung hinterlässt ein Echo.**
 |---|---|
 | Farben und Licht gemessen, Regeln festgeschrieben | **PRODUCTION READY** |
 | Startbildschirm und Titelkarte | **PRODUCTION READY**: im Bild geprüft |
-| Farbstimmung der Szenen | **BETA**: gemeinsame Abstimmung liegt auf allen drei Karten, gemessen |
+| Farbstimmung der Szenen | **BETA**: gemeinsame Abstimmung auf allen drei Karten, Gebärmutter und Kreißsaal nachgemessen |
 
 ## Gemessen, nicht geschätzt
 
@@ -88,6 +88,7 @@ Danach gemessen (Mittelwerte über das ganze Bild):
 | Kreißsaal | 0,28 | 18 % | 0,3 % | 0,5 % | 11,9 % |
 | Gebärmutter (vorher) | **0,54** | 98 % | 0 % | 0 % | 0,9 % |
 | Gebärmutter (jetzt) | **0,40** | 100 % | 0 % | 0 % | 0 % |
+| Kreißsaal (jetzt) | **0,25** | 17 % | 0,2 % | 2,0 % | 11,3 % |
 
 Die Gebärmutter war gleichmäßig hell – es fehlte der dunkle Halt des Covers. Die Abhilfe ist physikalisch, nicht
 farblich: Ein Endoskop leuchtet einen **Kegel** aus (jetzt 16°/38° statt 30°/58°), und die Uterusflüssigkeit streut
@@ -96,9 +97,27 @@ Einnistungsstelle steht im Zentrum, und die Leuchtdichte sinkt auf 0,40. Dass da
 Gewebe im weißen Nahlicht. Der Kreißsaal liegt in der Leuchtdichte genau auf dem Cover, hat aber ausgebrannte
 Deckenfelder (11,9 %) und keinerlei kühlen Anteil – das ist der nächste Schritt.
 
-## Als Nächstes
+## Der Kreißsaal: gedimmt wie bei einer echten Geburt
 
-- Kreißsaal: wärmeres Hauptlicht, kühlere Tiefen, die Deckenfelder nicht mehr ausbrennen lassen.
+Der Raum war gleichmäßig ausgeleuchtet und hatte fast keine Tiefen (0,5 % gegen 3,1 % auf dem Cover). Abhilfe ist die,
+die eine Hebamme auch trifft: **die Deckenfelder herunterdimmen** (720 → 430 lm je Feld) und die **warme Wandleuchte**
+übernehmen lassen (800 → 1250 lm, 2700 K); das Dämmerlicht am Fenster (8000 K) bleibt die kühle Gegenseite und wird
+etwas kräftiger (540 → 700 cd).
+
+**Eigener Fehler dabei, der viel erklärt:** Zuerst habe ich nur die Leuchten gedimmt – das Bild änderte sich **gar
+nicht** (gemessen: Leuchtdichte 0,275 vorher wie nachher). Der Grund: Die hellen Felder sind zugleich *selbstleuchtende
+Flächen*, und Lumen zieht diese Flächen als Lichtquelle heran. Leuchtdichte des Materials und Lichtstrom der Leuchte
+müssen zusammen geändert werden, sonst leuchtet der Raum doppelt gezählt weiter. Danach: 0,245 Leuchtdichte, Tiefen von
+0,5 % auf 2,0 %, das Gesicht der Mutter ist modelliert statt flach.
+
+| vorher | jetzt |
+|---|---|
+| ![](Media/GENESIS-045_Kreisssaal_vorher.png) | ![](Media/GENESIS-045_Kreisssaal_nachher.png) |
+
+Die Deckenfelder brennen weiterhin aus (11,3 % der Fläche) – sie sind Leuchten **im Bild**, und eine Kamera, die in eine
+Leuchte schaut, hat dort immer Weiß. Für das Kind ist genau das die Erfahrung.
+
+## Als Nächstes
 - Kapitelkarten und Abspann in derselben Schrift.
 - Die Karte „Drücke eine beliebige Taste" steht vor dem hellen Zellkranz; der goldene Schriftzug ist dort weniger satt
   als auf Schwarz.
