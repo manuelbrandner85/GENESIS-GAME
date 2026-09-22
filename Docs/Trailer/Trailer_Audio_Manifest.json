@@ -1,0 +1,138 @@
+{
+  "music": [
+    {
+      "asset": "MX_Trailer_Epic_A",
+      "task": "460ed5364c2df126ef7ca7b2107dfb0a",
+      "duration": 178.8,
+      "suno_id": "a71ebbc7-5206-472b-8a84-75b0ab09235d",
+      "style": "epic emotional cinematic movie trailer score, opens with a lone felt piano motif over a deep slow heartbeat pulse, long hush, then legato strings and low brass slowly rise, ticking ostinato, tension builds in waves, huge orchestral climax with wordless choir, taiko and big braams, then a sudden hard stop into silence, ends on one soft piano note, 70 bpm, awe, wonder, fragility of life, original and intimate yet vast",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\MX_Trailer_Epic_A.mp3"
+    },
+    {
+      "asset": "MX_Trailer_Epic_B",
+      "task": "460ed5364c2df126ef7ca7b2107dfb0a",
+      "duration": 184.4,
+      "suno_id": "17883623-0629-4635-ac30-a43f65b885f1",
+      "style": "epic emotional cinematic movie trailer score, opens with a lone felt piano motif over a deep slow heartbeat pulse, long hush, then legato strings and low brass slowly rise, ticking ostinato, tension builds in waves, huge orchestral climax with wordless choir, taiko and big braams, then a sudden hard stop into silence, ends on one soft piano note, 70 bpm, awe, wonder, fragility of life, original and intimate yet vast",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\MX_Trailer_Epic_B.mp3"
+    },
+    {
+      "asset": "MX_Trailer_Hybrid_A",
+      "task": "2f850ffdca664e6892d9c4b3dbf283ce",
+      "duration": 177.72,
+      "suno_id": "cf005d2c-2a42-4ba1-92c3-b75d43e1ebd1",
+      "style": "modern hybrid orchestral trailer music, intimate music-box and piano theme, sub bass heartbeat, slowly swelling strings, rising risers and pulses, emotional build, massive drums and brass at the peak, wordless ethereal female choir, abrupt cut to silence, gentle outro, cinematic, dramatic, hopeful, 72 bpm",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\MX_Trailer_Hybrid_A.mp3"
+    },
+    {
+      "asset": "MX_Trailer_Hybrid_B",
+      "task": "2f850ffdca664e6892d9c4b3dbf283ce",
+      "duration": 168.4,
+      "suno_id": "03550c4b-9a17-40a3-bf7c-1da84ac0cbc8",
+      "style": "modern hybrid orchestral trailer music, intimate music-box and piano theme, sub bass heartbeat, slowly swelling strings, rising risers and pulses, emotional build, massive drums and brass at the peak, wordless ethereal female choir, abrupt cut to silence, gentle outro, cinematic, dramatic, hopeful, 72 bpm",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\MX_Trailer_Hybrid_B.mp3"
+    }
+  ],
+  "vo": [
+    {
+      "asset": "VO_G_03",
+      "take": "A",
+      "text": "[softly] Millionen machen sich auf den Weg.",
+      "voice": "Algieba",
+      "task": "bdf0c1a9eab4fc7153306934790e7fe0",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_03_TAKE_A.wav"
+    },
+    {
+      "asset": "VO_G_03",
+      "take": "B",
+      "text": "[softly] Millionen machen sich auf den Weg.",
+      "voice": "Algieba",
+      "task": "2cd5e20e160ccf1df07505951eb65f5c",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_03_TAKE_B.wav"
+    },
+    {
+      "asset": "VO_G_04",
+      "take": "A",
+      "text": "[quietly, with weight] Nur einer kommt an.",
+      "voice": "Algieba",
+      "task": "fdea6ab857c8144f8be1c71936c5e1d5",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_04_TAKE_A.wav"
+    },
+    {
+      "asset": "VO_G_04",
+      "take": "B",
+      "text": "[quietly, with weight] Nur einer kommt an.",
+      "voice": "Algieba",
+      "task": "e53a531c2d273e14c8f90fb279aeca58",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_04_TAKE_B.wav"
+    },
+    {
+      "asset": "VO_G_05",
+      "take": "A",
+      "text": "[with quiet wonder] Aus einer Zelle werden zwei.",
+      "voice": "Algieba",
+      "task": "bb7b24fd8ffa79f038b345607f6c3a99",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_05_TAKE_A.wav"
+    },
+    {
+      "asset": "VO_G_05",
+      "take": "B",
+      "text": "[with quiet wonder] Aus einer Zelle werden zwei.",
+      "voice": "Algieba",
+      "task": "dcbe74001e603092a260d6665882615d",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_05_TAKE_B.wav"
+    },
+    {
+      "asset": "VO_G_06",
+      "take": "A",
+      "text": "[tenderly] Aus zweien … ein Mensch.",
+      "voice": "Algieba",
+      "task": "05451f2cbda93fd7016ae61234d2f2d9",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_06_TAKE_A.wav"
+    },
+    {
+      "asset": "VO_G_06",
+      "take": "B",
+      "text": "[tenderly] Aus zweien … ein Mensch.",
+      "voice": "Algieba",
+      "task": "8e75555a24398528e54d7b7530924ad4",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_06_TAKE_B.wav"
+    },
+    {
+      "asset": "VO_G_09",
+      "take": "A",
+      "text": "[slowly] Und jede Entscheidung …",
+      "voice": "Algieba",
+      "task": "74373b8cd6028d2836760fb085e78acf",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_09_TAKE_A.wav"
+    },
+    {
+      "asset": "VO_G_09",
+      "take": "B",
+      "text": "[slowly] Und jede Entscheidung …",
+      "voice": "Algieba",
+      "task": "a9e3f74612813e52544fc59d25524524",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_09_TAKE_B.wav"
+    },
+    {
+      "asset": "VO_G_10",
+      "take": "A",
+      "text": "[softly, with gravity] … hinterlässt ein Echo.",
+      "voice": "Algieba",
+      "task": "de3e44ea60d7b036da0ce0b1b2ebec67",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_10_TAKE_A.wav"
+    },
+    {
+      "asset": "VO_G_10",
+      "take": "B",
+      "text": "[softly, with gravity] … hinterlässt ein Echo.",
+      "voice": "Algieba",
+      "task": "5472ff0ac2614526f1b13b15e12fe45e",
+      "file": "ArtSource\\Generated\\Trailer\\Audio\\VO_G_10_TAKE_B.wav"
+    }
+  ],
+  "credits": {
+    "before": 1628.12,
+    "after": 1597.36
+  }
+}

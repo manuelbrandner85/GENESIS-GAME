@@ -1,0 +1,208 @@
+{
+  "shots": {
+    "SH_A02_LiftedUp": {
+      "status": "CONCEPT",
+      "tier": "L",
+      "keyframe_task": "7f4cf8988d3c8db192db063f6cd7fdb0",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_c175e50e6cba3520d5d5938f4a48bc38.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. A young father lifts the 6-year-old boy from the reference image high into the evening sun in a garden, backlit, the boy laughs with arms spread, lens flare from the low sun, 28mm lens, warm late summer light.",
+      "video_task": "bff416d11d980ec0cdb3bb51df7ab61c",
+      "video_credits": 42.0,
+      "resolution": "720p",
+      "duration": 3,
+      "motion_prompt": "The father lifts the boy up into the sunlight, slow upward crane movement, the boy's hair moves in the wind, gentle and joyful."
+    },
+    "SH_A03_EmptyBasket": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "b6901dabae27d1304bd5c5c9f1f49e43",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_1d8bdc69988136cb3c8ec055a2aa6c0d.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. A worn empty dog basket on a wooden hallway floor in grey morning light, a faded red dog collar lies in it, a small child's hand rests on the blanket, quiet grief, 50mm lens, static composition, muted colors."
+    },
+    "SH_A04_RainWindow": {
+      "status": "CONCEPT",
+      "tier": "L",
+      "keyframe_task": "23f1959376f86310611f920fc0568039",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_6d7371c959b1b6e0dd9f07a3ad6acf27.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. The 6-year-old boy from the reference image sits alone at a rain-streaked window, looking out, not crying, only a still gaze, raindrops on the glass in the foreground, cool overcast light, 85mm lens, shallow depth of field.",
+      "video_task": "376cf2efd3bc5522a6b4ee8c3e0132eb",
+      "video_credits": 42.0,
+      "resolution": "720p",
+      "duration": 3,
+      "motion_prompt": "Raindrops run down the glass, the boy breathes slowly and blinks once, very slow push-in."
+    },
+    "SH_A05_RooftopFriends": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "13d6a05827f3bc9d15527d1f4becade8",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_b53ed24334f292762b1fcc0e638fdc37.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. The 16-year-old teenager from the reference image laughs with three friends sitting on a city rooftop at night, city lights bokeh behind them, handheld feeling, 28mm lens, cool night tones with warm skin from a nearby lamp."
+    },
+    "SH_A06_FirstLove": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "2efc5967fd54d248d10ef44660c4b820",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_529e663c3f6c062c5b4482bd7aa9a8d5.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. Extreme close-up of two teenage hands on a wooden park bench at dusk, the fingers almost touch for the first time, warm street lamp light, 100mm macro lens, very shallow depth of field."
+    },
+    "SH_A07_Crossroads": {
+      "status": "CONCEPT",
+      "tier": "L",
+      "keyframe_task": "e2a39ea97860df2e6378d4d40c3a5375",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_d1ac5c06612aa268dc1b1d2a9b7d9535.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. Wide shot: the man from the reference image (same face, grey-green eyes, small scar through the left eyebrow) at about 20 years old stands alone at a fork of two country roads in thick morning fog, seen from behind at a distance, one road slightly brighter, 24mm lens, desaturated cool fog.",
+      "video_task": "6f42b61992fd2c6579c03da3f3e731e0",
+      "video_credits": 42.0,
+      "resolution": "720p",
+      "duration": 3,
+      "motion_prompt": "Fog drifts slowly, the young man hesitates and then takes a first step onto the left road, slow crane up."
+    },
+    "SH_A08_HospitalWait": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "a9b6196ac04e6c8bb0df1174b1853dae",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_f52bbac40c9164b58baeacccc6eeadbb.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. the man from the reference image (same face, grey-green eyes, small scar through the left eyebrow) at about 35 years old waits alone on a plastic chair in a night hospital corridor under cold fluorescent light, elbows on knees, looking at a closed door, 35mm lens."
+    },
+    "SH_A09_WeddingRing": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "42a84484e0aa5bcc8550907f925862c4",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_a149e4b7126f6f19ba9704e36b551922.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. Macro close-up: a simple gold wedding ring is slid onto a woman's finger by a man's hand, soft daylight, 100mm macro, creamy bokeh, emotional and intimate."
+    },
+    "SH_A10_BabyFinger": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "490fffe2455ef3151b3e3a8d5f8db737",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_5d486ab2fd097c7b774a7070a15a8526.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. Macro close-up: a newborn baby's tiny hand grips an adult man's index finger in a softly lit nursery, 100mm macro, warm morning light."
+    },
+    "SH_A11_EraMedieval": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "d71c20ea8866ab3a3ce751ac67c878da",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_bf3a074b3d9d18d83466881f5e76838e.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. A medieval village in the fog at dusk, a figure in a wool cloak carries a burning torch along a muddy path between thatched houses, smoke, 35mm lens, painterly realistic, historically accurate."
+    },
+    "SH_A12_EraFuture": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "a402a339073beec1c486f5c85fc6dd4a",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_97bd5fa76f6648b2aa7a2e4c5b64fb14.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. A believable future city at dawn seen from a high balcony, elegant towers with vertical gardens, soft haze, calm, not neon, not sci-fi kitsch, 35mm lens, realistic architecture photography."
+    },
+    "SH_A13_OldBench": {
+      "status": "CONCEPT",
+      "tier": "H",
+      "keyframe_task": "5483c6aad91976a4d90de03243457947",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_a0d5d83b2b301c36a8ef7d37cd20c966.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. The 78-year-old man from the reference image sits alone on a weathered wooden bench on a cliff above the sea in late afternoon light, wind in his thin grey hair and coat, slightly bent posture, 50mm lens, calm, melancholic, beautiful.",
+      "video_task": "a4c213813c856d677c69554d7a0d4525",
+      "video_credits": 72.0,
+      "resolution": "1080p",
+      "duration": 4,
+      "motion_prompt": "Wind moves his hair and coat, the sea glitters, he breathes slowly, very slow dolly-in, long contemplative shot."
+    },
+    "SH_A14_OldPhoto": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "7ffd804543ddaf9c4da4c2563f1e4925",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_9660b7e2d41674d094683da9b3f77d9f.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. Close-up of wrinkled old hands holding a faded old photograph of the 6-year-old boy from the reference image laughing with a golden dog in tall grass, wind at the edge of the photo, late afternoon light, 85mm lens."
+    },
+    "SH_A15_LastBreath": {
+      "status": "CONCEPT",
+      "tier": "H",
+      "keyframe_task": "15740d639ce3446c28f9a5cbd9be44a1",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_74550ed09ac23a0385d04cd0474c5aef.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. Extreme close-up of the eye of the very old man from the reference image lying in bed, soft window light, a tiny reflection of family members in the pupil, wet eye, fine wrinkles, 100mm macro, peaceful.",
+      "video_task": "d2d99411716609fba63a4a40cce94926",
+      "video_credits": 72.0,
+      "resolution": "1080p",
+      "duration": 4,
+      "motion_prompt": "The old eye slowly closes for the last time, one final breath, total stillness, static macro camera."
+    },
+    "SH_A16_Ghost": {
+      "status": "CONCEPT",
+      "tier": "L",
+      "keyframe_task": "eb386afdef171c0712d559fabc47fc01",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_cab20829784bac728480d459c14eb352.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. A quiet bedroom at dusk, the old man from the reference image lies still in bed surrounded by his grieving family, and a faint translucent luminous version of himself stands beside the bed looking at them, desaturated colors, soft light, not horror, 28mm lens.",
+      "video_task": "2fa2eb4c7f84e8dc7b68469da8ab30cb",
+      "video_credits": 42.0,
+      "resolution": "720p",
+      "duration": 3,
+      "motion_prompt": "The translucent figure slowly raises a hand towards his daughter, the family moves in slow motion, camera slowly orbits."
+    },
+    "SH_A17_Afterlife": {
+      "status": "CONCEPT",
+      "tier": "H",
+      "keyframe_task": "797ca6a0c072cb6d8db50d0a5e5aea60",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_e7b76ac313aab0ca6ee79a96d1a56412.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. An immense cosmic landscape beyond life: glowing paths of golden light lead across a dark reflective plain towards an infinite library of light rising into a gold, blue and violet nebula sky, tiny luminous human souls walk the paths, religiously neutral, awe-inspiring, ultra wide 24mm.",
+      "video_task": "5226195ac95b54ba39f8112cc5151a46",
+      "video_credits": 72.0,
+      "resolution": "1080p",
+      "duration": 4,
+      "motion_prompt": "Slow majestic crane up revealing the endless landscape, the light paths shimmer, souls drift forward, nebula clouds move slowly."
+    },
+    "SH_A18_DogReturns": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "85fdf01bbe7d7cccb0279eb07e22f68a",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_d9316675b699c1259832c9f971621a37.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. A scruffy golden mixed-breed dog runs joyfully out of warm white light along a glowing golden path towards the camera, backlit halo, dreamlike but photorealistic, 50mm lens."
+    },
+    "SH_A19_NewBaby": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "c143f670d2d41614b7b7c2324137eea2",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_0b298719e75f2c75aa9c54f0dcd1eafb.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. A newborn baby in a clay-walled room lit by a single oil lamp, a young mother of another culture gently lays her hand on the baby's forehead, warm flickering light, 85mm lens, timeless, respectful."
+    },
+    "SH_A20_HandsPlanet": {
+      "status": "CONCEPT",
+      "tier": "S",
+      "keyframe_task": "39cf6ee5233ea387513c4c79e9601741",
+      "keyframe_url": "https://tempfile.aiquickdraw.com/workers/images/image_ac5ea9aecdf7834712ce16dd3e05a8d5.png",
+      "keyframe_credits": 18.0,
+      "image_prompt": "Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. Two luminous, softly glowing human hands made of warm light hold a small newborn planet between them in deep space, the planet shows oceans, swirling clouds and a thin blue atmosphere, stars and a faint golden thread around it, photorealistic, awe."
+    }
+  },
+  "credits_log": [
+    {
+      "before": 1489.36,
+      "after": 1429.36,
+      "time": "2026-09-22 01:52"
+    },
+    {
+      "before": 1429.36,
+      "after": 1105.36,
+      "time": "2026-09-22 02:06"
+    },
+    {
+      "before": 1100.37,
+      "after": 758.37,
+      "time": "2026-09-22 02:16"
+    }
+  ]
+}

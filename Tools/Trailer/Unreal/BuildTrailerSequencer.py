@@ -248,7 +248,14 @@ def main():
     index = 0
     for seq_info in DATA["sequences"]:
         shots = [s for s in DATA["shots"] if s["seq"] == seq_info["id"]]
-        subs[seq_info["id"]] = build_sub_sequence(seq_info, shots, index)
+        existing = SUB_DIR + "/" + seq_info["id"]
+        in_production = any(s["status"] not in ("PLANNED", "ANIMATIC") for s in shots)
+        if in_production and eal.does_asset_exist(existing):
+            # Produktionssequenzen (eigene Skripte, z. B. BuildOriginSet.py) nicht mit Blocking ueberschreiben
+            subs[seq_info["id"]] = eal.load_asset(existing)
+            unreal.log("GENESIS_TRAILER {} in Produktion - unveraendert uebernommen".format(seq_info["id"]))
+        else:
+            subs[seq_info["id"]] = build_sub_sequence(seq_info, shots, index)
         index += len(shots)
     master = build_master(subs, sounds)
 
@@ -259,7 +266,7 @@ def main():
     cameras = 0
     for seq_info in DATA["sequences"]:
         sub = eal.load_asset(SUB_DIR + "/" + seq_info["id"])
-        cameras += len(sub.get_spawnables())
+        cameras += len([b for b in sub.get_spawnables() if str(b.get_display_name()).startswith("SH_")])
         by_name = {str(b.get_display_name()): b for b in sub.get_spawnables()}   # Reihenfolge ist nicht garantiert
         for shot in [s for s in DATA["shots"] if s["seq"] == seq_info["id"]]:
             b = by_name.get(shot["id"])

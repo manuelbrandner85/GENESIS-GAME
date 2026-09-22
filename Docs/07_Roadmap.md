@@ -147,7 +147,8 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - 2026-09-17: Pre-Production nach Trailer-Briefing: Asset-Analyse, Lückenliste, 120-s-Timeline mit 65 Shots (`Docs/Trailer/ShotList.json` als einzige Datenquelle, Tabelle `Docs/Trailer/01_ShotList.md`), Voice-over-Timing, Musikdramaturgie. Doku `Docs/Trailer/00_Trailer_Produktion.md`.
 - 2026-09-17: Soul Theme (eigene Komposition, 60 BPM, D-Moll → D-Dur) mit Unreal-Harmonix-Instrumenten; Stimmen über kie.ai (Gemini 3.1 Flash TTS, 2 Takes je Zeile; ElevenLabs über kie.ai war gestört); prozedurales Sound Design; Mix mit gemessener absoluter Stille bei 27,5 und 88–90 s.
 - 2026-09-17: **Animatic v1** (Blender-VSE, 1080p, 120 s, mit Ton) und **Unreal-Sequencer**: `L_Trailer_Stage`, `LS_GENESIS_REVEAL_TRAILER` (24 fps, 2880 Frames), 12 Sub-Sequences, 65 CineCameras mit Brennweite und Bewegungs-Blocking, 3 Audio-Tracks, Fade-Track, 65 Marker. Zurückgelesen und geprüft; nur API-Veraltet-Warnungen.
-- **Status: ANIMATIC.** Noch kein finales Bildmaterial, keine MetaHumans, Stimmen und Sound als PLACEHOLDER.
+- 2026-09-22: **Reveal Trailer v2 (In-Engine + Konzept), 120 s:** Auftrag des Game Directors „kinoreif, dramatisch, vom Spermium bis zum Erschaffen der Welten“. Akt 1 aus echten Aufnahmen der gebauten Spielfassung (Rennen, Befruchtung, erste Woche, Geburt, die Mutter lippensynchron), Lebensphasen als gekennzeichnete KI-Konzeptbilder (kie.ai, eine Hauptfigur über alle Alter), Portal/Galaxie/Welten-Erschaffung/Titel in Blender, Musik Suno, Erzähler Gemini „Algieba“ wie im Prolog. Doku `Docs/Trailer/02_Trailer_v2.md`. ≈ 870 kie.ai-Credits.
+- **Status: v2 GERENDERT** (Abnahme durch den Game Director offen). Die spielbaren Szenen sind echt, die Lebensphasen Konzept.
 
 ### GENESIS-010 – Entstehung: Mikrowelt
 - 2026-09-20: Auf Wunsch des Game Directors vorgezogen (vorher GENESIS-017), damit endlich etwas Sichtbares entsteht. Audio-Blöcke rücken nach hinten.
