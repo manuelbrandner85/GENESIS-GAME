@@ -5,6 +5,7 @@
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Engine/Font.h"
+#include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GenesisEarlyLifeSubsystem.h"
 #include "GenesisEarlyLifeTypes.h"
@@ -18,11 +19,145 @@
 #include "GenesisEmbryoLogic.h"
 #include "GenesisSliceLogic.h"
 #include "CanvasItem.h"
+#include "Engine/Font.h"
+#include "Engine/FontFace.h"
+#include "UObject/ConstructorHelpers.h"
 #include "EngineUtils.h"
 
 AGenesisSliceHud::AGenesisSliceHud()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Die Schrift des Covers: Cinzel, eine Kapitälchen-Antiqua nach römischen Inschriften (SIL Open Font License)
+	static ConstructorHelpers::FObjectFinder<UFontFace> Cinzel(TEXT("/Game/Genesis/UI/Fonts/FF_GEN_Cinzel.FF_GEN_Cinzel"));
+	TitleFontFace = Cinzel.Succeeded() ? Cinzel.Object : nullptr;
+}
+
+UFont* AGenesisSliceHud::GetTitleFont()
+{
+	// Ein Font-Asset lässt sich im Editor-Skript nicht anlegen (die Daten sind dort nicht zugänglich),
+	// deshalb entsteht die Laufzeitschrift hier aus dem Schriftschnitt. Slate rastert sie in jeder Größe frisch.
+	if (!TitleFont && TitleFontFace)
+	{
+		TitleFont = NewObject<UFont>(this);
+		TitleFont->FontCacheType = EFontCacheType::Runtime;
+		FTypefaceEntry& Entry = TitleFont->CompositeFont.DefaultTypeface.Fonts.AddDefaulted_GetRef();
+		Entry.Name = TEXT("Default");
+		Entry.Font = FFontData(TitleFontFace);
+	}
+	return TitleFont;
+}
+
+UTexture2D* AGenesisSliceHud::GetVeilGradient()
+{
+	if (VeilGradient)
+	{
+		return VeilGradient;
+	}
+	const int32 Height = 256;
+	VeilGradient = UTexture2D::CreateTransient(1, Height, PF_B8G8R8A8);
+	if (!VeilGradient)
+	{
+		return nullptr;
+	}
+	VeilGradient->SRGB = false;
+	VeilGradient->AddressY = TA_Clamp;
+	VeilGradient->Filter = TF_Bilinear;
+	FTexture2DMipMap& Mip = VeilGradient->GetPlatformData()->Mips[0];
+	uint8* Pixels = static_cast<uint8*>(Mip.BulkData.Lock(LOCK_READ_WRITE));
+	for (int32 Row = 0; Row < Height; ++Row)
+	{
+		// Oben voll, nach unten quadratisch auslaufend – so bleibt keine Kante stehen
+		const float T = static_cast<float>(Row) / (Height - 1);
+		const uint8 Alpha = static_cast<uint8>(FMath::Clamp(FMath::Square(1.0f - T) * 255.0f, 0.0f, 255.0f));
+		Pixels[Row * 4 + 0] = 255;
+		Pixels[Row * 4 + 1] = 255;
+		Pixels[Row * 4 + 2] = 255;
+		Pixels[Row * 4 + 3] = Alpha;
+	}
+	Mip.BulkData.Unlock();
+	VeilGradient->UpdateResource();
+	return VeilGradient;
+}
+
+void AGenesisSliceHud::DrawVeil(float FlatAlpha, float GradientAlpha)
+{
+	if (!Canvas)
+	{
+		return;
+	}
+	const FLinearColor Deep(0.006f, 0.008f, 0.013f, 1.0f);   // tiefes Blauschwarz wie der Raum auf dem Cover
+	if (FlatAlpha > 0.001f)
+	{
+		FCanvasTileItem Flat(FVector2D::ZeroVector, FVector2D(Canvas->SizeX, Canvas->SizeY),
+			FLinearColor(Deep.R, Deep.G, Deep.B, FlatAlpha));
+		Flat.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Flat);
+	}
+	if (GradientAlpha > 0.001f)
+	{
+		if (UTexture2D* Gradient = GetVeilGradient())
+		{
+			if (FTextureResource* Resource = Gradient->GetResource())
+			{
+				FCanvasTileItem Band(FVector2D::ZeroVector, Resource, FVector2D(Canvas->SizeX, 0.58f * Canvas->SizeY),
+					FVector2D(0.0f, 0.0f), FVector2D(1.0f, 1.0f), FLinearColor(0.004f, 0.006f, 0.010f, GradientAlpha));
+				Band.BlendMode = SE_BLEND_Translucent;
+				Canvas->DrawItem(Band);
+			}
+		}
+	}
+}
+
+float AGenesisSliceHud::DrawCoverTitle(const FString& Text, float Y, float Scale, const FLinearColor& Colour, float Tracking, float Glow)
+{
+	UFont* Font = GetTitleFont();
+	if (!Canvas || !Font || Text.IsEmpty())
+	{
+		return 0.0f;
+	}
+
+	// Zeichen für Zeichen, damit zwischen den Buchstaben Luft steht – wie auf dem Cover
+	TArray<float> Widths;
+	Widths.Reserve(Text.Len());
+	float Total = 0.0f;
+	float Height = 0.0f;
+	for (int32 Index = 0; Index < Text.Len(); ++Index)
+	{
+		float Width = 0.0f;
+		float Line = 0.0f;
+		Canvas->TextSize(Font, FString::Chr(Text[Index]), Width, Line, Scale, Scale);
+		Widths.Add(Width);
+		Total += Width + (Index + 1 < Text.Len() ? Tracking * Scale : 0.0f);
+		Height = FMath::Max(Height, Line);
+	}
+
+	auto Pass = [&](float OffsetX, float OffsetY, const FLinearColor& PassColour)
+	{
+		float X = 0.5f * Canvas->SizeX - 0.5f * Total + OffsetX;
+		for (int32 Index = 0; Index < Text.Len(); ++Index)
+		{
+			FCanvasTextItem Item(FVector2D(X, Y + OffsetY), FText::FromString(FString::Chr(Text[Index])), Font, PassColour);
+			Item.Scale = FVector2D(Scale, Scale);
+			Canvas->DrawItem(Item);
+			X += Widths[Index] + Tracking * Scale;
+		}
+	};
+
+	// Erst ein Schein (mehrere versetzte, sehr schwache Durchgänge), dann ein dunkler Grund, dann die Schrift.
+	// Auf dem Cover leuchtet der Schriftzug von innen; ein harter Schlagschatten würde ihn aufkleben.
+	if (Glow > 0.0f)
+	{
+		const float Radius = 2.5f * Scale;
+		for (int32 Step = 0; Step < 8; ++Step)
+		{
+			const float Angle = 2.0f * PI * Step / 8.0f;
+			Pass(Radius * FMath::Cos(Angle), Radius * FMath::Sin(Angle), FLinearColor(Colour.R, Colour.G * 0.8f, Colour.B * 0.5f, Glow));
+		}
+	}
+	Pass(1.5f * Scale, 1.5f * Scale, FLinearColor(0.02f, 0.015f, 0.01f, 0.55f));
+	Pass(0.0f, 0.0f, Colour);
+	return Total;
 }
 
 void AGenesisSliceHud::DrawLine(const FString& Text, float LineIndex, float Alpha)
@@ -112,7 +247,7 @@ void AGenesisSliceHud::DrawMenuRow(const FString& Left, const FString& Right, fl
 	if (bSelected)
 	{
 		// Ein schmaler Strich links statt eines Balkens: Er zeigt die Auswahl, ohne das Bild zuzudecken
-		Canvas->K2_DrawBox(FVector2D(ColumnLeft - 20.0f * Scale, Y + 2.0f * Scale), FVector2D(4.0f * Scale, 18.0f * Scale), 4.0f * Scale, FLinearColor(0.95f, 0.75f, 0.62f, 0.95f));
+		Canvas->K2_DrawBox(FVector2D(ColumnLeft - 20.0f * Scale, Y + 2.0f * Scale), FVector2D(4.0f * Scale, 18.0f * Scale), 4.0f * Scale, FLinearColor(0.79f, 0.57f, 0.26f, 0.95f));
 	}
 
 	FCanvasTextItem LeftItem(FVector2D(ColumnLeft, Y), FText::FromString(Left), Font, Colour);
@@ -239,8 +374,13 @@ bool AGenesisSliceHud::DrawBoot()
 		DrawBlack(1.0f);
 		if (Lines.Num() >= 2)
 		{
-			DrawCentered(Lines[0], 0.38f * Canvas->SizeY, Scale * 4.2f, CardAlpha, true);
-			DrawCentered(Lines[1], 0.38f * Canvas->SizeY + 124.0f * Scale, Scale * 1.6f, CardAlpha * 0.85f, false);
+			// Wie auf dem Cover: Gold, weiter Buchstabenabstand, eine feine Linie, Untertitel in Kapitälchen
+			const float Width = DrawCoverTitle(Lines[0].ToUpper(), 0.36f * Canvas->SizeY, Scale * 4.2f,
+				FLinearColor(0.82f, 0.60f, 0.28f, CardAlpha), 22.0f, 0.07f * CardAlpha);
+			const float LineY = 0.36f * Canvas->SizeY + 138.0f * Scale;
+			Canvas->K2_DrawBox(FVector2D(0.5f * Canvas->SizeX - 0.46f * Width, LineY - 18.0f * Scale),
+				FVector2D(0.92f * Width, FMath::Max(1.0f, 1.2f * Scale)), 1.0f, FLinearColor(0.70f, 0.55f, 0.32f, 0.55f * CardAlpha));
+			DrawCoverTitle(Lines[1].ToUpper(), LineY, Scale * 1.15f, FLinearColor(0.84f, 0.78f, 0.70f, 0.9f * CardAlpha), 11.0f, 0.0f);
 		}
 		SkipPrompt();
 		return true;
@@ -249,16 +389,19 @@ bool AGenesisSliceHud::DrawBoot()
 	case EGenesisBootStage::Taste:
 	{
 		// Der Eileiter hinter dem Titel ist das Bild des Startbildschirms – nur leicht abgedunkelt
-		FCanvasTileItem Veil(FVector2D::ZeroVector, FVector2D(Canvas->SizeX, Canvas->SizeY), FLinearColor(0.02f, 0.01f, 0.01f, 0.45f));
-		Veil.BlendMode = SE_BLEND_Translucent;
-		Canvas->DrawItem(Veil);
+		// Derselbe Schleier wie im Menü: Über dem hellen Zellkranz stand der goldene Schriftzug sonst kraftlos da
+		DrawVeil(0.62f, 0.6f);
 
 		const TArray<FString> Title = GenesisBootFlow::CardLines(EGenesisBootStage::Titel);
 		const float TitleAlpha = FMath::Clamp(Boot.StageSeconds / 1.5f, 0.0f, 1.0f);
 		if (Title.Num() >= 2)
 		{
-			DrawCentered(Title[0], 0.22f * Canvas->SizeY, Scale * 3.4f, TitleAlpha, true);
-			DrawCentered(Title[1], 0.22f * Canvas->SizeY + 104.0f * Scale, Scale * 1.45f, TitleAlpha * 0.85f, false);
+			const float Width = DrawCoverTitle(Title[0].ToUpper(), 0.22f * Canvas->SizeY, Scale * 3.4f,
+				FLinearColor(0.82f, 0.60f, 0.28f, TitleAlpha), 20.0f, 0.06f * TitleAlpha);
+			const float LineY = 0.22f * Canvas->SizeY + 116.0f * Scale;
+			Canvas->K2_DrawBox(FVector2D(0.5f * Canvas->SizeX - 0.46f * Width, LineY - 16.0f * Scale),
+				FVector2D(0.92f * Width, FMath::Max(1.0f, 1.0f * Scale)), 1.0f, FLinearColor(0.70f, 0.55f, 0.32f, 0.5f * TitleAlpha));
+			DrawCoverTitle(Title[1].ToUpper(), LineY, Scale * 1.0f, FLinearColor(0.84f, 0.78f, 0.70f, 0.85f * TitleAlpha), 10.0f, 0.0f);
 		}
 		// Ein ruhiges Atmen statt eines Blinkens: 4 Sekunden je Zyklus, nie ganz weg
 		const float Breath = 0.55f + 0.45f * FMath::Sin(Now * 2.0f * PI / 4.0f);
@@ -307,9 +450,9 @@ bool AGenesisSliceHud::DrawMenu()
 
 	// Die Szene bleibt sichtbar, sie wird nur gedämpft: Das Bild hinter dem Menü ist das Spiel,
 	// nicht ein Hintergrundbild. Deshalb ein Schleier statt einer Fläche.
-	FCanvasTileItem Veil(FVector2D::ZeroVector, FVector2D(Canvas->SizeX, Canvas->SizeY), FLinearColor(0.015f, 0.008f, 0.008f, 0.86f));
-	Veil.BlendMode = SE_BLEND_Translucent;
-	Canvas->DrawItem(Veil);
+	// Nach oben hin dunkler, damit die Schrift trägt. Als Verlauf, nicht als Fläche: Eine Fläche hinterließ eine
+	// sichtbare Kante quer durchs Bild, einzelne Streifen feine Linien (beides gesehen).
+	DrawVeil(0.72f, 0.62f);
 
 	// Die Schriftgröße folgt der Einstellung für Barrierefreiheit **und** der Bildhöhe
 	const float Scale = (Canvas->SizeY / 900.0f) * (Frontend->GetSettings().TextScalePercent / 100.0f);
@@ -318,10 +461,23 @@ bool AGenesisSliceHud::DrawMenu()
 
 	if (Frontend->GetPage() == EGenesisMenuPage::Haupt)
 	{
-		DrawMenuTitle(TEXT("GENESIS"), Y, Scale * 3.4f);
-		Y += 96.0f * Scale;
-		DrawMenuTitle(TEXT("Der Kreislauf des Lebens"), Y, Scale * 1.1f);
-		Y += 110.0f * Scale;
+		// Der Satz des Covers steht oben, weit gesetzt und zurückhaltend
+		DrawCoverTitle(TEXT("JEDE ENTSCHEIDUNG HINTERLÄSST EIN ECHO"), 0.052f * Canvas->SizeY, Scale * 0.86f,
+			FLinearColor(0.80f, 0.72f, 0.60f, 0.95f), 7.0f, 0.0f);
+
+		// GENESIS in Gold (gemessen am Cover), mit Schein
+		const float TitleWidth = DrawCoverTitle(TEXT("GENESIS"), Y, Scale * 3.8f, FLinearColor(0.82f, 0.60f, 0.28f, 1.0f), 20.0f, 0.07f);
+		Y += 132.0f * Scale;
+
+		// Eine feine Linie darunter, wie auf dem Cover, und der Untertitel in Kapitälchen
+		if (TitleWidth > 0.0f)
+		{
+			const float LineWidth = TitleWidth * 0.92f;
+			Canvas->K2_DrawBox(FVector2D(0.5f * Canvas->SizeX - 0.5f * LineWidth, Y - 18.0f * Scale),
+				FVector2D(LineWidth, FMath::Max(1.0f, 1.2f * Scale)), 1.0f, FLinearColor(0.70f, 0.55f, 0.32f, 0.55f));
+		}
+		DrawCoverTitle(TEXT("DER KREISLAUF DES LEBENS"), Y, Scale * 1.05f, FLinearColor(0.84f, 0.78f, 0.70f, 0.92f), 10.0f, 0.0f);
+		Y += 130.0f * Scale;
 
 		const TArray<FString> Entries = Frontend->GetMainEntries();
 		for (int32 Index = 0; Index < Entries.Num(); ++Index)
@@ -333,7 +489,7 @@ bool AGenesisSliceHud::DrawMenu()
 	else
 	{
 		Y = 0.06f * Canvas->SizeY;
-		DrawMenuTitle(TEXT("Einstellungen"), Y, Scale * 2.0f);
+		DrawCoverTitle(TEXT("EINSTELLUNGEN"), Y, Scale * 1.4f, FLinearColor(0.79f, 0.57f, 0.26f, 0.95f), 12.0f, 0.0f);
 		Y += 64.0f * Scale;
 
 		const TArray<FGenesisSettingEntry> Entries = Frontend->GetSettingEntries();

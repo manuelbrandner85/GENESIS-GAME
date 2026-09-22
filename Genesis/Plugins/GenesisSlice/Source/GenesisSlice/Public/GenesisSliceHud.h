@@ -24,6 +24,17 @@ public:
 	virtual void DrawHUD() override;
 
 	/** Wie lange ein Hinweis stehen bleibt, nachdem der Spieler ihn zum ersten Mal befolgt hat (s). */
+	/** Schriftschnitt der Titelschrift (Cinzel). Das Font-Asset dazu wird zur Laufzeit gebaut. */
+	UPROPERTY(EditDefaultsOnly, Category = "Genesis|Hud")
+	TObjectPtr<class UFontFace> TitleFontFace;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UFont> TitleFont;
+
+	/** Ein Verlauf von oben (dunkel) nach unten (klar) für den Schleier hinter der Schrift. */
+	UPROPERTY(Transient)
+	TObjectPtr<class UTexture2D> VeilGradient;
+
 	UPROPERTY(EditAnywhere, Category = "Genesis|Hud")
 	float FadeAfterUseSeconds = 4.0f;
 
@@ -38,6 +49,21 @@ private:
 	/** Startbildschirm und Pausenmenü. Gibt zurück, ob gezeichnet wurde. */
 	bool DrawMenu();
 	void DrawMenuTitle(const FString& Text, float Y, float Scale);
+
+	/**
+	 * Titelzeile in der Schrift des Covers: Großbuchstaben mit weitem Abstand, Gold, ein weicher Schein
+	 * (Docs/31_Bildsprache.md). Liefert die Breite des Schriftzugs zurück – die feine Linie darunter richtet sich danach.
+	 */
+	float DrawCoverTitle(const FString& Text, float Y, float Scale, const FLinearColor& Colour, float Tracking, float Glow);
+
+	/** Die Titelschrift (Cinzel, SIL OFL) als Laufzeitschrift – das Font-Asset entsteht erst hier. */
+	UFont* GetTitleFont();
+
+	/** Legt den Verlauf einmal an (256 Stufen); mit einzelnen Streifen blieben feine Linien im Bild stehen. */
+	UTexture2D* GetVeilGradient();
+
+	/** Der Schleier über der laufenden Szene: gleichmäßig plus ein Verlauf, der nach oben dunkler wird. */
+	void DrawVeil(float FlatAlpha, float GradientAlpha);
 	void DrawMenuHint(const FString& Text, float Y, float Scale, float Alpha);
 	void DrawMenuRow(const FString& Left, const FString& Right, float Y, bool bSelected, float Scale, bool bSection = false);
 

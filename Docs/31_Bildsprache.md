@@ -12,7 +12,8 @@ Entscheidung hinterlässt ein Echo.**
 | Bereich | Stand |
 |---|---|
 | Farben und Licht gemessen, Regeln festgeschrieben | **PRODUCTION READY** |
-| Startbildschirm, Farbstimmung der Szenen | **PLAN** (GENESIS-041) |
+| Startbildschirm und Titelkarte | **PRODUCTION READY**: im Bild geprüft |
+| Farbstimmung der Szenen | **IN ARBEIT** |
 
 ## Gemessen, nicht geschätzt
 
@@ -51,13 +52,30 @@ dunkel, aber nie schwarz zugelaufen; die Spitzlichter brennen nicht aus.
 7. **Kein Effektfeuerwerk.** Bloom nur als Schein um echte Lichter, keine Lens Flares, keine chromatische Aberration,
    kaum Vignette. Was auf dem Cover leuchtet, leuchtet, weil dort etwas hell ist.
 
-## Was daraus folgt (GENESIS-041)
+## Umgesetzt: Titelkarte und Startbildschirm
 
-- **Startbildschirm:** Titel in Gold mit weitem Buchstabenabstand, darunter eine feine Linie und
-  „DER KREISLAUF DES LEBENS", dazu der Satz „Jede Entscheidung hinterlässt ein Echo." Dahinter läuft weiter die lebende
-  Szene, aber abgedunkelt und kühl, damit die Schrift trägt.
+Die Schrift ist **Cinzel** (SIL Open Font License, darf mitgeliefert werden) – eine Antiqua nach römischen Inschriften,
+dieselbe Anmutung wie auf dem Cover. Sie liegt als Quelle unter `ArtSource/Fonts/Cinzel` samt Lizenz.
+
+| Titelkarte (vor dem Menü) | Startbildschirm |
+|---|---|
+| ![](Media/GENESIS-045_Titelkarte.png) | ![](Media/GENESIS-045_Startbildschirm.png) |
+
+- **Titel:** Großbuchstaben, weiter Abstand (20 Einheiten), Gold `#C6A28F`–`#E9E2DD`, ein weicher Schein aus acht
+  versetzten, sehr schwachen Durchgängen statt eines Schlagschattens; darunter eine feine goldene Linie und der
+  Untertitel in Kapitälchen.
+- **Der Satz des Covers** steht über dem Titel: „Jede Entscheidung hinterlässt ein Echo."
+- **Der Schleier** über der laufenden Szene ist tiefes Blauschwarz (`#0B0A0C`) statt des früheren Brauns und läuft als
+  Verlauf nach unten aus – oben trägt er die Schrift, unten bleibt das Spiel sichtbar. Eine einzelne dunkle Fläche
+  hinterließ eine sichtbare Kante, 32 Streifen feine Linien; beides im Bild gesehen, deshalb ein echter Verlauf.
+- **Die Auswahl** im Menü ist ein goldener Strich.
+
+Eigene Fehler dabei: Der Import der Schrift bricht headless ab (die Oberfläche fehlt) – er läuft jetzt im vollen Editor.
+Ein Font-Asset lässt sich aus einem Skript gar nicht bauen; das HUD baut die Laufzeitschrift selbst aus dem
+Schriftschnitt. Und weil kein Asset auf sie verweist, steht ihr Ordner in der Cook-Liste (Test `Genesis.Frontend.TitleFont`).
+
+## Als Nächstes
+
 - **Farbstimmung der Szenen:** ein gemeinsamer, zurückhaltender Look (kühle Tiefen, warme Lichter, Leuchtdichte im
-  gemessenen Band) statt je Szene eigener Einstellungen.
-- **Offene Frage an den Game Director:** Für die Serifenschrift des Titels fehlt eine Schriftdatei, die mitgeliefert
-  werden darf (die Windows-Schriften dürfen nicht ins Spiel). Vorschlag: eine freie Schrift unter der SIL Open Font
-  License (z. B. Cinzel oder EB Garamond) herunterladen – dafür wird eine Freigabe gebraucht.
+  gemessenen Band) statt je Szene eigener Einstellungen – `Tools/Unreal/Frontend/apply_cover_look.py`.
+- Kapitelkarten und Abspann in derselben Schrift.

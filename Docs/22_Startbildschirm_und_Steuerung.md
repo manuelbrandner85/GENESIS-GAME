@@ -6,7 +6,19 @@ und an sich selbst anpasst. Dieser Block baut beides – und macht alles mit dem
 
 ## Der Startbildschirm
 
-![Der Startbildschirm](Media/GENESIS-031_Startbildschirm.png)
+![Der Startbildschirm](Media/GENESIS-045_Startbildschirm.png)
+
+**Seit GENESIS-045 im Bild des Covers** (Docs/31_Bildsprache.md): „GENESIS" in Gold und in der Schrift des Covers
+(Cinzel, eine Kapitälchen-Antiqua nach römischen Inschriften, SIL Open Font License) mit weitem Buchstabenabstand und
+einem weichen Schein, darunter eine feine goldene Linie und „DER KREISLAUF DES LEBENS" in Kapitälchen. Über allem steht
+der Satz des Covers: **Jede Entscheidung hinterlässt ein Echo.** Der Schleier über der Szene ist nicht mehr bräunlich,
+sondern kühl und tief wie der Weltraum auf dem Cover, und er läuft als Verlauf nach unten aus – oben trägt er die
+Schrift, unten bleibt das Spiel sichtbar. Die Auswahl im Menü ist ein goldener Strich.
+
+Die Titelschrift ist kein fertiges Font-Asset: Ein solches lässt sich im Editor-Skript nicht anlegen. Importiert wird
+der Schriftschnitt (`Tools/Unreal/Frontend/setup_title_font.py`, nur im vollen Editor – headless fehlt die Oberfläche),
+die Laufzeitschrift baut das HUD daraus selbst. Weil kein Asset auf sie verweist, steht ihr Ordner in der Cook-Liste;
+der Test `Genesis.Frontend.TitleFont` prüft, dass sie da ist.
 
 Hinter dem Menü läuft die Szene weiter. Das ist Absicht: Das Bild des Startbildschirms ist kein
 Standbild und kein gerendertes Hintergrundvideo, sondern der Eileiter selbst, in dem in diesem Moment

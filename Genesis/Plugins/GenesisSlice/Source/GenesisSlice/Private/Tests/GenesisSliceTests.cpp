@@ -2,6 +2,7 @@
 
 #include "GenesisSliceLogic.h"
 #include "GenesisEmbryoLogic.h"
+#include "Engine/FontFace.h"
 #include "Misc/AutomationTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -248,6 +249,22 @@ bool FGenesisSliceEmbryoMapTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Geschlüpft: Gebärmutter"), GenesisSliceLogic::MapForEmbryoStage(EGenesisEmbryoStage::Implanting, Tuning), Tuning.ImplantationMap);
 	TestEqual(TEXT("Eingenistet: Gebärmutter"), GenesisSliceLogic::MapForEmbryoStage(EGenesisEmbryoStage::Implanted, Tuning), Tuning.ImplantationMap);
 	TestEqual(TEXT("Stillstand: kein Ortswechsel"), GenesisSliceLogic::MapForEmbryoStage(EGenesisEmbryoStage::Arrested, Tuning), Tuning.ConceptionMap);
+	return true;
+}
+
+/**
+ * Die Titelschrift des Covers (Cinzel, SIL OFL) muss im Projekt liegen: Sie haengt nur am HUD-Code, kein Asset verweist
+ * auf sie. Fehlt sie, faellt der Startbildschirm still auf die Engine-Schrift zurueck (Docs/31_Bildsprache.md).
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisFrontendTitleFontTest, "Genesis.Frontend.TitleFont", GenesisSliceTests::SliceFlags)
+bool FGenesisFrontendTitleFontTest::RunTest(const FString& Parameters)
+{
+	const UFontFace* Face = LoadObject<UFontFace>(nullptr, TEXT("/Game/Genesis/UI/Fonts/FF_GEN_Cinzel.FF_GEN_Cinzel"));
+	TestNotNull(TEXT("Schriftschnitt der Titelschrift liegt im Projekt"), Face);
+	if (Face)
+	{
+		AddInfo(FString::Printf(TEXT("Titelschrift: %s"), *Face->GetPathName()));
+	}
 	return true;
 }
 
