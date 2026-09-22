@@ -19,6 +19,15 @@ namespace
 
 	/** Ab wann in der Kapitelkarte der Level frisch geladen wird: Das Bild ist schwarz, der Text steht. */
 	constexpr float StartLifeAt = 2.4f;
+
+	/** Wie lange der Ablauf auf das Ende des Films wartet, falls der Abspieler es nicht meldet (s). */
+	constexpr float FilmGrace = 2.0f;
+
+	/** Auf den Hinweis folgt der Vorfilm – oder, wenn er fehlt, der Prolog. */
+	EGenesisBootStage AfterHinweis(const FGenesisBootState& State)
+	{
+		return State.bFilmAvailable ? EGenesisBootStage::Vorfilm : EGenesisBootStage::Prolog;
+	}
 }
 
 float GenesisBootFlow::StageDuration(EGenesisBootStage Stage)
@@ -28,6 +37,7 @@ float GenesisBootFlow::StageDuration(EGenesisBootStage Stage)
 	case EGenesisBootStage::Studio:  return 4.0f;
 	case EGenesisBootStage::Engine:  return 3.2f;
 	case EGenesisBootStage::Hinweis: return 6.5f;
+	case EGenesisBootStage::Vorfilm: return FilmLength() + FilmGrace;
 	case EGenesisBootStage::Prolog:  return 52.0f;
 	case EGenesisBootStage::Titel:   return 7.0f;
 	case EGenesisBootStage::Kapitel: return 6.2f;
@@ -68,6 +78,74 @@ const TArray<FGenesisPrologueBeat>& GenesisBootFlow::PrologueBeats()
 	return Beats;
 }
 
+float GenesisBootFlow::FilmLength()
+{
+	return 2916.0f / 24.0f;
+}
+
+const TArray<FGenesisPrologueBeat>& GenesisBootFlow::FilmSubtitles()
+{
+	// Gemessen an der Sprachspur des Trailers (Genesis/Saved/Trailer/v2/..._Stem_Voice.wav): Pegel über
+	// −38 dB, Lücken unter 0,45 s gehören zur Phrase. Der Vorfilm beginnt beim ersten Bild des Trailers,
+	// die Zeiten gelten also unverändert. Wortlaut aus Tools/Trailer/Audio/generate_trailer_audio_kie.py
+	// und Tools/Audio/speech_lines.py.
+	// „Jede Entscheidung … hinterlässt ein Echo." (113,96–118,2 s) fehlt mit Absicht: Der Satz steht in
+	// diesem Moment als Schrift auf der Titelkarte – ein Untertitel darunter wäre derselbe Text zweimal.
+	static const TArray<FGenesisPrologueBeat> Lines = []()
+	{
+		auto Line = [](float Start, float End, const TCHAR* Text)
+		{
+			FGenesisPrologueBeat Result;
+			Result.StartSeconds = Start;
+			Result.DurationSeconds = End - Start;
+			Result.Subtitle = Text;
+			return Result;
+		};
+		return TArray<FGenesisPrologueBeat>{
+			Line(1.82f, 5.38f, TEXT("Bevor du deinen ersten Atemzug nahmst …")),
+			Line(6.40f, 9.84f, TEXT("… hatte deine Geschichte bereits begonnen.")),
+			Line(12.22f, 15.02f, TEXT("Millionen machen sich auf den Weg.")),
+			Line(16.08f, 19.06f, TEXT("Nur einer kommt an.")),
+			Line(19.52f, 22.60f, TEXT("Aus einer Zelle werden zwei.")),
+			Line(23.48f, 26.68f, TEXT("Aus zweien … ein Mensch.")),
+			Line(30.02f, 31.20f, TEXT("Hebamme: Da ist er!")),
+			Line(33.22f, 38.08f, TEXT("Mutter: Oh mein Gott … hallo …")),
+			Line(40.02f, 41.50f, TEXT("Du wirst lieben.")),
+			Line(42.46f, 43.74f, TEXT("Du wirst verlieren.")),
+			Line(49.62f, 51.48f, TEXT("Du wirst Entscheidungen treffen …")),
+			Line(52.52f, 56.64f, TEXT("… deren Folgen du vielleicht erst Jahrzehnte später verstehst.")),
+			Line(58.30f, 60.66f, TEXT("Doch kein Weg ist falsch.")),
+			Line(61.58f, 64.94f, TEXT("Jeder Weg hinterlässt Spuren.")),
+			Line(65.82f, 68.94f, TEXT("Am Ende bleiben nicht die Jahre.")),
+			Line(69.86f, 71.66f, TEXT("Es bleiben die Augenblicke.")),
+			Line(82.56f, 86.60f, TEXT("Tochter: Ich bin hier … ich bin hier.")),
+			Line(88.64f, 92.66f, TEXT("Und wenn du glaubst, dass alles vorbei ist …")),
+			Line(93.62f, 96.02f, TEXT("… beginnt erst die nächste Reise.")),
+			Line(101.62f, 103.52f, TEXT("Und eines Tages …")),
+			Line(104.58f, 106.98f, TEXT("… erschaffst du selbst Leben.")),
+			Line(118.35f, 119.84f, TEXT("Kind: Kennen wir uns?"))
+		};
+	}();
+	return Lines;
+}
+
+void GenesisBootFlow::SetFilmTime(FGenesisBootState& State, float Seconds)
+{
+	if (State.Stage == EGenesisBootStage::Vorfilm)
+	{
+		State.FilmSeconds = FMath::Max(0.0f, Seconds);
+	}
+}
+
+void GenesisBootFlow::FilmFinished(FGenesisBootState& State, TArray<FGenesisBootEvent>& OutEvents)
+{
+	// Direkt zum Startbildschirm, nicht zur Titelkarte: Der Film endet schon auf dem Titel.
+	if (State.Stage == EGenesisBootStage::Vorfilm)
+	{
+		EnterStage(State, EGenesisBootStage::Taste, OutEvents);
+	}
+}
+
 float GenesisBootFlow::PrologueCameraDistance(float Seconds)
 {
 	// Eine einzige, langsame Fahrt auf die Eizelle zu – aus dem offenen Eileiter bis vor die
@@ -100,6 +178,7 @@ float GenesisBootFlow::FadeAlpha(const FGenesisBootState& State)
 	case EGenesisBootStage::Studio:
 	case EGenesisBootStage::Engine:
 	case EGenesisBootStage::Hinweis:
+	case EGenesisBootStage::Vorfilm:   // Schwarz hinter dem Film – das Bild bringt er selbst mit
 	case EGenesisBootStage::Titel:
 		return 1.0f;
 	case EGenesisBootStage::Prolog:
@@ -127,14 +206,24 @@ float GenesisBootFlow::FadeAlpha(const FGenesisBootState& State)
 
 FString GenesisBootFlow::CurrentSubtitle(const FGenesisBootState& State)
 {
-	if (State.Stage != EGenesisBootStage::Prolog)
+	const bool bFilm = State.Stage == EGenesisBootStage::Vorfilm;
+	if (State.Stage != EGenesisBootStage::Prolog && !bFilm)
 	{
 		return FString();
 	}
-	for (const FGenesisPrologueBeat& Beat : PrologueBeats())
+	const TArray<FGenesisPrologueBeat>& Beats = bFilm ? FilmSubtitles() : PrologueBeats();
+	const float Seconds = bFilm && State.FilmSeconds >= 0.0f ? State.FilmSeconds : State.StageSeconds;
+	for (int32 Index = 0; Index < Beats.Num(); ++Index)
 	{
-		// Etwas länger stehen lassen als gesprochen: Wer langsamer liest, soll den Satz zu Ende lesen können
-		if (State.StageSeconds >= Beat.StartSeconds && State.StageSeconds < Beat.StartSeconds + Beat.DurationSeconds + 0.5f)
+		const FGenesisPrologueBeat& Beat = Beats[Index];
+		// Etwas länger stehen lassen als gesprochen: Wer langsamer liest, soll den Satz zu Ende lesen
+		// können – aber nie über den Beginn des nächsten Satzes hinaus.
+		float HoldUntil = Beat.StartSeconds + Beat.DurationSeconds + 0.5f;
+		if (Beats.IsValidIndex(Index + 1))
+		{
+			HoldUntil = FMath::Min(HoldUntil, Beats[Index + 1].StartSeconds);
+		}
+		if (Seconds >= Beat.StartSeconds && Seconds < HoldUntil)
 		{
 			return Beat.Subtitle;
 		}
@@ -204,6 +293,7 @@ void GenesisBootFlow::EnterStage(FGenesisBootState& State, EGenesisBootStage Sta
 	{
 		State.bLifeStarted = false;
 	}
+	State.FilmSeconds = -1.0f;
 
 	FGenesisBootEvent Event;
 	Event.Type = EGenesisBootEventType::StageEntered;
@@ -211,9 +301,10 @@ void GenesisBootFlow::EnterStage(FGenesisBootState& State, EGenesisBootStage Sta
 	OutEvents.Add(Event);
 }
 
-void GenesisBootFlow::Start(FGenesisBootState& State, TArray<FGenesisBootEvent>& OutEvents)
+void GenesisBootFlow::Start(FGenesisBootState& State, TArray<FGenesisBootEvent>& OutEvents, bool bFilmAvailable)
 {
 	State = FGenesisBootState();
+	State.bFilmAvailable = bFilmAvailable;
 	EnterStage(State, EGenesisBootStage::Studio, OutEvents);
 }
 
@@ -269,7 +360,9 @@ void GenesisBootFlow::Advance(FGenesisBootState& State, float DeltaSeconds, TArr
 	{
 	case EGenesisBootStage::Studio:  EnterStage(State, EGenesisBootStage::Engine, OutEvents); break;
 	case EGenesisBootStage::Engine:  EnterStage(State, EGenesisBootStage::Hinweis, OutEvents); break;
-	case EGenesisBootStage::Hinweis: EnterStage(State, EGenesisBootStage::Prolog, OutEvents); break;
+	case EGenesisBootStage::Hinweis: EnterStage(State, AfterHinweis(State), OutEvents); break;
+	// Hat der Abspieler das Ende nicht gemeldet: nach Filmlänge und etwas Luft trotzdem weiter
+	case EGenesisBootStage::Vorfilm: EnterStage(State, EGenesisBootStage::Taste, OutEvents); break;
 	case EGenesisBootStage::Prolog:  EnterStage(State, EGenesisBootStage::Titel, OutEvents); break;
 	case EGenesisBootStage::Titel:   EnterStage(State, EGenesisBootStage::Taste, OutEvents); break;
 	case EGenesisBootStage::Kapitel: EnterStage(State, EGenesisBootStage::Spiel, OutEvents); break;
@@ -293,7 +386,8 @@ void GenesisBootFlow::Press(FGenesisBootState& State, TArray<FGenesisBootEvent>&
 	{
 	case EGenesisBootStage::Studio:  EnterStage(State, EGenesisBootStage::Engine, OutEvents); break;
 	case EGenesisBootStage::Engine:  EnterStage(State, EGenesisBootStage::Hinweis, OutEvents); break;
-	case EGenesisBootStage::Hinweis: EnterStage(State, EGenesisBootStage::Prolog, OutEvents); break;
+	case EGenesisBootStage::Hinweis: EnterStage(State, AfterHinweis(State), OutEvents); break;
+	case EGenesisBootStage::Vorfilm:
 	case EGenesisBootStage::Prolog:
 	case EGenesisBootStage::Titel:
 		if (State.bSkipArmed)

@@ -77,7 +77,7 @@ float UGenesisAudioSubsystem::GetBusGainLinear(EGenesisAudioBus Bus) const
 {
 	// Mischung mal Regler: Dass die Mischung etwas leiser macht, weil gerade etwas Wichtigeres
 	// läuft, und dass der Spieler es leiser gestellt hat, sind zwei verschiedene Dinge – beide wirken.
-	return GenesisAudioCoreLogic::DbToLinear(Mix.GetGainDb(Bus)) * GetUserVolume(Bus);
+	return GenesisAudioCoreLogic::DbToLinear(Mix.GetGainDb(Bus)) * GetUserVolume(Bus) * SceneGain;
 }
 
 void UGenesisAudioSubsystem::SetUserVolumes(float Master, float Dialogue, float Music, float World)

@@ -79,6 +79,12 @@ public:
 	/** Der Reglerwert für diesen Bus, ohne die Mischung. */
 	float GetUserVolume(EGenesisAudioBus Bus) const;
 
+	/**
+	 * Wie weit die ganze Szene gerade zurücktritt (1 = normal, 0 = still) – für den Vorfilm, der seinen
+	 * eigenen Ton mitbringt. Liegt über Mischung und Reglern; den weichen Verlauf gibt der Aufrufer vor.
+	 */
+	void SetSceneGain(float Gain) { SceneGain = FMath::Clamp(Gain, 0.0f, 1.0f); }
+
 	/** Mutterleib ↔ Luft (Geburt) – Schlüsselmoment für Audio und Cinematics. */
 	FGenesisOnHearingEnvironmentChanged OnHearingEnvironmentChanged;
 
@@ -104,4 +110,5 @@ private:
 	float UserDialogueVolume = 1.0f;
 	float UserMusicVolume = 1.0f;
 	float UserWorldVolume = 1.0f;
+	float SceneGain = 1.0f;
 };

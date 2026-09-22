@@ -19,5 +19,12 @@ public class GenesisFrontend : ModuleRules
 			"GenesisCore",
 			"GenesisAudioCore"
 		});
+
+		// Der Vorfilm (Docs/33): Abspieler, Bild und Ton aus dem Media Framework
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"MediaAssets",
+			"AudioMixer"
+		});
 	}
 }

@@ -65,3 +65,11 @@ Genesis/Content/Genesis/Characters/
 
 # KI-Referenzbilder (kie.ai): nur lokale Zielbilder fuer Look-Dev, Nutzungsrechte ungeklaert – nicht veroeffentlichen
 ArtSource/Reference/kie/
+
+# Referenzbilder Embryologie (GENESIS-041): Bilder aus Sammlungen mit "educational use only"
+# (UNSW, Kyoto, Carnegie, EHD) duerfen nicht in einem oeffentlichen Repository liegen.
+ArtSource/Reference/Embryo/
+
+# Vorfilm (GENESIS-046): ~300 MB, entsteht mit Tools/Intro/build_vorfilm.py aus Docs/Media/Trailer/GENESIS_Trailer_v2.mp4.
+# Nicht doppelt ins LFS legen – die Quelle liegt schon im Repository.
+Genesis/Content/Movies/

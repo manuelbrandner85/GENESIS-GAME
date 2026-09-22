@@ -23,6 +23,11 @@ enum class EGenesisBootStage : uint8
 	Engine,
 	/** Hinweis zu Lichtwechseln und Kopfhörern */
 	Hinweis,
+	/**
+	 * Der Vorfilm (Docs/33): vom Spermium bis zum Sterbebett und zurück, endet auf der Titelkarte.
+	 * Er ersetzt den Prolog – beide sprechen dieselben Sätze. Fehlt die Filmdatei, kommt der Prolog.
+	 */
+	Vorfilm,
 	/** Kamerafahrt durch den Eileiter mit Erzählerstimme */
 	Prolog,
 	/** Der Titel, groß */
@@ -90,6 +95,14 @@ struct GENESISFRONTEND_API FGenesisBootState
 	UPROPERTY() float SkipArmedSeconds = 0.0f;
 	/** Wurde der Level für dieses Leben schon angefordert? Genau einmal pro Kapitelkarte. */
 	UPROPERTY() bool bLifeStarted = false;
+	/** Liegt der Vorfilm bereit? Sonst folgt auf den Hinweis der Prolog. */
+	UPROPERTY() bool bFilmAvailable = false;
+	/**
+	 * Wo der Film gerade steht (s), gemeldet vom Abspieler. Die Untertitel folgen dem Bild, nicht der
+	 * Uhr des Ablaufs: Die zählt ein hängendes Bild nur als Zehntelsekunde, der Film läuft weiter.
+	 * Negativ, solange nichts gemeldet ist – dann gilt die Uhr des Ablaufs.
+	 */
+	UPROPERTY() float FilmSeconds = -1.0f;
 };
 
 namespace GenesisBootFlow
@@ -99,6 +112,18 @@ namespace GenesisBootFlow
 
 	/** Die Sätze des Prologs, zeitlich geordnet. */
 	GENESISFRONTEND_API const TArray<FGenesisPrologueBeat>& PrologueBeats();
+
+	/** Länge des Vorfilms (s): 2916 Bilder bei 24 Bildern je Sekunde. */
+	GENESISFRONTEND_API float FilmLength();
+
+	/** Die Untertitel des Vorfilms – an der Sprachspur gemessen, zeitlich geordnet. Ohne Tonspur-Namen. */
+	GENESISFRONTEND_API const TArray<FGenesisPrologueBeat>& FilmSubtitles();
+
+	/** Der Abspieler meldet, wo der Film steht. */
+	GENESISFRONTEND_API void SetFilmTime(FGenesisBootState& State, float Seconds);
+
+	/** Der Film ist zu Ende – oder ließ sich nicht öffnen. Beides führt zum Startbildschirm. */
+	GENESISFRONTEND_API void FilmFinished(FGenesisBootState& State, TArray<FGenesisBootEvent>& OutEvents);
 
 	/** Abstand der Kamera zur Eizelle im Prolog (µm) – eine langsame Fahrt auf sie zu. */
 	GENESISFRONTEND_API float PrologueCameraDistance(float Seconds);
@@ -115,8 +140,8 @@ namespace GenesisBootFlow
 	/** Wie sichtbar der Text einer Karte gerade ist (weiches Ein- und Ausblenden). */
 	GENESISFRONTEND_API float CardAlpha(const FGenesisBootState& State);
 
-	/** Den Ablauf beginnen. */
-	GENESISFRONTEND_API void Start(FGenesisBootState& State, TArray<FGenesisBootEvent>& OutEvents);
+	/** Den Ablauf beginnen. Mit Film folgt auf den Hinweis der Vorfilm, sonst der Prolog. */
+	GENESISFRONTEND_API void Start(FGenesisBootState& State, TArray<FGenesisBootEvent>& OutEvents, bool bFilmAvailable = false);
 
 	/** Zeit fortschreiben. */
 	GENESISFRONTEND_API void Advance(FGenesisBootState& State, float DeltaSeconds, TArray<FGenesisBootEvent>& OutEvents);
@@ -124,7 +149,7 @@ namespace GenesisBootFlow
 	/**
 	 * Der Spieler hat eine Taste gedrückt.
 	 *
-	 * Karten lassen sich mit einem Druck überspringen. Der Prolog braucht zwei: Der erste zeigt
+	 * Karten lassen sich mit einem Druck überspringen. Vorfilm und Prolog brauchen zwei: Der erste zeigt
 	 * „Nochmal drücken zum Überspringen" – sonst ist die Erzählung mit einem versehentlichen Druck
 	 * weg, und man bekommt sie nie wieder zu hören. So machen es die meisten großen Spiele.
 	 */

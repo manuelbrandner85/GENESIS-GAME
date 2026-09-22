@@ -357,6 +357,48 @@ bool AGenesisSliceHud::DrawBoot()
 		return true;
 	}
 
+	case EGenesisBootStage::Vorfilm:
+	{
+		DrawBlack(1.0f);
+
+		// Der Film füllt das Bild so weit, wie sein Seitenverhältnis es erlaubt; der Rest bleibt schwarz.
+		// Bis das erste Bild da ist, gilt 16:9 – die Untertitel stehen dann schon an ihrem Platz.
+		UTexture* Film = Frontend->GetFilmTexture();
+		const float FilmAspect = Film ? Film->GetSurfaceWidth() / FMath::Max(1.0f, Film->GetSurfaceHeight()) : 16.0f / 9.0f;
+		const float CanvasAspect = Canvas->SizeX / FMath::Max(1.0f, static_cast<float>(Canvas->SizeY));
+		const FVector2D Size = FilmAspect >= CanvasAspect
+			? FVector2D(Canvas->SizeX, Canvas->SizeX / FilmAspect)
+			: FVector2D(Canvas->SizeY * FilmAspect, Canvas->SizeY);
+		const FVector2D Origin(0.5f * (Canvas->SizeX - Size.X), 0.5f * (Canvas->SizeY - Size.Y));
+		if (Film && Film->GetResource())
+		{
+			FCanvasTileItem Tile(Origin, Film->GetResource(), Size, FLinearColor::White);
+			Tile.BlendMode = SE_BLEND_Opaque;
+			Canvas->DrawItem(Tile);
+		}
+
+		// Untertitel im unteren Kinobalken, den der Film selbst mitbringt (2,39:1 in 16:9 = 12,8 % der
+		// Bildhöhe): So verdecken sie nichts vom Bild.
+		if (Frontend->GetSettings().bSubtitles)
+		{
+			const FString Subtitle = GenesisBootFlow::CurrentSubtitle(Boot);
+			UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+			if (Font && !Subtitle.IsEmpty())
+			{
+				// Rund 37 px bei 1080p: gut lesbar vom Sofa aus und immer noch klein genug für den Balken
+				// (138 px bei 1080p). Die erste Fassung (1,35) ergab 24 px – am Bildschirm zu klein.
+				const float TextScale = Scale * 2.2f;
+				float Width = 0.0f;
+				float Height = 0.0f;
+				Canvas->TextSize(Font, Subtitle, Width, Height, TextScale, TextScale);
+				const float Bar = Size.Y * 0.128f;
+				DrawCentered(Subtitle, Origin.Y + Size.Y - 0.5f * Bar - 0.5f * Height, TextScale, 0.95f, false);
+			}
+		}
+		SkipPrompt();
+		return true;
+	}
+
 	case EGenesisBootStage::Prolog:
 	{
 		DrawBlack(GenesisBootFlow::FadeAlpha(Boot));

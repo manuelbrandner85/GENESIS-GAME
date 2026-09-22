@@ -15,7 +15,8 @@ geworfen. Dieser Block baut genau diese Abfolge.
 | Studio | 4,0 s | „GENESIS TEAM präsentiert", Musik blendet ein | 1 Druck |
 | Engine | 3,2 s | „Entwickelt mit Unreal Engine 5" | 1 Druck |
 | Hinweis | 6,5 s | Kopfhörer empfohlen, Lichtwechsel, wo man sie dämpft | 1 Druck |
-| **Prolog** | 52 s | Eine einzige Kamerafahrt durch den Eileiter auf die Eizelle zu, zehn Sätze des Erzählers mit Untertiteln | 2 Drücke |
+| **Vorfilm** (seit GENESIS-046) | 121,5 s | Der Trailer als Film vor dem Spiel, mit Untertiteln – danach direkt „Taste" (Doc 33) | 2 Drücke |
+| **Prolog** (nur ohne Filmdatei) | 52 s | Eine einzige Kamerafahrt durch den Eileiter auf die Eizelle zu, zehn Sätze des Erzählers mit Untertiteln | 2 Drücke |
 | Titel | 7 s | GENESIS – Der Kreislauf des Lebens | 2 Drücke |
 | Taste | – | Der Eizellkomplex hinter dem Titel, „Drücke eine beliebige Taste" (atmet, blinkt nicht) | – |
 | Menü | – | Hauptmenü mit Musik und Klängen | – |
@@ -38,6 +39,10 @@ ins Menü noch ins Spiel.
 - **Der Prolog ist in Echtzeit, nicht als Video.** Er spielt im echten Eileiter mit dem echten
   Schwarm. Kein Film kann das, was danach im Spiel kommt, so genau ankündigen – und die gebaute
   Fassung wird dadurch nicht um ein Video größer.
+  *Nachtrag GENESIS-046:* Auf Wunsch des Game Directors läuft jetzt der Trailer als Vorfilm an dieser
+  Stelle (Doc 33). Er erzählt dieselben Sätze und zeigt zusätzlich, was der Prolog nicht zeigen konnte:
+  Geburt, Leben und Tod. Die gebaute Fassung wird dafür 300 MB größer. Der Prolog bleibt als Rückfall,
+  wenn die Filmdatei fehlt.
 - **Zwei Drücke zum Überspringen der Erzählung.** Der erste zeigt „Nochmal drücken zum Überspringen"
   (verfällt nach 3 s). Ein versehentlicher Druck soll den Prolog nicht beenden – so machen es die
   meisten großen Spiele. Karten lassen sich mit einem Druck überspringen.

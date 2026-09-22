@@ -353,6 +353,8 @@ void AGenesisSliceGameMode::Tick(float DeltaSeconds)
 	case EGenesisBootStage::Prolog:
 		Distance = GenesisBootFlow::PrologueCameraDistance(Boot.StageSeconds);
 		break;
+	// Hinter dem Vorfilm steht die Kamera schon dort, wo der Startbildschirm aufblendet
+	case EGenesisBootStage::Vorfilm:
 	case EGenesisBootStage::Titel:
 	case EGenesisBootStage::Taste:
 	case EGenesisBootStage::Menue:

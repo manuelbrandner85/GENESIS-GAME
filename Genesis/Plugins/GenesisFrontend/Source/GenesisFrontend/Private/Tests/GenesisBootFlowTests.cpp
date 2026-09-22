@@ -209,3 +209,114 @@ bool FGenesisPrologueTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisBootFilmTest, "Genesis.Frontend.Boot.Film", GenesisBootFlowTests::Flags)
+bool FGenesisBootFilmTest::RunTest(const FString& Parameters)
+{
+	using namespace GenesisBootFlowTests;
+
+	// Mit Film: Logo, Engine, Hinweis – dann der Vorfilm statt des Prologs. Der Hinweis auf
+	// Lichtwechsel steht vor dem Film, nicht dahinter: Der Film hat helle Blitze.
+	FGenesisBootState State;
+	TArray<FGenesisBootEvent> Events;
+	GenesisBootFlow::Start(State, Events, true);
+	const float ToFilm = RunUntil(State, EGenesisBootStage::Vorfilm, 60.0f, Events);
+	AddInfo(FString::Printf(TEXT("Vom Start bis zum Vorfilm: %.1f s"), ToFilm));
+	TestEqual(TEXT("Nach dem Hinweis kommt der Vorfilm"), State.Stage, EGenesisBootStage::Vorfilm);
+	TestTrue(TEXT("Hinter dem Film ist es schwarz"), GenesisBootFlow::FadeAlpha(State) >= 0.999f);
+
+	// Der Film spricht selbst: keine Erzählerstimme obendrauf
+	const int32 VoicesBefore = Count(Events, EGenesisBootEventType::PlayVoice);
+	GenesisBootFlow::Advance(State, 0.1f, Events);
+	for (int32 Step = 0; Step < 60 * 60; ++Step)
+	{
+		GenesisBootFlow::Advance(State, 1.0f / 60.0f, Events);
+	}
+	TestEqual(TEXT("Kein Prologsatz unter dem Film"), Count(Events, EGenesisBootEventType::PlayVoice), VoicesBefore);
+
+	// Meldet der Abspieler das Ende, geht es direkt zum Startbildschirm – nicht zur Titelkarte,
+	// denn der Film endet schon auf dem Titel
+	GenesisBootFlow::FilmFinished(State, Events);
+	TestEqual(TEXT("Filmende führt zum Startbildschirm"), State.Stage, EGenesisBootStage::Taste);
+	GenesisBootFlow::FilmFinished(State, Events);
+	TestEqual(TEXT("Ein spätes Filmende ändert nichts mehr"), State.Stage, EGenesisBootStage::Taste);
+
+	// Meldet er es nie (Datei kaputt, Treiber hängt), geht es nach Filmlänge trotzdem weiter
+	GenesisBootFlow::EnterStage(State, EGenesisBootStage::Vorfilm, Events);
+	const float Waited = RunUntil(State, EGenesisBootStage::Taste, 300.0f, Events);
+	TestEqual(TEXT("Ohne Meldung trotzdem zum Startbildschirm"), State.Stage, EGenesisBootStage::Taste);
+	TestTrue(TEXT("… aber erst nach dem Film"), Waited >= GenesisBootFlow::FilmLength() && Waited <= GenesisBootFlow::FilmLength() + 3.0f);
+
+	// Überspringen wie beim Prolog: zwei Drücke, damit ein versehentlicher den Film nicht beendet
+	GenesisBootFlow::EnterStage(State, EGenesisBootStage::Vorfilm, Events);
+	GenesisBootFlow::Press(State, Events);
+	TestEqual(TEXT("Erster Druck lässt den Film laufen"), State.Stage, EGenesisBootStage::Vorfilm);
+	TestTrue(TEXT("… und zeigt, wie man überspringt"), State.bSkipArmed);
+	GenesisBootFlow::Press(State, Events);
+	TestEqual(TEXT("Zweiter Druck überspringt zum Startbildschirm"), State.Stage, EGenesisBootStage::Taste);
+
+	// Ohne Film bleibt alles wie vorher: Der Prolog erzählt
+	FGenesisBootState Without;
+	GenesisBootFlow::Start(Without, Events, false);
+	RunUntil(Without, EGenesisBootStage::Prolog, 60.0f, Events);
+	TestEqual(TEXT("Fehlt der Film, kommt der Prolog"), Without.Stage, EGenesisBootStage::Prolog);
+
+	TestEqual(TEXT("Filmlänge = 2916 Bilder bei 24/s"), GenesisBootFlow::FilmLength(), 121.5f, 0.001f);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisBootFilmSubtitlesTest, "Genesis.Frontend.Boot.FilmSubtitles", GenesisBootFlowTests::Flags)
+bool FGenesisBootFilmSubtitlesTest::RunTest(const FString& Parameters)
+{
+	// Die Untertitel sind an der Sprachspur gemessen. Keiner darf in den nächsten hineinreichen, und
+	// alle liegen im Film. Die halbe Sekunde Nachlauf endet spätestens, wenn der nächste Satz beginnt.
+	const TArray<FGenesisPrologueBeat>& Lines = GenesisBootFlow::FilmSubtitles();
+	TestTrue(TEXT("Der Film hat Untertitel"), Lines.Num() >= 15);
+	for (int32 Index = 0; Index < Lines.Num(); ++Index)
+	{
+		const FGenesisPrologueBeat& Line = Lines[Index];
+		TestFalse(FString::Printf(TEXT("Zeile %d hat Text"), Index), Line.Subtitle.IsEmpty());
+		TestTrue(FString::Printf(TEXT("Zeile %d ist lesbar lang (≥ 1 s)"), Index), Line.DurationSeconds >= 1.0f);
+		TestTrue(FString::Printf(TEXT("Zeile %d liegt im Film"), Index), Line.StartSeconds >= 0.0f
+			&& Line.StartSeconds + Line.DurationSeconds + 0.5f <= GenesisBootFlow::FilmLength());
+		if (Lines.IsValidIndex(Index + 1))
+		{
+			TestTrue(FString::Printf(TEXT("Zeile %d endet, bevor %d beginnt"), Index, Index + 1),
+				Line.StartSeconds + Line.DurationSeconds <= Lines[Index + 1].StartSeconds);
+		}
+	}
+
+	FGenesisBootState State;
+	TArray<FGenesisBootEvent> Events;
+	GenesisBootFlow::EnterStage(State, EGenesisBootStage::Vorfilm, Events);
+
+	// Zu Beginn jeder Zeile steht genau diese Zeile – kein Nachlauf der vorigen verdeckt sie
+	for (const FGenesisPrologueBeat& Line : Lines)
+	{
+		GenesisBootFlow::SetFilmTime(State, Line.StartSeconds + 0.01f);
+		TestEqual(TEXT("Zeile erscheint pünktlich"), GenesisBootFlow::CurrentSubtitle(State), Line.Subtitle);
+	}
+
+	// Die Stimme spricht schon über dem Schwarz des Anfangs
+	GenesisBootFlow::SetFilmTime(State, 2.5f);
+	TestEqual(TEXT("Erster Satz aus dem Dunkel"), GenesisBootFlow::CurrentSubtitle(State), FString(TEXT("Bevor du deinen ersten Atemzug nahmst …")));
+	GenesisBootFlow::SetFilmTime(State, 11.0f);
+	TestTrue(TEXT("In der Pause kein Untertitel"), GenesisBootFlow::CurrentSubtitle(State).IsEmpty());
+
+	// Die Untertitel folgen dem Bild, nicht der Uhr des Ablaufs: Die Uhr sagt 5 s, der Film 30,5 s
+	State.StageSeconds = 5.0f;
+	GenesisBootFlow::SetFilmTime(State, 30.5f);
+	TestEqual(TEXT("Folgt dem Film"), GenesisBootFlow::CurrentSubtitle(State), FString(TEXT("Hebamme: Da ist er!")));
+
+	// Der letzte Satz des Erzählers steht als Schrift auf der Titelkarte – kein doppelter Text
+	GenesisBootFlow::SetFilmTime(State, 115.0f);
+	TestTrue(TEXT("Auf der Titelkarte kein Untertitel"), GenesisBootFlow::CurrentSubtitle(State).IsEmpty());
+	GenesisBootFlow::SetFilmTime(State, 119.0f);
+	TestEqual(TEXT("Das Kind am Schluss"), GenesisBootFlow::CurrentSubtitle(State), FString(TEXT("Kind: Kennen wir uns?")));
+
+	// Außerhalb des Films wird keine Filmzeit angenommen
+	GenesisBootFlow::EnterStage(State, EGenesisBootStage::Taste, Events);
+	GenesisBootFlow::SetFilmTime(State, 30.5f);
+	TestTrue(TEXT("Nach dem Film keine Filmuntertitel"), GenesisBootFlow::CurrentSubtitle(State).IsEmpty());
+	return true;
+}

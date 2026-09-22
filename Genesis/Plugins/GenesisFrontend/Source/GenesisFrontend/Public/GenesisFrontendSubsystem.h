@@ -11,6 +11,11 @@
 
 class UAudioComponent;
 class USoundBase;
+class UTexture;
+class UMediaPlayer;
+class UMediaTexture;
+class UFileMediaSource;
+class UMediaSoundComponent;
 
 DECLARE_MULTICAST_DELEGATE(FGenesisOnStartRequested);
 DECLARE_MULTICAST_DELEGATE(FGenesisOnReturnToMenuRequested);
@@ -74,6 +79,12 @@ public:
 	/** Soll die Steuerung gerade Tastendrücke als „weiter" werten statt als Menübedienung? */
 	bool WantsAnyKey() const;
 
+	/** Das laufende Bild des Vorfilms – nur während er läuft und schon ein Bild da ist, sonst nullptr. */
+	UTexture* GetFilmTexture() const;
+
+	/** Wo die Filmdatei liegt: Content/Movies/GENESIS_Vorfilm.mp4 (entsteht mit Tools/Intro/build_vorfilm.py). */
+	static FString FilmPath();
+
 	// --- Menü ----------------------------------------------------------------------------------
 
 	EGenesisMenuPage GetPage() const { return Page; }
@@ -119,6 +130,35 @@ private:
 	void StartMusic();
 	float MusicVolume() const;
 	float VoiceVolume() const;
+
+	/** Den Vorfilm öffnen und abspielen. */
+	void StartFilm();
+	/** Den Film beenden; der Ton klingt über FadeSeconds aus, erst dann wird geschlossen. */
+	void StopFilm(float FadeSeconds);
+	void FinishFilm();
+
+	UFUNCTION()
+	void HandleFilmEnded();
+	UFUNCTION()
+	void HandleFilmFailed(FString FailedUrl);
+
+	UPROPERTY()
+	TObjectPtr<UMediaPlayer> FilmPlayer;
+
+	UPROPERTY()
+	TObjectPtr<UMediaTexture> FilmTexture;
+
+	UPROPERTY()
+	TObjectPtr<UFileMediaSource> FilmSource;
+
+	UPROPERTY()
+	TObjectPtr<UMediaSoundComponent> FilmSound;
+
+	/** Sekunden, bis ein ausklingender Film geschlossen wird (negativ: nichts zu schließen). */
+	float FilmCloseIn = -1.0f;
+
+	/** Wie weit die Menümusik für den Film zurückgenommen ist (1 = gar nicht, 0 = stumm). */
+	float FilmDuck = 1.0f;
 
 	UPROPERTY()
 	FGenesisPlayerSettings Settings;

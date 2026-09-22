@@ -16,6 +16,13 @@
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "GameFramework/WorldSettings.h"
+#include "HAL/FileManager.h"
+#include "Misc/Paths.h"
+#include "FileMediaSource.h"
+#include "MediaPlayer.h"
+#include "MediaSoundComponent.h"
+#include "MediaTexture.h"
 
 namespace
 {
@@ -125,6 +132,7 @@ void UGenesisFrontendSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UGenesisFrontendSubsystem::Deinitialize()
 {
+	FinishFilm();
 	SaveSettings();
 	Super::Deinitialize();
 }
@@ -285,9 +293,30 @@ void UGenesisFrontendSubsystem::Tick(float DeltaTime)
 		return;
 	}
 
+	const float Delta = static_cast<float>(FApp::GetDeltaTime());
+
+	// Die Untertitel folgen dem Bild: Der Abspieler sagt, wo der Film steht
+	if (FilmPlayer && Boot.Stage == EGenesisBootStage::Vorfilm)
+	{
+		GenesisBootFlow::SetFilmTime(Boot, static_cast<float>(FilmPlayer->GetTime().GetTotalSeconds()));
+	}
+	if (FilmSound)
+	{
+		// Der Film trägt Stimme und Musik in einer Spur – er folgt der Gesamtlautstärke
+		FilmSound->SetVolumeMultiplier(FMath::Clamp(Settings.MasterVolume, 0.0f, 1.0f));
+	}
+	if (FilmCloseIn >= 0.0f)
+	{
+		FilmCloseIn -= Delta;
+		if (FilmCloseIn < 0.0f)
+		{
+			FinishFilm();
+		}
+	}
+
 	// Echte Zeit, nicht Spielzeit: In der Pause steht die Spielzeit still, der Ablauf nicht
 	TArray<FGenesisBootEvent> Events;
-	GenesisBootFlow::Advance(Boot, static_cast<float>(FApp::GetDeltaTime()), Events);
+	GenesisBootFlow::Advance(Boot, Delta, Events);
 	HandleBootEvents(Events);
 
 	// Die Musik weicht der Stimme, wie im Film: Während der Erzähler spricht, geht sie um 7 dB
@@ -302,10 +331,20 @@ void UGenesisFrontendSubsystem::Tick(float DeltaTime)
 		|| Boot.Stage == EGenesisBootStage::Hinweis || Boot.Stage == EGenesisBootStage::Prolog;
 	const float StageLevel = bIntro ? 0.6f : 1.0f;
 
+	// Der Film bringt seine eigene Musik mit: Das Menüthema weicht ganz, in 1,5 s, und kehrt danach in
+	// 4 s zurück – unter dem aufblendenden Startbildschirm, nicht als Sprung.
+	const float FilmTarget = Boot.Stage == EGenesisBootStage::Vorfilm ? 0.0f : 1.0f;
+	FilmDuck = FMath::FInterpConstantTo(FilmDuck, FilmTarget, Delta, FilmTarget < FilmDuck ? 1.0f / 1.5f : 1.0f / 4.0f);
+	// Dasselbe für die Szene dahinter: Der Eileiter rauscht nicht unter den Film
+	if (UGenesisAudioSubsystem* Audio = GetGameInstance() ? GetGameInstance()->GetSubsystem<UGenesisAudioSubsystem>() : nullptr)
+	{
+		Audio->SetSceneGain(FilmDuck);
+	}
+
 	// Lautstärke folgt den Reglern sofort – auch mitten in einem Satz
 	if (Music)
 	{
-		Music->SetVolumeMultiplier(MusicVolume() * StageLevel * MusicDuck);
+		Music->SetVolumeMultiplier(MusicVolume() * StageLevel * MusicDuck * FilmDuck);
 	}
 	if (Voice)
 	{
@@ -315,10 +354,126 @@ void UGenesisFrontendSubsystem::Tick(float DeltaTime)
 
 void UGenesisFrontendSubsystem::StartBoot()
 {
+	// Der Vorfilm liegt nicht im Repository (300 MB); fehlt er, erzählt der Prolog dieselben Sätze.
+	// -genesisnofilm lässt ihn beim Prüfen weg, ohne die Datei anzufassen.
+	const bool bFilm = FPaths::FileExists(FilmPath()) && !FParse::Param(FCommandLine::Get(), TEXT("genesisnofilm"));
 	TArray<FGenesisBootEvent> Events;
-	GenesisBootFlow::Start(Boot, Events);
+	GenesisBootFlow::Start(Boot, Events, bFilm);
 	HandleBootEvents(Events);
-	UE_LOG(LogGenesis, Display, TEXT("Startablauf: beginnt."));
+	UE_LOG(LogGenesis, Display, TEXT("Startablauf: beginnt (%s)."), bFilm ? TEXT("mit Vorfilm") : TEXT("mit Prolog, Vorfilm fehlt"));
+}
+
+FString UGenesisFrontendSubsystem::FilmPath()
+{
+	return FPaths::ProjectContentDir() / TEXT("Movies/GENESIS_Vorfilm.mp4");
+}
+
+UTexture* UGenesisFrontendSubsystem::GetFilmTexture() const
+{
+	if (Boot.Stage != EGenesisBootStage::Vorfilm || !FilmTexture || !FilmPlayer || FilmTexture->GetWidth() <= 0)
+	{
+		return nullptr;
+	}
+	return FilmTexture;
+}
+
+void UGenesisFrontendSubsystem::StartFilm()
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	UWorld* World = GameInstance ? GameInstance->GetWorld() : nullptr;
+	AWorldSettings* WorldSettings = World ? World->GetWorldSettings() : nullptr;
+	if (!WorldSettings)
+	{
+		HandleFilmFailed(TEXT("keine Welt"));
+		return;
+	}
+
+	FilmPlayer = NewObject<UMediaPlayer>(this);
+	FilmPlayer->PlayOnOpen = true;
+	FilmPlayer->SetLooping(false);
+	FilmPlayer->OnEndReached.AddDynamic(this, &UGenesisFrontendSubsystem::HandleFilmEnded);
+	FilmPlayer->OnMediaOpenFailed.AddDynamic(this, &UGenesisFrontendSubsystem::HandleFilmFailed);
+
+	FilmTexture = NewObject<UMediaTexture>(this);
+	FilmTexture->AutoClear = true;
+	FilmTexture->ClearColor = FLinearColor::Black;
+	FilmTexture->SetMediaPlayer(FilmPlayer);
+	FilmTexture->UpdateResource();
+
+	// Der Ton hängt an einem Actor, der sicher da ist und tickt – sonst holt niemand die Tonproben ab
+	FilmSound = NewObject<UMediaSoundComponent>(WorldSettings);
+	FilmSound->bIsUISound = true;
+	FilmSound->SetMediaPlayer(FilmPlayer);
+	FilmSound->RegisterComponent();
+	FilmSound->SetVolumeMultiplier(FMath::Clamp(Settings.MasterVolume, 0.0f, 1.0f));
+	FilmSound->Activate(true);
+
+	FilmSource = NewObject<UFileMediaSource>(this);
+	const FString FullPath = FPaths::ConvertRelativePathToFull(FilmPath());
+	FilmSource->SetFilePath(FullPath);
+	FilmCloseIn = -1.0f;
+
+	if (!FilmPlayer->OpenSource(FilmSource))
+	{
+		HandleFilmFailed(FullPath);
+		return;
+	}
+	UE_LOG(LogGenesis, Display, TEXT("Vorfilm: %s"), *FullPath);
+}
+
+void UGenesisFrontendSubsystem::StopFilm(float FadeSeconds)
+{
+	if (!FilmPlayer)
+	{
+		return;
+	}
+	// Wer überspringt, hört den Film ausklingen statt abreißen; das Bild ist sofort weg
+	if (FilmSound && FadeSeconds > 0.0f)
+	{
+		FilmSound->FadeOut(FadeSeconds, 0.0f);
+		FilmCloseIn = FadeSeconds;
+	}
+	else
+	{
+		FinishFilm();
+	}
+}
+
+void UGenesisFrontendSubsystem::FinishFilm()
+{
+	FilmCloseIn = -1.0f;
+	if (FilmPlayer)
+	{
+		FilmPlayer->OnEndReached.RemoveAll(this);
+		FilmPlayer->OnMediaOpenFailed.RemoveAll(this);
+		FilmPlayer->Close();
+	}
+	if (FilmSound)
+	{
+		FilmSound->Stop();
+		FilmSound->DestroyComponent();
+	}
+	FilmPlayer = nullptr;
+	FilmTexture = nullptr;
+	FilmSource = nullptr;
+	FilmSound = nullptr;
+}
+
+void UGenesisFrontendSubsystem::HandleFilmEnded()
+{
+	UE_LOG(LogGenesis, Display, TEXT("Vorfilm: zu Ende."));
+	TArray<FGenesisBootEvent> Events;
+	GenesisBootFlow::FilmFinished(Boot, Events);
+	HandleBootEvents(Events);
+}
+
+void UGenesisFrontendSubsystem::HandleFilmFailed(FString FailedUrl)
+{
+	// Kein Film heißt nicht: zwei Minuten Schwarz. Weiter zum Startbildschirm.
+	UE_LOG(LogGenesis, Warning, TEXT("Vorfilm ließ sich nicht öffnen (%s) – weiter zum Startbildschirm."), *FailedUrl);
+	TArray<FGenesisBootEvent> Events;
+	GenesisBootFlow::FilmFinished(Boot, Events);
+	HandleBootEvents(Events);
 }
 
 bool UGenesisFrontendSubsystem::WantsAnyKey() const
@@ -328,6 +483,7 @@ bool UGenesisFrontendSubsystem::WantsAnyKey() const
 	case EGenesisBootStage::Studio:
 	case EGenesisBootStage::Engine:
 	case EGenesisBootStage::Hinweis:
+	case EGenesisBootStage::Vorfilm:
 	case EGenesisBootStage::Prolog:
 	case EGenesisBootStage::Titel:
 	case EGenesisBootStage::Taste:
@@ -369,8 +525,16 @@ void UGenesisFrontendSubsystem::HandleBootEvents(const TArray<FGenesisBootEvent>
 				Voice->FadeOut(0.4f, 0.0f);
 				Voice = nullptr;
 			}
+			// Dasselbe für den Film: Jede andere Stufe beendet ihn
+			if (Event.Stage != EGenesisBootStage::Vorfilm && FilmPlayer)
+			{
+				StopFilm(0.6f);
+			}
 			switch (Event.Stage)
 			{
+			case EGenesisBootStage::Vorfilm:
+				StartFilm();
+				break;
 			case EGenesisBootStage::Studio:
 				StartMusic();
 				break;
