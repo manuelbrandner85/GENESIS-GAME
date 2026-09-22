@@ -635,6 +635,10 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 	Camera->SetFocusSettings(Focus);
 	UpdateLight();
 
+	// Kein MegaLights unter dem Mikroskop: Die dünnen, durchscheinenden Spermien (Kopf und Geißel) blieben damit fast
+	// unbeleuchtet und verschwanden im dunklen Eileiter (Vergleichsbild GENESIS-039 Teil 6). Im Kreißsaal ist es an.
+	Camera->PostProcessSettings.bOverride_bMegaLights = true;
+	Camera->PostProcessSettings.bMegaLights = false;
 	// Die Kamera belichtet wie eine echte Kamera: feste Belichtung, Blende und Verschlusszeit wirken auf die Helligkeit.
 	// Die Korrektur gleicht den Maßstabssprung aus – im Mikrometerraum trifft die Optik nur wenige Lux.
 	Camera->PostProcessSettings.bOverride_AutoExposureMethod = true;

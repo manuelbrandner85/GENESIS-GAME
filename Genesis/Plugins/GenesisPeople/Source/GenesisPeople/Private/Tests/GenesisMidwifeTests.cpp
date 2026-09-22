@@ -2,6 +2,7 @@
 
 #include "Misc/AutomationTest.h"
 #include "GenesisMidwifeRig.h"
+#include "GenesisPeopleRendering.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -60,6 +61,16 @@ bool FGenesisMidwifeTaskTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("In der Mitte hält sie noch"), Compute(In).HandsOnChild > 0.99f);
 	In.HandingProgress = 1.0f;
 	TestTrue(TEXT("Am Ende hat die Mutter das Kind"), Compute(In).HandsOnChild < 0.01f);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisHairVoxelTest, "Genesis.People.HairVoxelsFollowScale",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FGenesisHairVoxelTest::RunTest(const FString& Parameters)
+{
+	// Am Menschen immer 3 mm: 0,3 Einheiten bei 1 cm je Einheit, 3 Einheiten im Kreißsaal (1 mm je Einheit, Figur zehnfach)
+	TestTrue(TEXT("Normaler Maßstab"), FMath::IsNearlyEqual(GenesisPeopleRendering::HairVoxelWorldSize(1.0f), 0.3f));
+	TestTrue(TEXT("Kreißsaal"), FMath::IsNearlyEqual(GenesisPeopleRendering::HairVoxelWorldSize(10.0f), 3.0f));
 	return true;
 }
 

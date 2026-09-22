@@ -77,10 +77,32 @@ nass 0,7 °C, unbedeckt 0,3 °C unter der Haut der Mutter.
 
 ![Zugedeckt: der Rand des Tuchs oben, die Hebamme sieht zu](Media/GENESIS-039_Zugedeckt.png)
 
-## Rendering
+## Rendering: das Maximum bei spielbarer Bildrate
 
-Lumen-Spiegelungen mit Hit Lighting (Material und Licht am Trefferpunkt statt aus dem Oberflächen-Cache): Augen, Haut, Nitril
-und Edelstahl spiegeln die Umgebung richtig. Gemessen: +0,7 ms (~5 %) im Kreißsaal auf einer RTX 5070.
+Gemessen im fertigen Spiel, Full HD nativ, RTX 5070, Kreißsaal (`stat unit` / `stat gpu`):
+
+| Schritt | Bildzeit | |
+|---|---|---|
+| Ausgang | 25,0 ms (40 fps), Spitzen bis 43 ms | |
+| Haar-Voxel im Maßstab der Szene | 17,2 ms | Spitzen weg |
+| MegaLights im Kreißsaal | **15,0 ms (~67 fps)** | 496 → 207 Draw Calls |
+
+- **Lumen Hit Lighting:** Spiegelungen mit echtem Material und Licht am Trefferpunkt statt aus dem Oberflächen-Cache – Augen,
+  Haut, Nitril, Edelstahl. +0,7 ms.
+- **Haare im Maßstab der Szene:** Die Haarsträhnen der MetaHumans werden für Schatten und Licht voxelisiert, in fester Größe von
+  0,3 Einheiten – bei normalem Maßstab 3 mm. Im Kreißsaal ist 1 mm eine Einheit und die Figuren zehnfach skaliert: 0,3 mm,
+  tausendmal so viele Voxel, 6 ms allein dafür. Jetzt setzt jede Figur die Voxelgröße nach ihrer eigenen Skalierung
+  (`GenesisPeopleRendering::ScaleHairVoxelsTo`) – am Menschen wieder 3 mm, dasselbe Bild. Test `HairVoxelsFollowScale`.
+- **MegaLights:** Deckenfelder, Fenster und Wandleuchte sind Flächenleuchten; MegaLights rechnet sie mit geraytracten weichen
+  Schatten statt einzeln mit Schattenkarten – physikalisch genauer, 4 ms billiger, im Bild nicht zu unterscheiden
+  (Vergleich aus derselben Einstellung).
+- **Nicht unter dem Mikroskop:** Dort blieben die dünnen, durchscheinenden Spermien mit MegaLights fast unbeleuchtet und
+  verschwanden im dunklen Eileiter. Die Mikroskop-Kamera schaltet es für ihre Szene ab; danach gleicht das Bild dem ohne
+  MegaLights.
+
+| Mikroskop mit MegaLights: Spermien fehlen | Mikroskop-Kamera schaltet es ab |
+|---|---|
+| ![](Media/GENESIS-039_MegaLights_Spermien_fehlen.png) | ![](Media/GENESIS-039_MegaLights_Mikroskop_aus.png) |
 
 ## Nebenbefunde
 

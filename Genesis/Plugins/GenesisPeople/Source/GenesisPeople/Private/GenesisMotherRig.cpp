@@ -7,6 +7,7 @@
 #include "Engine/World.h"
 #include "GenesisMotherAnimInstance.h"
 #include "GenesisMotherLogic.h"
+#include "GenesisPeopleRendering.h"
 
 namespace
 {
@@ -79,6 +80,7 @@ void AGenesisMotherRig::Configure()
 	{
 		return;
 	}
+	GenesisPeopleRendering::ScaleHairVoxelsTo(MotherActor);
 
 	TArray<USkeletalMeshComponent*> Meshes;
 	MotherActor->GetComponents<USkeletalMeshComponent>(Meshes);

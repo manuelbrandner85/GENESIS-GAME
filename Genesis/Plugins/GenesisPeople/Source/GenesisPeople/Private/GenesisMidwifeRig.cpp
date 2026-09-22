@@ -5,6 +5,7 @@
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
 #include "GenesisMotherLogic.h"
+#include "GenesisPeopleRendering.h"
 #include "GenesisMotherRig.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "GenesisLog.h"
@@ -194,6 +195,7 @@ void AGenesisMidwifeRig::Configure()
 	{
 		return;
 	}
+	GenesisPeopleRendering::ScaleHairVoxelsTo(MidwifeActor);
 	TArray<USkeletalMeshComponent*> Meshes;
 	MidwifeActor->GetComponents<USkeletalMeshComponent>(Meshes);
 	for (USkeletalMeshComponent* Mesh : Meshes)
