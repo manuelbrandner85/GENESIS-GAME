@@ -216,7 +216,9 @@ void AGenesisBirthCameraRig::ApplyPerception(const FGenesisBirthState& State, co
 		if (bShow)
 		{
 			const FVector Drying(-70.0f + 25.0f * FMath::Sin(RubPhase * 2.0f * PI), 0.0f, 6.0f);
-			const FVector Lowering(0.0f, 0.0f, 90.0f * (1.0f - FMath::SmoothStep(0.0f, 0.7f, Cover)));
+			// Zugedeckt liegt das Tuch auf Hinterkopf und Rücken; vom Kind aus nur ein schmaler Rand oben im Bild (weiter
+			// vorn verdeckte es als graues Band ein Drittel des Bildes – auch das Gesicht der Mutter)
+			const FVector Lowering(-14.0f, 0.0f, 20.0f + 90.0f * (1.0f - FMath::SmoothStep(0.0f, 0.7f, Cover)));
 			Towel->SetRelativeLocation(Rub > 0.01f && Cover <= 0.01f ? Drying : Lowering);
 		}
 	}

@@ -71,6 +71,13 @@ bool FGenesisHairVoxelTest::RunTest(const FString& Parameters)
 	// Am Menschen immer 3 mm: 0,3 Einheiten bei 1 cm je Einheit, 3 Einheiten im Kreißsaal (1 mm je Einheit, Figur zehnfach)
 	TestTrue(TEXT("Normaler Maßstab"), FMath::IsNearlyEqual(GenesisPeopleRendering::HairVoxelWorldSize(1.0f), 0.3f));
 	TestTrue(TEXT("Kreißsaal"), FMath::IsNearlyEqual(GenesisPeopleRendering::HairVoxelWorldSize(10.0f), 3.0f));
+
+	// Haut nach der Geburt: glänzend und gerötet, in der ersten Stunde klingt es ab
+	const FGenesisSkinExertion Born = GenesisPeopleRendering::SkinExertion(GenesisPeopleRendering::ExertionAfterBirth(0.0f));
+	const FGenesisSkinExertion Hour = GenesisPeopleRendering::SkinExertion(GenesisPeopleRendering::ExertionAfterBirth(60.0f));
+	TestTrue(TEXT("Gleich nach der Geburt glänzt die Haut (Schweiß)"), Born.RoughnessMultiply < 0.7f);
+	TestTrue(TEXT("…und ist gerötet"), Born.BaseColorMultiply.R > Born.BaseColorMultiply.G);
+	TestTrue(TEXT("Nach einer Stunde fast wie in Ruhe"), Hour.RoughnessMultiply > 0.95f);
 	return true;
 }
 

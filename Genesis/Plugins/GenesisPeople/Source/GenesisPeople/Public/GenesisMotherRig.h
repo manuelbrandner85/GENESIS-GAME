@@ -94,6 +94,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Genesis|Mother")
 	float GetBreathLift() const;
 
+	/**
+	 * Anstrengung 0..1 (von der Regie): gerade geboren 1 – Gesicht schweißglänzend und gerötet –, in der ersten Stunde
+	 * abklingend. Frisch geschminkt und trocken sah sie aus wie zu einem Fototermin, nicht wie nach Stunden Wehen.
+	 */
+	void SetExertion(float InExertion) { Exertion = FMath::Clamp(InExertion, 0.0f, 1.0f); }
+
 	UFUNCTION(BlueprintCallable, Category = "Genesis|Mother")
 	bool HasEyeContact() const { return bEyeContact; }
 
@@ -111,6 +117,8 @@ public:
 
 private:
 	UPROPERTY(Transient) FGenesisLipSyncPlayer LipSync;
+	float Exertion = 1.0f;
+	float AppliedExertion = -1.0f;
 	void Configure();
 	void UpdatePose(float DeltaSeconds);
 	UGenesisMotherAnimInstance* GetMotherAnim() const;

@@ -18,6 +18,7 @@
 #include "GenesisVoiceActor.h"
 #include "GenesisSceneSpeech.h"
 #include "GenesisMidwifeRig.h"
+#include "GenesisPeopleRendering.h"
 #include "CineCameraComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
@@ -284,6 +285,9 @@ void AGenesisSliceGameMode::Tick(float DeltaSeconds)
 			if (Mother && It->Camera)
 			{
 				Mother->SetChild(bOnChest, bSeeksFace, It->Camera->GetComponentLocation(), It->Camera->GetComponentQuat());
+				// Nach Stunden Wehen: Schweiß und Röte, die in der ersten Stunde abklingen
+				Mother->SetExertion(EarlyLife->HasNewborn()
+					? GenesisPeopleRendering::ExertionAfterBirth(static_cast<float>(EarlyLife->GetState().MinutesSinceBirth)) : 1.0f);
 				// Das Kind liegt auf ihrem Körper, nicht auf festen Koordinaten
 				It->ChestEyeLocation = It->GetActorTransform().InverseTransformPosition(Mother->GetChestChildLocation());
 				It->MotherBreathLift = Mother->GetBreathLift();

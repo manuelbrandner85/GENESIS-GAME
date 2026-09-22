@@ -119,3 +119,22 @@ Prüfhilfe: `genesis.Mother.SeekFace 1` erzwingt das Suchen (wie ein gehaltener 
 - **Arbeitsspeicher und Grafikspeicher:** Beim Bauen lief parallel ein Film-Render eines anderen
   Projekts; die Meldung „Video memory exhausted" im Editor stammt aus dieser Zeit. Im Spiel selbst
   nicht beobachtet, aber auf der 12-GB-Karte im Blick behalten (4K-Gesicht + Haar-Strähnen).
+
+## GENESIS-039 (Teil 8) – Das Gesicht nach der Geburt
+
+Bei der Durchsicht Bild für Bild (fertiges Spiel, Full HD) sah die Mutter aus wie zu einem Fototermin: trocken, gepudert,
+frisch. Nach Stunden Wehen und Presswehen ist ein Gesicht nass vor Schweiß und gerötet.
+
+- **Schweiß und Röte aus der Anstrengung** (`GenesisPeopleRendering::SkinExertion`): Bei voller Anstrengung Rauheit der Haut
+  ×0,48 und Glanz ×1,4 (Schweißfilm), Grundfarbe rot ×1,08, grün/blau ×0,90 (Durchblutung) – über die Regler der MetaHuman-
+  Haut („… Global Multiply Post-Bake") an Gesicht und Körper.
+- **Klingt in der ersten Stunde ab** (`ExertionAfterBirth`): Halbwertszeit gut 14 min – der Schweiß verdunstet, die Röte geht
+  zurück. Die Regie setzt den Wert aus der Zeit seit der Geburt.
+- **Das Tuch** über dem Kind lag zu weit vorn: Beim Blick zur Mutter verdeckte es als graues Band das obere Drittel des Bildes,
+  auch ihr Gesicht. Jetzt liegt es auf Hinterkopf und Rücken.
+
+| vorher | nach der Geburt |
+|---|---|
+| ![](Media/GENESIS-039_Mutter_vorher.png) | ![](Media/GENESIS-039_Mutter_nach_der_Geburt.png) |
+
+Offen: Die Haare sitzen noch wie frisch frisiert (Strähnen, feucht am Haaransatz), die Wimpern sind die des MetaHuman-Presets.

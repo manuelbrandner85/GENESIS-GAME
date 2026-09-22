@@ -327,6 +327,14 @@ void AGenesisMotherRig::UpdatePose(float DeltaSeconds)
 		Pose.BreathLift = GenesisMotherLogic::GetBreathLift(State, Tuning);
 		Pose.BlinkClosure = GenesisMotherLogic::GetBlinkClosure(State, Tuning);
 		Pose.Smile = State.Smile;
+		// Haut nach der Anstrengung: nur bei merklicher Änderung neu setzen
+		if (FMath::Abs(Exertion - AppliedExertion) > 0.01f)
+		{
+			const FGenesisSkinExertion Look = GenesisPeopleRendering::SkinExertion(Exertion);
+			GenesisPeopleRendering::ApplySkinExertion(Face, Look);
+			GenesisPeopleRendering::ApplySkinExertion(Body, Look);
+			AppliedExertion = Exertion;
+		}
 		// Hält sie das Kind, umfassen ihre Finger seinen Rücken; sonst liegen sie entspannt
 		Pose.HandCurl = 0.8f * HoldBlend;
 		LipSync.Evaluate(GetWorld()->GetAudioTimeSeconds(), Pose.SpeechCurves);
