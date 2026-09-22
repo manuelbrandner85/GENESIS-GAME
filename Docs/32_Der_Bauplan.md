@@ -82,6 +82,11 @@ Das ist die erste Kette dieser Art im Spiel: **Wie die Mutter lebt, entscheidet 
 
 - **Die Szene fehlt** (Teil 2): Keimscheibe mit Primitivstreifen, die Neuralrinne, die sich schließt, Somitenpaare, die
   wie Perlen erscheinen, und das Herz, das zu schlagen beginnt. Bis dahin bleibt die Kamera auf der Einnistungsstelle.
+  Ein erster Anlauf für den Körper steht als **Prototyp** in `Tools/Blender/Embryogenesis/build_embryo_body.py`: Die
+  Maße stimmen (0,7 mm an Tag 16 bis 4,6 mm an Tag 28, Somitenzahl, Krümmung zur C-Form, Formschlüssel je Tag), die
+  Form überzeugt aber nicht – die Somiten lesen sich als gezackter Kamm, der Kopf bleibt ein glatter Klumpen. Der
+  nächste Weg steht im Kopf der Datei: die Anatomie aus impliziten Körpern aufbauen und die Topologie danach
+  vereinheitlichen.
 - Der Herzschlag soll hörbar werden (der Klang liegt im Körperklang-System bereit) und den Spieler von hier an
   begleiten.
 - Die Ernährung der Mutter steht noch als Wert in der Regie (`MotherNutrition`), weil die Mutter noch keine eigene

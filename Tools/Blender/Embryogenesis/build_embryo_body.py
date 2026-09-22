@@ -1,5 +1,14 @@
 # GENESIS: Der Kreislauf des Lebens
-# Baut den Embryo der dritten und vierten Woche (SK_GEN_EmbryoBody) mit Formschlüsseln für Tag 16 bis Tag 28.
+# PROTOTYPE – noch nicht im Spiel. Baut den Embryo der dritten und vierten Woche (SK_GEN_EmbryoBody) mit
+# Formschlüsseln für Tag 16 bis Tag 28.
+#
+# Stand 2026-09-22: Die Maße stimmen (Länge, Somitenzahl, Krümmung), die Form überzeugt noch nicht. Der Körper
+# entsteht hier als Schlauch entlang einer gekrümmten Achse; die Somiten wirken dabei wie ein gezackter Kamm
+# statt wie paarige Blöcke, und der Kopf bleibt ein glatter Klumpen ohne Augen und Kiemenbögen (Prüfbilder
+# ArtSource/Generated/Embryogenesis/LookDev_Embryo_Tag28.png). Nächster Weg: die Anatomie aus impliziten Körpern
+# (Metaballs) für jeden Tag aufbauen – Hirnbläschen, Herzwulst, Somitenpaare, Knospen als eigene Elemente – und
+# die Topologie anschließend vereinheitlichen (Grundnetz von Tag 28 schrittweise auf die früheren Tage
+# aufschrumpfen), damit Formschlüssel möglich bleiben. Alternativ in der Blender-Oberfläche nachmodellieren.
 #
 # Aufruf:
 #   blender -b --factory-startup -P Tools/Blender/Embryogenesis/build_embryo_body.py -- --out ArtSource/Generated/Embryogenesis [--export] [--render]
@@ -26,7 +35,7 @@ from genesis_blender_common import UM, ensure_dir, reset_scene, script_args, smo
 import bpy
 import numpy as np
 
-RINGS = 96          # Punkte entlang der Körperachse (Kopf → Schwanz)
+RINGS = 220         # Punkte entlang der Körperachse: je Somitenpaar rund sieben Ringe, sonst werden die Blöcke zu Zacken
 SEGMENTS = 40       # Punkte um den Querschnitt
 SOMITE_MAX = 30
 
@@ -53,7 +62,7 @@ def axis_points(day):
     length, _, curvature, _ = body_profile(day)
     u = np.linspace(0.0, 1.0, RINGS)
     # Krümmung ungleich verteilt: vorn (Nackenbeuge) und hinten (Schwanzfalte) stärker als in der Mitte
-    local = 1.4 * np.exp(-((u - 0.18) / 0.22) ** 2) + 1.0 * np.exp(-((u - 0.85) / 0.25) ** 2) + 0.55
+    local = 2.1 * np.exp(-((u - 0.26) / 0.13) ** 2) + 1.1 * np.exp(-((u - 0.86) / 0.22) ** 2) + 0.45
     angle = np.cumsum(local) / max(1.0e-6, np.sum(local)) * (math.pi * 1.25 * curvature)
     angle = angle - angle[len(angle) // 2]
     step = length / (RINGS - 1)
@@ -65,25 +74,30 @@ def axis_points(day):
 
 
 def build_day(day):
-    """Ein Körper für diesen Tag – gleiche Topologie für alle Tage, damit Formschlüssel möglich sind."""
+    """
+    Ein Körper für diesen Tag – gleiche Topologie für alle Tage, damit Formschlüssel möglich sind.
+    Die Enden sind geschlossen (Kappe aus Dreiecken), sonst sähe man in den Körper hinein.
+    """
     u, ax, az, angle = axis_points(day)
     length, radius, curvature, somites = body_profile(day)
-    flat = 1.0 - smoothstep(16.0, 21.0, day)          # Tag 16: noch eine flache Scheibe
-    groove = 1.0 - smoothstep(19.0, 25.5, day)         # offene Neuralrinne, schließt sich
+    flat = 1.0 - smoothstep(16.0, 21.0, day)           # Tag 16: noch eine flache Scheibe
+    groove = 1.0 - smoothstep(19.0, 25.5, day)          # offene Neuralrinne, schließt sich
     heart = smoothstep(20.5, 24.0, day)
     head = smoothstep(19.0, 27.0, day)
     buds = smoothstep(26.0, 29.0, day)
     sense = smoothstep(23.0, 27.0, day)
 
-    verts = np.zeros((RINGS * SEGMENTS, 3))
+    verts = np.zeros((RINGS * SEGMENTS + 2, 3))
     for ring in range(RINGS):
         t = u[ring]
 
-        # Grundverlauf: Kopfende dick, Rumpf gleichmäßig, Schwanz spitz
-        shape = 0.55 + 0.75 * bump(t, 0.16, 0.20) + 0.35 * bump(t, 0.45, 0.28)
-        shape *= 1.0 - 0.75 * smoothstep(0.78, 1.0, t)
-        # Drei Hirnbläschen am Kopfende (Vorder-, Mittel-, Rautenhirn) – ab der vierten Woche deutlich
-        vesicles = head * (0.30 * bump(t, 0.06, 0.05) + 0.24 * bump(t, 0.14, 0.045) + 0.28 * bump(t, 0.23, 0.05))
+        # Grundverlauf: Kopfende dick, Rumpf gleichmäßig, Schwanz spitz und dünn
+        shape = 0.34 + 1.00 * bump(t, 0.13, 0.15) + 0.34 * bump(t, 0.47, 0.26)
+        shape *= 1.0 - 0.80 * smoothstep(0.72, 1.0, t)
+        shape *= 1.0 - 0.55 * smoothstep(0.06, 0.0, t)      # Kopfspitze läuft zu
+        # Drei Hirnbläschen (Vorder-, Mittel-, Rautenhirn) mit Einschnürungen dazwischen
+        vesicles = head * (0.34 * bump(t, 0.07, 0.045) + 0.26 * bump(t, 0.155, 0.04) + 0.30 * bump(t, 0.235, 0.05))
+        vesicles -= head * (0.12 * bump(t, 0.113, 0.02) + 0.12 * bump(t, 0.196, 0.02))
         r_base = radius * (shape + vesicles)
 
         for seg in range(SEGMENTS):
@@ -94,34 +108,48 @@ def build_day(day):
             side = abs(sin_p)
 
             r = r_base
-            # Herzwölbung: vorn am Bauch, unter dem Kopf
-            r += radius * 1.15 * heart * bump(t, 0.30, 0.075) * belly
-            # Somiten: Blöcke rechts und links des Rückens (nicht auf der Mittellinie)
+            lateral_extra = 0.0
+            # Herzwölbung: vorn am Bauch, unter dem Kopf – sie wölbt sich bis Tag 28 deutlich vor
+            r += radius * 1.05 * heart * bump(t, 0.32, 0.085) * (belly ** 0.7)
+            # Somiten: Blöcke beidseits des Rückens, dazwischen tiefe Furchen
             if somites > 0:
-                span_start, span_end = 0.28, 0.28 + 0.55 * min(1.0, somites / 28.0)
+                span_start, span_end = 0.30, 0.30 + 0.50 * min(1.0, somites / 28.0)
                 if span_start <= t <= span_end:
                     local = (t - span_start) / max(1.0e-4, span_end - span_start)
-                    wave = 0.5 + 0.5 * math.cos(2.0 * math.pi * somites * local)
-                    beside = math.exp(-((side - 0.55) / 0.35) ** 2)   # neben der Mittellinie
-                    r += radius * 0.16 * wave * beside * back
-            # Neuralrinne: Furche auf der Mittellinie des Rückens, solange das Rohr offen ist
-            r -= radius * 0.45 * groove * math.exp(-(side / 0.22) ** 2) * back
+                    phase = math.cos(2.0 * math.pi * somites * local)
+                    # Runde Blöcke mit schmalen Furchen dazwischen – in Aufnahmen liest sich der Rücken wie eine Perlenkette
+                    block = 0.5 + 0.5 * math.copysign(abs(phase) ** 0.7, phase)
+                    # Zwei Reihen beidseits der Mittellinie (dort liegt das Neuralrohr)
+                    # Die Blöcke sitzen seitlich des Neuralrohrs: Sie machen den Rücken breiter, nicht höher.
+                    # Radial aufgetragen wurden daraus Zacken wie bei einem Drachen (im Bild gesehen).
+                    beside = math.exp(-((side - 0.55) / 0.28) ** 2)
+                    swell = radius * 0.22 * block * beside * (0.35 + 0.65 * back)
+                    r += swell * 0.35
+                    lateral_extra += swell * 0.9
+            # Neuralrinne auf der Mittellinie des Rückens, solange das Rohr offen ist
+            r -= radius * 0.42 * groove * math.exp(-(side / 0.20) ** 2) * back
+            # Nach dem Schluss bleibt über dem Rohr eine flache Rinne zwischen den Somitenreihen
+            r -= radius * 0.10 * (1.0 - groove) * math.exp(-(side / 0.16) ** 2) * back
             # Augenbläschen und Ohrgrübchen seitlich am Kopf
-            r += radius * 0.22 * sense * bump(t, 0.11, 0.035) * math.exp(-((side - 0.9) / 0.25) ** 2)
-            r += radius * 0.14 * sense * bump(t, 0.20, 0.03) * math.exp(-((side - 0.85) / 0.25) ** 2)
-            # Extremitätenknospen: kleine seitliche Paddel (Arme Tag 26, Beine etwas später)
-            r += radius * 0.40 * buds * bump(t, 0.40, 0.045) * math.exp(-((side - 0.95) / 0.20) ** 2)
-            r += radius * 0.32 * buds * bump(t, 0.66, 0.045) * math.exp(-((side - 0.95) / 0.20) ** 2)
+            r += radius * 0.20 * sense * bump(t, 0.10, 0.03) * math.exp(-((side - 0.92) / 0.22) ** 2)
+            r += radius * 0.12 * sense * bump(t, 0.19, 0.028) * math.exp(-((side - 0.88) / 0.22) ** 2)
+            # Extremitätenknospen: kleine seitliche Paddel (Arme vor Beinen)
+            r += radius * 0.45 * buds * bump(t, 0.42, 0.04) * math.exp(-((side - 0.96) / 0.18) ** 2)
+            r += radius * 0.36 * buds * bump(t, 0.64, 0.04) * math.exp(-((side - 0.96) / 0.18) ** 2)
 
             # Tag 16 ist eine flache Scheibe: breit, aber kaum dick
             height_scale = 1.0 - 0.88 * flat
-            y = r * sin_p * (1.0 + 0.9 * flat)
+            y = (r + lateral_extra) * sin_p * (1.0 + 0.9 * flat)
             local_z = r * cos_p * height_scale
 
-            # Der Querschnitt steht senkrecht zur Mittellinie
             nx = -math.sin(angle[ring])
             nz = math.cos(angle[ring])
             verts[ring * SEGMENTS + seg] = (ax[ring] + nx * local_z, y, az[ring] + nz * local_z)
+
+    # Kappen: je ein Punkt vor dem Kopf und hinter dem Schwanz, leicht vorgesetzt
+    step = length / (RINGS - 1)
+    verts[RINGS * SEGMENTS] = (ax[0] - math.cos(angle[0]) * step * 0.8, 0.0, az[0] - math.sin(angle[0]) * step * 0.8)
+    verts[RINGS * SEGMENTS + 1] = (ax[-1] + math.cos(angle[-1]) * step * 0.8, 0.0, az[-1] + math.sin(angle[-1]) * step * 0.8)
 
     faces = []
     for ring in range(RINGS - 1):
@@ -131,6 +159,12 @@ def build_day(day):
             c = (ring + 1) * SEGMENTS + (seg + 1) % SEGMENTS
             d = (ring + 1) * SEGMENTS + seg
             faces.append((a, b, c, d))
+    head_pole = RINGS * SEGMENTS
+    tail_pole = RINGS * SEGMENTS + 1
+    for seg in range(SEGMENTS):
+        faces.append((head_pole, (seg + 1) % SEGMENTS, seg))
+        last = (RINGS - 1) * SEGMENTS
+        faces.append((tail_pole, last + seg, last + (seg + 1) % SEGMENTS))
     return verts * UM, faces
 
 
