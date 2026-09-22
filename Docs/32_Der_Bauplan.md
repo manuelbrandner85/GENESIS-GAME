@@ -10,6 +10,7 @@ Bauplan: vorn und hinten, links und rechts, oben und unten. In der vierten schl�
 | Simulation der dritten und vierten Woche (`GenesisEmbryogenesisLogic`) | **PRODUCTION READY**: gegen Lehrbuch und Ultraschalldaten geprüft |
 | Anzeige im Durchlauf (Tag, Länge, Somiten, Herzschlag), Entwicklerseite | **BETA** |
 | Der Körper an Tag 28, nach Referenzen in Blender (Form, innere Organe, Gewebe) | **ALPHA** – siehe „Der Körper" |
+| Der Körper in Unreal (Prüfkarte `L_GEN_EmbryoLookdev`, noch nicht im Durchlauf) | **ALPHA** – siehe „In Unreal" |
 | Szene: die Keimscheibe, das Neuralrohr, das schlagende Herz | **PLAN** (Teil 2) |
 
 ## Die Stufen
@@ -119,6 +120,39 @@ abgelesen (Kopfkuppe, Rückenlinie, Herz, Kiemenbögen, Knospen, Schwanz; 6,7 µ
 7. Messwerkzeug: 16-Bit-Bilder wurden linear gemessen und wirkten zu dunkel (behoben in `genesis_blender_common`).
 
 Der frühere Prototyp (`build_embryo_body.py`, Röhre mit Ringen) ist damit ersetzt und entfernt.
+
+### In Unreal
+
+![Tag 28 in Unreal, Prüfkarte mit dem Licht des Blender-Lookdevs](Media/GENESIS-041_Embryo_Tag28_Unreal.png)
+
+Weg: `build_embryo_day28.py` exportiert (`export_all`) Hülle und Organe als FBX (1 µm = 1 Einheit),
+`Tools/Unreal/Embryogenesis/setup_embryo.py` importiert, baut die Materialien und die Prüfkarte
+`/Game/Genesis/Embryogenesis/Maps/L_GEN_EmbryoLookdev` mit Kamera und Licht wie in Blender.
+
+- **Organe** undurchsichtig mit Streuung (Subsurface), über Nanite in voller Auflösung (Herz, Gefäße, Neuralrohr,
+  Somiten, Leberanlage – je eine Materialinstanz von `M_GEN_EmbryoOrgan`).
+- **Hülle** durchscheinend (kein Nanite möglich, deshalb in Blender auf 30 % der Dreiecke reduziert – glatt, ohne
+  sichtbaren Verlust). Blender rechnet das Mesenchym als Streuvolumen; in Echtzeit übernimmt das die Hülle selbst:
+  - **Beer-Lambert:** Deckung = 1 − e^(−d/0,7 mm), d = Gewebe zwischen Haut und dem Organ dahinter (Szenentiefe minus
+    Hauttiefe). Ein Organ dicht unter der Haut bleibt klar, ein tiefes wird milchig.
+  - **Tiefenbewusste Streuunschärfe:** Das Bild hinter der Haut wird mit 13 Abtastpunkten geholt, Radius mit d
+    wachsend; ein Punkt zählt nur, wenn hinter ihm Körper liegt.
+- **Gemessen:** Grafikzeit 2,7 ms bei 1066 × 600 (1,27 Mio. Dreiecke, 83 Zeichenaufrufe). Farben an denselben
+  Bildstellen gegen Blender abgeglichen.
+
+**Gefunden und behoben:**
+1. Alles blau statt gold: `unreal.Color` liegt als B, G, R im Speicher – jetzt mit benannten Kanälen.
+2. Organe wie in Glas: feste Deckung der Hülle; jetzt Tiefe nach Beer-Lambert und Unschärfe.
+3. Dunkle Ringe um Organkanten durch die Unschärfe (Abtastung traf den schwarzen Hintergrund) – jetzt tiefenbewusst.
+4. Durchscheinende Flächen beleuchtet Unreal nur mit **einem** gerichteten Licht: Gegenlicht und Aufhellung sind
+   jetzt Scheinwerfer (Stärke aus I = E · d²).
+5. Orange Haut: Unreals Filmic-Tonemapper behält Sättigung, die Blenders AgX nimmt – Licht auf das Gold des Covers
+   (#C6A28F) gedämpft.
+6. `SceneColor` hat in 5.8 nur noch einen Eingang (Modus „Versatz"); Verbindungen im Materialgraphen werden jetzt
+   geprüft statt still übergangen.
+
+**Noch offen in Unreal:** feines Flimmern an den Knospen (Abtastung am Rand), der Hirnrand ist unten etwas bläulich
+(Aufhellung von unten), und der Embryo steht noch in einer Prüfkarte, nicht im Durchlauf.
 
 ## Offen
 

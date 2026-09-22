@@ -445,8 +445,9 @@ def inner_organs(coll):
     def brain(mb):
         # Der Kopf ist mit vier Wochen fast nur Gehirn: Die Wand ist dieselbe Form wie der Kopf, nur
         # eingerückt – drei einzelne Kugeln leuchteten als helle Flecken durch die Haut.
+        # 95 %: Die Haut liegt direkt auf dem Gehirn. Mit 90 % blieb in Unreal ein Band mit hartem Rand
         for x, y, semi, angle, stiff in HEAD_BLOBS[:3]:
-            blob(mb, x, y, tuple(v * 0.90 for v in semi), 0.0, angle, stiffness=stiff)
+            blob(mb, x, y, tuple(v * 0.95 for v in semi), 0.0, angle, stiffness=stiff)
             blob(mb, x, y, tuple(v * 0.55 for v in semi), 0.0, angle, stiffness=2.4, negative=True)
         # Augenbläschen: Ausstülpungen der Hirnwand
         for side in (-1.0, 1.0):
@@ -645,6 +646,49 @@ def finish(metaball_obj):
     inner_organs(obj.users_collection[0])
     print("GENESIS: Embryo Tag 28: %d Punkte, Verschiebung %.1f bis %.1f µm" % (len(obj.data.vertices), lo, hi))
     return obj
+
+
+# ------------------------------------------------------------------------------------------------
+# Export nach Unreal (1 µm = 1 Unreal-Einheit, wie alle Mikroszenen)
+# ------------------------------------------------------------------------------------------------
+
+# Die Hülle wird in Unreal durchscheinend gezeichnet – das kann Nanite nicht. Sie ist glatt, deshalb
+# verliert sie bei 30 % der Dreiecke nichts Sichtbares; die Organe bleiben in voller Auflösung (Nanite).
+SHELL_KEEP = 0.30
+EXPORT_PARTS = {
+    "Embryo_Tag28": "SM_GEN_Embryo28_Huelle",
+    "Embryo_Tag28_Herz": "SM_GEN_Embryo28_Herz",
+    "Embryo_Tag28_Gefaesse": "SM_GEN_Embryo28_Gefaesse",
+    "Embryo_Tag28_Neuralrohr": "SM_GEN_Embryo28_Neuralrohr",
+    "Embryo_Tag28_Somiten": "SM_GEN_Embryo28_Somiten",
+    "Embryo_Tag28_Leberanlage": "SM_GEN_Embryo28_Leberanlage",
+}
+
+
+def export_all(out_dir):
+    import os
+    os.makedirs(out_dir, exist_ok=True)
+    report = {}
+    for obj_name, asset in EXPORT_PARTS.items():
+        obj = bpy.data.objects[obj_name]
+        added = None
+        if obj_name == "Embryo_Tag28":
+            added = obj.modifiers.new("Fuer_Unreal", "DECIMATE")
+            added.ratio = SHELL_KEEP
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.hide_viewport = False
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        path = os.path.join(out_dir, asset + ".fbx")
+        bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_unit_scale=True,
+                                 apply_scale_options="FBX_SCALE_UNITS", object_types={"MESH"},
+                                 use_mesh_modifiers=True, mesh_smooth_type="FACE", use_tspace=False,
+                                 add_leaf_bones=False, bake_space_transform=False)
+        if added is not None:
+            obj.modifiers.remove(added)
+        report[asset] = round(os.path.getsize(path) / 1e6, 1)
+        print("GENESIS: exportiert %s (%.1f MB)" % (path, report[asset]))
+    return report
 
 
 if "GENESIS_ONLY_BLOCKOUT" not in globals():
