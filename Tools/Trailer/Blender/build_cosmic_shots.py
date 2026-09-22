@@ -618,12 +618,21 @@ def shot_planet():
 
 
 # ---------------------------------------------------------------- 4 Titel
+TITLE_FORMAT = os.environ.get("GENESIS_FORMAT", "16x9")      # 16x9 | 9x16 | 1x1 (Social-Fassungen)
+
+
 def shot_title():
     frames = 132
     scene = new_scene("Title", frames)
-    cam, tgt = camera(scene, 50, (0, -12, 0), (0, 0, 0))
-    key(cam, "location", 1, (0, -12.4, 0))
-    key(cam, "location", 132, (0, -11.6, 0))
+    # Hochformat: gleiche Schriftgroesse, aber mehr Abstand (die Breite ist das enge Mass); Quadrat: etwas mehr Abstand
+    dist = {"16x9": 12.0, "9x16": 17.5, "1x1": 13.5}[TITLE_FORMAT]
+    if TITLE_FORMAT == "9x16":
+        scene.render.resolution_x, scene.render.resolution_y = 1080, 1920
+    elif TITLE_FORMAT == "1x1":
+        scene.render.resolution_x, scene.render.resolution_y = 1080, 1080
+    cam, tgt = camera(scene, 50, (0, -dist, 0), (0, 0, 0))
+    key(cam, "location", 1, (0, -dist * 1.033, 0))
+    key(cam, "location", 132, (0, -dist * 0.967, 0))
     gold_m = bpy.data.materials.new("M_TitleGold")
     gold_m.use_nodes = True
     nt = gold_m.node_tree
@@ -682,7 +691,8 @@ def shot_title():
         key(title, "scale", f, (s, s, s))
     # Aufdecken durch eine Blende (Plane vor dem Titel, schwarz, gleitet weg) statt Einblendung eines Bildes
     text("DER KREISLAUF DES LEBENS", 0.26, -0.72, 1.6, [(1, 0.0), (68, 0.0), (86, 0.9), (132, 0.9)], "Subtitle")
-    text("JEDE ENTSCHEIDUNG HINTERLÄSST EIN ECHO.", 0.17, -1.22, 1.5, [(1, 0.0), (92, 0.0), (108, 0.6), (132, 0.6)], "Tagline")
+    text("JEDE ENTSCHEIDUNG HINTERLÄSST EIN ECHO." if TITLE_FORMAT == "16x9" else "JEDE ENTSCHEIDUNG\nHINTERLÄSST EIN ECHO.",
+         0.17 if TITLE_FORMAT == "16x9" else 0.22, -1.22 if TITLE_FORMAT == "16x9" else -1.4, 1.5, [(1, 0.0), (92, 0.0), (108, 0.6), (132, 0.6)], "Tagline")
     mask_m, _ = emission_material("M_Mask", (0, 0, 0), 0.0)
     bpy.ops.mesh.primitive_plane_add(size=1, location=(0, -0.6, 0.35), rotation=(math.radians(90), 0, 0))
     mask = bpy.context.active_object
@@ -718,8 +728,9 @@ def shot_title():
     curve.bevel_depth = 0.004
     spline = curve.splines.new("POLY")
     spline.points.add(1)
-    spline.points[0].co = (-3.4, 0, -0.22, 1)
-    spline.points[1].co = (3.4, 0, -0.22, 1)
+    half = 3.4 if TITLE_FORMAT == "16x9" else 2.9
+    spline.points[0].co = (-half, 0, -0.22, 1)
+    spline.points[1].co = (half, 0, -0.22, 1)
     line = bpy.data.objects.new("Line", curve)
     scene.collection.objects.link(line)
     line.data.materials.append(line_mat)
@@ -729,7 +740,7 @@ def shot_title():
     key(curve, "bevel_factor_end", 92, 1.0)
     stars(scene, 1500, 900.0, seed=21)
     glare(scene, threshold=1.0, size=7)
-    render(scene, "BL_Title")
+    render(scene, "BL_Title" if TITLE_FORMAT == "16x9" else "BL_Title_" + TITLE_FORMAT)
 
 
 SHOTS = {"portal": shot_portal, "galaxy": shot_galaxy, "planet": shot_planet, "title": shot_title}

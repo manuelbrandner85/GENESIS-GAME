@@ -14,7 +14,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.dirname(HERE))
 import build_trailer_audio as base          # Grundfunktionen (Filter, Hall, Herzschlag, Rauschen ...)
-import trailer_v2_edl as edl
+import importlib
+edl = importlib.import_module(os.environ.get("GENESIS_EDL", "trailer_v2_edl"))
+NAME = getattr(edl, "NAME", "GENESIS_Trailer_v2")
 
 SR = base.SR
 N = int((edl.LENGTH + 2.0) * SR)
@@ -171,10 +173,10 @@ def main():
     master = master[: int(edl.LENGTH * SR)]
     peak = float(np.max(np.abs(master)))
     master = np.tanh(master / peak * 1.1) / np.tanh(1.1) * 0.89
-    base.write_wav(os.path.join(OUT, "GENESIS_Trailer_v2_Mix.wav"), master)
-    base.write_wav(os.path.join(OUT, "Stem_Music.wav"), (mx * duck[:, None])[: int(edl.LENGTH * SR)] / peak * 0.89)
-    base.write_wav(os.path.join(OUT, "Stem_Voice.wav"), vo[: int(edl.LENGTH * SR)] / peak * 0.89)
-    base.write_wav(os.path.join(OUT, "Stem_SFX.wav"), fx[: int(edl.LENGTH * SR)] / peak * 0.89)
+    base.write_wav(os.path.join(OUT, NAME + "_Mix.wav"), master)
+    base.write_wav(os.path.join(OUT, NAME + "_Stem_Music.wav"), (mx * duck[:, None])[: int(edl.LENGTH * SR)] / peak * 0.89)
+    base.write_wav(os.path.join(OUT, NAME + "_Stem_Voice.wav"), vo[: int(edl.LENGTH * SR)] / peak * 0.89)
+    base.write_wav(os.path.join(OUT, NAME + "_Stem_SFX.wav"), fx[: int(edl.LENGTH * SR)] / peak * 0.89)
     print("Stimmen (Start / Ende / Datei):")
     placed.sort()
     for i, (s, e, name, kind) in enumerate(placed):

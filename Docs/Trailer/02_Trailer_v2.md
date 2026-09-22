@@ -45,7 +45,14 @@ Einzige Quelle für Bild und Ton ist die Schnittliste [`Tools/Trailer/trailer_v2
 5. Ton: `build_trailer_v2_audio.py` · 6. Schnitt/Render: `blender -b --python Tools/Trailer/Blender/build_trailer_v2_edit.py -- [--master]`
 
 ## Status (2026-09-22)
-- **Fertig gerendert:** `GENESIS_Trailer_v2_1080p.mp4` (H.264 nahezu verlustfrei, AAC 320 kbit/s) und Master `GENESIS_Trailer_v2_Master_ProRes422HQ.mov` in `Genesis/Saved/Trailer/v2/`; Web-Fassung zusätzlich unter `Docs/Media/Trailer/` (LFS).
+- **Fertig gerendert** (`Genesis/Saved/Trailer/v2/`, Web-Fassungen zusätzlich in `Docs/Media/Trailer/`, LFS):
+  | Fassung | Datei | Format | Länge |
+  |---|---|---|---|
+  | Haupttrailer (YouTube) | `GENESIS_Trailer_v2.mp4` | 1920 × 1080, Kinobalken 2,39:1 | 120 s |
+  | Master | `GENESIS_Trailer_v2_Master_ProRes422HQ.mov` (2,3 GB, nur lokal) | 1920 × 1080 ProRes 422 HQ, PCM | 120 s |
+  | TikTok / Reels / Shorts | `GENESIS_Trailer_v2_9x16.mp4` | 1080 × 1920 | 46,4 s |
+  | Instagram / Facebook Feed | `GENESIS_Trailer_v2_1x1.mp4` | 1080 × 1080 | 33 s |
+- **Social-Fassungen sind eigene Schnitte**, kein Zuschnitt: kürzere Einstellungen, eigener Musikschnitt (Aufbau → Abriss genau vor dem Titel), jede Einstellung neu ausgerichtet (Motiv in die Bildmitte, `focus` in `Tools/Trailer/trailer_v2_9x16_edl.py` / `trailer_v2_1x1_edl.py`), Titel eigens im Hoch- bzw. Quadratformat in Blender gerendert (`GENESIS_FORMAT=9x16|1x1`). Aufruf: `$env:GENESIS_EDL="trailer_v2_9x16_edl"` vor Ton- und Schnittskript.
 - Geprüft: Übergänge (Weißblitz Befruchtung/Geburt, Überblendungen), Kinobalken, Titel in voller Auflösung, Stille-Momente −180 dBFS, keine Stimmüberlappung, Mutter lippensynchron (Zeile beginnt Frame 1882, „oh mein Gott“ ab 3,2 s, „hallo“ bei Frame ≈ 2060).
 - Behobene Fehler während der Produktion: Startmenü mitten in der Aufnahme (Eingabe ins Aufnahmefenster → Aufnahme offscreen), Aufnahme endete zu früh (Verzögerungsbefehl zählt Echtzeit), Befehlszeile zu lang, Geburtskamera verlässt den Kanal erst ~42 s nach „geboren“, Galaxie-Sterne als Scheiben / Warp-Streifen, Stadtlichter als Flecken, Streiflicht statt Fog-Glow (Blender-5.2-API).
 - Offen: Abnahme per Ohr und Auge durch den Game Director (Mischung, Erzählerstimme, Musikwahl).

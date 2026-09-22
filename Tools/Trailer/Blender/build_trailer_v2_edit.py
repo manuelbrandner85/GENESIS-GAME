@@ -12,14 +12,16 @@ import sys
 import bpy
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import trailer_v2_edl as edl
+import importlib
+edl = importlib.import_module(os.environ.get("GENESIS_EDL", "trailer_v2_edl"))   # andere Fassungen: trailer_v2_social_edl ...
 
 ARGS = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 FPS = edl.FPS
-W, H = 1920, 1080
+W, H = getattr(edl, "WIDTH", 1920), getattr(edl, "HEIGHT", 1080)
+NAME = getattr(edl, "NAME", "GENESIS_Trailer_v2")
 OUT = os.path.join(edl.REPO, "Genesis", "Saved", "Trailer", "v2")
-MIX = os.path.join(OUT, "GENESIS_Trailer_v2_Mix.wav")
-BAR = int(round((H - W / 2.39) / 2))
+MIX = os.path.join(OUT, NAME + "_Mix.wav")
+BAR = int(round((H - W / 2.39) / 2)) if getattr(edl, "BARS", True) else 0
 
 
 def fr(t):
@@ -83,13 +85,18 @@ def add_shot(se, i, shot, prev):
         s.frame_final_duration = length
         z0, z1 = opts.get("zoom", (1.0, 1.0))
         px, py = opts.get("pan", (0, 0))
-        for f, z, x, y in ((fr(t0), z0, 0, 0), (fr(t1) - 1, z1, px, py)):
-            s.transform.scale_x = s.transform.scale_y = z
+        fx = (0.5 - opts["focus"]) * H * 16 / 9 if "focus" in opts else 0.0
+        fill = s.transform.scale_x          # Skalierung aus fit_method="FILL" (im Hochformat > 1) - Zoom kommt obendrauf
+        for f, z, x, y in ((fr(t0), z0, fx, 0), (fr(t1) - 1, z1, fx + px, py)):
+            s.transform.scale_x = s.transform.scale_y = z * fill
             s.transform.offset_x, s.transform.offset_y = x, y
             for p in ("scale_x", "scale_y", "offset_x", "offset_y"):
                 s.transform.keyframe_insert(p, frame=f)
     elif kind == "bl":
-        files = sorted(f for f in os.listdir(src) if f.endswith(".png"))
+        if not os.path.isdir(src):
+            print("WARNUNG: Ordner fehlt", src)
+            return None
+        files = sorted(f for f in os.listdir(src) if f.endswith(".png"))[int(opts.get("offset", 0) * FPS):]
         if not files:
             print("WARNUNG: keine Frames in", src)
             return None
@@ -102,6 +109,9 @@ def add_shot(se, i, shot, prev):
     if s is None:
         return None
     s.blend_type = "ALPHA_OVER"
+    if "focus" in opts and kind != "still":
+        # Neuausrichtung fuer Hoch-/Quadratformat: Quellen sind 16:9, bei FILL fuellt die Hoehe das Bild
+        s.transform.offset_x = (0.5 - opts["focus"]) * H * 16 / 9
     if opts.get("desat"):
         s.color_saturation = 1.0 - opts["desat"]
     if opts.get("dreamy"):
@@ -157,7 +167,7 @@ def main():
     except AttributeError:
         pass
     # Kinobalken 2,39:1
-    for name, y in (("Bar_Top", H / 2 - BAR / 2), ("Bar_Bottom", -(H / 2 - BAR / 2))):
+    for name, y in ((("Bar_Top", H / 2 - BAR / 2), ("Bar_Bottom", -(H / 2 - BAR / 2))) if BAR > 0 else ()):
         b = color(se, name, fx_ch + 3, 0.0, edl.LENGTH, (0, 0, 0))
         b.transform.scale_y = BAR / H
         b.transform.offset_y = y
@@ -165,9 +175,11 @@ def main():
     t0, t1, text = edl.END_CARD
     card = se.strips.new_effect(name="EndCard", type="TEXT", channel=fx_ch + 4, frame_start=fr(t0), length=fr(t1) - fr(t0))
     card.text = text
-    card.font_size = 22
+    card.font = bpy.data.fonts.load("C:/Windows/Fonts/segoeui.ttf")     # gleiche Schriftfamilie wie der Titel
+    card.font_size = getattr(edl, "END_CARD_SIZE", 22)
+    card.wrap_width = 0.9
     card.color = (0.62, 0.6, 0.56, 1)
-    card.location = (0.5, 0.5)
+    card.location = getattr(edl, "END_CARD_POS", (0.5, 0.5))
     card.anchor_x, card.anchor_y = "CENTER", "CENTER"
     card.alignment_x = "CENTER"
     card.blend_type = "ALPHA_OVER"
@@ -178,12 +190,12 @@ def main():
         print("WARNUNG: Mix fehlt", MIX)
 
     os.makedirs(OUT, exist_ok=True)
-    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "GENESIS_Trailer_v2_Edit.blend"))
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, NAME + "_Edit.blend"))
     if "--stills" in ARGS:
         scene.render.image_settings.file_format = "JPEG"
         for t in [s[0] + (s[1] - s[0]) * 0.5 for s in edl.VIDEO]:
             scene.frame_set(fr(t))
-            scene.render.filepath = os.path.join(OUT, "stills", "v2_%06.2fs.jpg" % t)
+            scene.render.filepath = os.path.join(OUT, "stills_" + NAME, "%06.2fs.jpg" % t)
             bpy.ops.render.render(write_still=True)
         print("GENESIS_V2_STILLS_OK")
         return
@@ -194,7 +206,7 @@ def main():
     ff.constant_rate_factor = "PERC_LOSSLESS"
     ff.ffmpeg_preset = "BEST"
     ff.audio_codec, ff.audio_bitrate, ff.audio_mixrate, ff.audio_channels = "AAC", 320, 48000, "STEREO"
-    scene.render.filepath = os.path.join(OUT, "GENESIS_Trailer_v2_1080p.mp4")
+    scene.render.filepath = os.path.join(OUT, NAME + ".mp4")
     if "--master-only" not in ARGS:
         bpy.ops.render.render(animation=True)
         print("GENESIS_V2_RENDER_OK", scene.render.filepath)
@@ -202,7 +214,7 @@ def main():
         ff.format, ff.codec = "QUICKTIME", "PRORES"
         ff.ffmpeg_prores_profile = "422_HQ"
         ff.audio_codec = "PCM"
-        scene.render.filepath = os.path.join(OUT, "GENESIS_Trailer_v2_Master_ProRes422HQ.mov")
+        scene.render.filepath = os.path.join(OUT, NAME + "_Master_ProRes422HQ.mov")
         bpy.ops.render.render(animation=True)
         print("GENESIS_V2_MASTER_OK", scene.render.filepath)
 
