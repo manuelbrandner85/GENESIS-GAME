@@ -120,7 +120,8 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	 */
 	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float ZygoteHoursPerSecond = 3.0f;
 	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float CleavageHoursPerSecond = 1.6f;
-	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float ImplantationHoursPerSecond = 10.0f;
+	/** Die zweite Woche: sieben Stufen, je ein Satz dazu – 5 h je Sekunde lassen jeden lesen (gut eine halbe Minute). */
+	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float ImplantationHoursPerSecond = 5.0f;
 
 	/** Wie viele Stunden die Regie je Schritt überspringt, solange die erste Woche läuft (alt, nicht mehr benutzt). */
 	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "1", ClampMax = "24")) int32 EmbryoSkipHours = 6;
@@ -203,4 +204,6 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	/** Die Karten des Durchlaufs. */
 	UPROPERTY(EditAnywhere, Category = "Slice") FName ConceptionMap = TEXT("L_GEN_OviductAmpulla");
 	UPROPERTY(EditAnywhere, Category = "Slice") FName BirthMap = TEXT("L_GEN_Birth");
+	/** Die zweite Woche (GENESIS-040): Nach dem Schlüpfen zeigt das Spiel die Schleimhaut der Gebärmutter. */
+	UPROPERTY(EditAnywhere, Category = "Slice") FName ImplantationMap = TEXT("L_GEN_UterineCavity");
 };

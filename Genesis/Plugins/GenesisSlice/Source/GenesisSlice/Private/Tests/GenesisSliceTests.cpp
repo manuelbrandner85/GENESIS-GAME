@@ -236,4 +236,19 @@ bool FGenesisSliceEmbryoTimeLapseTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/**
+ * Der Ort folgt dem Keim (GENESIS-040): bis zum Schlüpfen der Eileiter, danach die Gebärmutter, eingenistet bleibt er dort.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSliceEmbryoMapTest, "Genesis.Slice.EmbryoMap", GenesisSliceTests::SliceFlags)
+bool FGenesisSliceEmbryoMapTest::RunTest(const FString& Parameters)
+{
+	const FGenesisSliceTuning Tuning;
+	TestEqual(TEXT("Morula im Eileiter"), GenesisSliceLogic::MapForEmbryoStage(EGenesisEmbryoStage::Morula, Tuning), Tuning.ConceptionMap);
+	TestEqual(TEXT("Beim Schlüpfen noch im Eileiter"), GenesisSliceLogic::MapForEmbryoStage(EGenesisEmbryoStage::Hatching, Tuning), Tuning.ConceptionMap);
+	TestEqual(TEXT("Geschlüpft: Gebärmutter"), GenesisSliceLogic::MapForEmbryoStage(EGenesisEmbryoStage::Implanting, Tuning), Tuning.ImplantationMap);
+	TestEqual(TEXT("Eingenistet: Gebärmutter"), GenesisSliceLogic::MapForEmbryoStage(EGenesisEmbryoStage::Implanted, Tuning), Tuning.ImplantationMap);
+	TestEqual(TEXT("Stillstand: kein Ortswechsel"), GenesisSliceLogic::MapForEmbryoStage(EGenesisEmbryoStage::Arrested, Tuning), Tuning.ConceptionMap);
+	return true;
+}
+
 #endif

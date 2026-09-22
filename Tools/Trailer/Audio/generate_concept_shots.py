@@ -16,6 +16,7 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")
 OUT = os.path.join(REPO, "ArtSource", "Generated", "Trailer", "Concept")
 MANIFEST = os.path.join(REPO, "Docs", "Trailer", "Concept_Shots_Manifest.json")
 REF_SHEET = os.path.join(OUT, "REF_Protagonist_Ages.png")
+REF_COVER = os.path.join(OUT, "REF_Cover.png")   # Spiel-Cover: Gold, Licht, kosmisch
 
 LOOK = ("Photorealistic cinematic film still, shot on 35mm film with an anamorphic lens, natural film grain, subtle halation, "
         "realistic skin with pores, motivated practical light only, restrained natural color grade, no text, no watermark, no logo. ")
@@ -83,6 +84,33 @@ SHOTS = [
      "The hands gently turn the small planet, clouds swirl on it, city lights begin to sparkle on its night side, slow orbit of the camera."),
 ]
 
+COVER = (" Match the visual language of the reference cover image: deep cosmic blacks, gold and blue luminous energy, "
+         "volumetric god rays, fine glowing particles, epic but restrained, photorealistic film still. ")
+SHOTS += [
+    ("SH_B01_SoulLeaves", "H", True,
+     "A quiet bedroom at dusk: the very old man from the character reference lies peacefully in bed, his family bowed around him in grief. "
+     "Above the body a translucent, softly glowing soul of the same man rises, weightless, made of warm golden light and fine particles, "
+     "still recognisably his face, looking down at his own body. Not horror, not religious kitsch - awe and release." + COVER,
+     "The luminous soul slowly rises and separates from the body, particles drift upward, the family stays still, "
+     "camera drifts gently upward with the soul."),
+    ("SH_B02_RealmsOfLight", "H", False,
+     "Beyond life: enormous floating islands under a gold, blue and violet nebula sky, a city of light with slender towers on the largest island, "
+     "waterfalls of light falling into the void, wide stairs of light on which countless small luminous souls walk upward. "
+     "Religiously neutral, no crosses, no angels. Ultra wide 24mm, immense scale, awe." + COVER,
+     "Slow majestic forward crane over the edge of an island towards the city of light, souls drift upward along the stairs, "
+     "light particles float, nebula clouds move slowly."),
+    ("SH_B03_CreationHands", "H", True,
+     "Deep space: the luminous soul-being of the old man from the character reference, a figure made of light, holds a newborn planet between his open hands. "
+     "The planet glows molten, oceans and continents forming on its surface, thin blue atmosphere, clouds swirling, a spiral galaxy far behind. "
+     "The being looks at his creation with quiet wonder." + COVER,
+     "The molten planet cools and turns between the hands, oceans spread, clouds form, tiny city lights begin to sparkle, "
+     "the camera slowly orbits around the hands."),
+    ("SH_B04_WorldOverlook", "H", False,
+     "A lone human figure seen from behind, standing on a dark rocky cliff at dawn, looking out over a newly created world: rivers, waterfalls, "
+     "forests, a distant city of white towers catching the first sunlight, two moons low in the sky, mist in the valleys. Epic, hopeful, cinematic." + COVER,
+     "Mist drifts through the valleys, the light of the rising sun grows, the figure stands still, very slow push-in from behind."),
+]
+
 
 def main():
     only = set()
@@ -92,6 +120,7 @@ def main():
     before = k.credit()
     print("GENESIS_CONCEPT Guthaben vorher", before)
     ref_url = None
+    cover_url = None
     pending = []
     for sid, tier, needs_ref, img_prompt, motion in SHOTS:
         if img_prompt is None or (only and sid not in only):
@@ -101,7 +130,10 @@ def main():
         if not os.path.exists(kf):
             if needs_ref and ref_url is None:
                 ref_url = k.upload(REF_SHEET, "REF_Protagonist_Ages.png")
-            task = k.create("nano-banana-pro", {"prompt": LOOK + img_prompt, "image_input": [ref_url] if needs_ref else [],
+            if sid.startswith("SH_B") and cover_url is None:
+                cover_url = k.upload(REF_COVER, "REF_Cover.png")
+            imgs = ([ref_url] if needs_ref else []) + ([cover_url] if sid.startswith("SH_B") else [])
+            task = k.create("nano-banana-pro", {"prompt": LOOK + img_prompt, "image_input": imgs,
                                                 "aspect_ratio": "16:9", "resolution": "2K", "output_format": "png"})
             urls, info = k.wait(task, 900)
             k.download(urls[0], kf)

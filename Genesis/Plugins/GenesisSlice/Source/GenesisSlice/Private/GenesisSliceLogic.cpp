@@ -123,6 +123,13 @@ namespace GenesisSliceLogic
 		}
 	}
 
+	FName MapForEmbryoStage(EGenesisEmbryoStage Stage, const FGenesisSliceTuning& Tuning)
+	{
+		// Geschlüpft liegt der Keim in der Gebärmutter; eingenistet bleibt er dort. Ein Keim im Stillstand bleibt, wo er ist.
+		const bool bUterus = Stage == EGenesisEmbryoStage::Implanting || Stage == EGenesisEmbryoStage::Implanted;
+		return bUterus && !Tuning.ImplantationMap.IsNone() ? Tuning.ImplantationMap : Tuning.ConceptionMap;
+	}
+
 	FString DescribeEmbryoStage(EGenesisEmbryoStage Stage)
 	{
 		switch (Stage)

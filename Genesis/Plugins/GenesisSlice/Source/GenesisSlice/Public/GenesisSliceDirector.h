@@ -79,6 +79,8 @@ private:
 	 * weitergeschwommen und hat die Eizelle womöglich schon erreicht.
 	 */
 	bool bForceTravel = false;
+	/** Einmal je Durchlauf in die Gebärmutter: Fehlt die Karte, würde sonst jedes Bild einen Ladeversuch starten. */
+	bool bUterusTravelTried = false;
 	/** Wie lange der Durchlauf schon zu Ende ist – der Abspann kommt nicht im selben Augenblick. */
 	float EndedSeconds = 0.0f;
 	bool bEndReported = false;

@@ -96,6 +96,7 @@ void UGenesisSliceDirector::ReturnToMenu()
 	State = FGenesisSliceState();
 	bCareGiven = false;
 	bEndReported = false;
+	bUterusTravelTried = false;
 	EndedSeconds = 0.0f;
 	bForceTravel = true;
 	TravelTo(Tuning.ConceptionMap);
@@ -141,6 +142,7 @@ void UGenesisSliceDirector::StartRun(uint64 Seed)
 	State.RunSeed = Seed != 0 ? Seed : GenesisHash::Mix64(static_cast<uint64>(FDateTime::UtcNow().GetTicks()));
 	State.StartTime = Clock ? Clock->GetNow() : FGenesisTimestamp();
 	bCareGiven = false;
+	bUterusTravelTried = false;
 	bEndReported = false;
 	EndedSeconds = 0.0f;
 
@@ -304,6 +306,16 @@ void UGenesisSliceDirector::DrivePhase(float DeltaSeconds)
 		// Sekundenbruchteile sammeln sich, bis eine ganze Sekunde Keimzeit übersprungen werden kann.
 		const UGenesisEmbryoSubsystem* EmbryoSystem = GameInstance->GetSubsystem<UGenesisEmbryoSubsystem>();
 		const EGenesisEmbryoStage EmbryoStage = EmbryoSystem && EmbryoSystem->HasEmbryo() ? EmbryoSystem->GetState().Stage : EGenesisEmbryoStage::Zygote;
+		// Geschlüpft: Der Ort wechselt in die Gebärmutter, weil der Keim dort ist
+		const FName EmbryoMap = GenesisSliceLogic::MapForEmbryoStage(EmbryoStage, Tuning);
+		const UWorld* World = GameInstance->GetWorld();
+		if (!bTravelPending && !bUterusTravelTried && EmbryoMap == Tuning.ImplantationMap && World && !World->GetMapName().Contains(EmbryoMap.ToString()))
+		{
+			bUterusTravelTried = true;
+			FadeOut(0.6f);
+			TravelTo(EmbryoMap);
+			break;
+		}
 		const float HoursPerSecond = GenesisSliceLogic::EmbryoHoursPerSecond(EmbryoStage, Tuning);
 		GestationStepTimer += DeltaSeconds * HoursPerSecond * 3600.0f;
 		const int64 Whole = static_cast<int64>(GestationStepTimer);

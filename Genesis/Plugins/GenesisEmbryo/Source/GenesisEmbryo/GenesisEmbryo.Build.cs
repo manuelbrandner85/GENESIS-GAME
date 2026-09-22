@@ -17,7 +17,8 @@ public class GenesisEmbryo : ModuleRules
 			"GenesisBody",
 			"GenesisGenetics",
 			"GenesisConception",
-			"GenesisSoulMusic"
+			"GenesisSoulMusic",
+			"CinematicCamera"
 		});
 	}
 }

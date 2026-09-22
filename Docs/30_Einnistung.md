@@ -10,8 +10,8 @@ Aus der Keimscheibe entsteht der ganze Mensch.
 | Bereich | Stand |
 |---|---|
 | Simulation der zweiten Woche (`GenesisEmbryoLogic`) | **PRODUCTION READY**: getestet gegen Lehrbuch und klinische Daten |
-| Anzeige im Durchlauf (Uhr, Größe, hCG, Satz je Stufe), Entwicklerseite | **BETA**: noch zu der Szene der ersten Woche |
-| Szene: Schleimhaut, Einsinken, Lakunen mit Blut | **PLAN** (Teil 2) |
+| Anzeige im Durchlauf (Uhr, Größe, hCG, Satz je Stufe), Entwicklerseite | **PRODUCTION READY** |
+| Szene: Gebärmutterschleimhaut, Einsinken, Pfropf, Blut (Teil 2) | **BETA**: im Bild geprüft; offene Punkte unten |
 
 ## Die Stufen
 
@@ -102,9 +102,91 @@ scheitern 58,6 % (Risiko 57,9 %). **Der Keim des Spielers scheitert nie.**
 | PERFORMANCE | Rechnet jede Größe direkt aus der Uhr; in der zweiten Woche teilen sich keine einzelnen Zellen mehr |
 | VISUAL | offen, Szene folgt in Teil 2 |
 
+
+## Die Szene: die Schleimhaut der Gebärmutter
+
+Nach dem Schlüpfen wechselt der Ort. Die erste Woche zeigt das Spiel wie einen Zeitraffer aus dem Brutschrank
+(Hoffman-Kontrast, optischer Schnitt); die zweite Woche spielt **im Körper**: Blick wie durch ein Hysteroskop auf die
+Schleimhaut, achsnahes Kaltlicht, weiche Schatten, alles scharf (`Tools/Unreal/Implantation/setup_uterus_scene.py`,
+Karte `L_GEN_UterineCavity`). Die Regie wechselt den Ort, sobald der Keim geschlüpft ist
+(`GenesisSliceLogic::MapForEmbryoStage`, Test `Genesis.Slice.EmbryoMap`).
+
+**Die Schleimhaut** (`Tools/Blender/Implantation/build_endometrium.py`, 1,75 Mio. Punkte, Nanite) entsteht aus
+anatomischen Maßen der Sekretionsphase (Zyklustag 20–24, Implantationsfenster):
+
+| | Maß | Herkunft |
+|---|---|---|
+| Polster des ödematösen Stromas | 0,4–0,9 mm breit, 20–45 µm hoch | Histologie der Sekretionsphase |
+| Furchen dazwischen | 45–80 µm breit, bis 24 µm tief, geschwungen | Hysteroskopie |
+| Drüsenöffnungen | 22–56 µm weit, 45–80 µm tiefer Trichter, im Mittel 175 µm auseinander, in dichteren und lichteren Feldern | SEM-Aufnahmen des Endometriums |
+| Epithelzellen | 7 µm, gewölbte Kuppen, Zellgrenzen | einschichtiges Säulenepithel |
+| Pinopoden | bis 4 µm hohe glatte Vorwölbungen, feldweise | Kennzeichen der Empfängnisbereitschaft |
+| Kapillarnetz | gewundene Röhrchen ~50 µm unter der Oberfläche | subepitheliales Kapillarnetz |
+
+Das Gitter ist in der Bildmitte 4 µm fein und wird zum Rand auf 16 µm gröber – Nanite zeigt in der Ferne ohnehin
+weniger. Epithelzellen, Pinopoden, Flimmerzellen und Gefäße rechnet das Material (HLSL), nicht die Geometrie; das
+Zellrelief blendet aus, sobald eine Zelle nur noch wenige Pixel groß ist, sonst flimmert das Bild.
+
+**Der Keim von außen.** Unter dem Mikroskop zeigt das Spiel jede Furchungszelle einzeln; im Körper wäre das falsch –
+eine geschlüpfte Blastozyste ist eine dünne, klare Hülle aus flachen, vieleckigen Zellen, gefüllt mit Flüssigkeit. Man
+sieht hindurch: die Schleimhaut darunter, die Rückwand der Hülle, den Embryoblasten als trüben Knoten. Deshalb ist der
+Keim hier eine durchscheinende Kugel mit Zellmuster (`M_GEN_TrophoblastShell`), der Embryoblast ein eigener, dichterer
+Körper (`M_GEN_InnerCellMass`) – beim Anlagern dreht er sich sichtbar nach unten zur Schleimhaut. Die erste Fassung mit
+den Einzelzellen der Simulation sah aus wie Popcorn.
+
+**Was die Einnistung im Bild macht** (`AGenesisImplantationSite`, Werte aus der Simulation über eine
+Material-Parameter-Sammlung):
+- Der Keim sinkt ein: Was unter der Oberfläche liegt, verdeckt das Gewebe. Ein Wulst aus Epithel umschließt ihn.
+- Im Wasserlinienkreis liegt nicht die Schleimhaut, sondern die untere Wand des Keims.
+- Ab Tag 10 liegt er ganz darunter, ein Fibrinpfropf schließt die Stelle: gelblich-graues Gerinnsel aus Fasern mit
+  roten Blutkörperchen, unregelmäßiger Rand.
+- Bis Tag 12 wächst das Epithel darüber zu, die Stelle rötet sich (Deziduareaktion: weitere, dichtere Kapillaren), das
+  Blut in den Lakunen scheint dunkelrot durch, die Stelle wölbt sich leicht vor.
+- Die Kamera weicht mit dem wachsenden Keim zurück (gedämpft, nie springend), das Licht regelt mit dem Abstand nach,
+  damit die Helligkeit gleich bleibt – wie an einem echten Endoskop.
+
+| Tag 6: angelagert | Tag 7,7: sinkt ein | Tag 9,8: Fibrinpfropf | Tag 12,5: die Stelle |
+|---|---|---|---|
+| ![](Media/GENESIS-040_Anlagerung.png) | ![](Media/GENESIS-040_Einsinken.png) | ![](Media/GENESIS-040_Fibrinpfropf.png) | ![](Media/GENESIS-040_Stelle_Tag12.png) |
+
+## Eigene Fehler auf dem Weg (im Bild gefunden)
+
+- **Vertexfarben kommen in Unreal nicht an.** Die Maske der Drüsenöffnungen blieb wirkungslos. Gemessen:
+  `has_vertex_colors = False` – auch an der Eileiterwand der ersten Woche, dort unbemerkt seit GENESIS-036. Jetzt trägt
+  ein Datenbild (2048², 3,9 µm je Texel) die Masken; es liegt über der lokalen Lage und gilt für beide Wände.
+- **Unreal überschreibt bei Alpha 0 die Farbe** durchsichtiger Pixel mit Nachbarfarben (PNG-Infill). Der Kennwert der
+  Drüse liegt deshalb als 0,5…1 im Alpha.
+- **Format „Vector Displacement Map" vertauscht Rot und Blau** (gemessen: Polster statt Drüse im Rotkanal). Jetzt
+  unkomprimiert als HDR.
+- **`pow()` mit negativer Basis ist in HLSL undefiniert.** Das ergab NaN in der Formverschiebung.
+- **Weiße Säulen ab Tag 12:** Die Kamera war beim Zurückweichen über die gegenüberliegende Gebärmutterwand gestiegen und
+  sah deren Drüsenschläuche von außen. Die Wand liegt jetzt 3,2 mm über der Einnistungsstelle, die Kamera bleibt darunter.
+- **Alles wirkte blass und flach:** 10 EV Belichtung legten die Flächen in die Schulter des Tonemappers. Bei 8,5 EV
+  bekommt das Gewebe Tiefe, und die Drüsengänge werden dunkel.
+- **Streifen auf den Trichterwänden:** Das Zellmuster liegt in der Draufsicht; an steilen Wänden wurde es zu Streifen
+  gezogen. Es blendet dort jetzt aus.
+- **Gefäße wie rote Blitze und Furchen wie gesprungene Farbe:** beides waren Vieleckkanten (Voronoi). Jetzt sind es
+  Höhenlinien eines verwundenen Rauschens – sie laufen geschwungen und verzweigt.
+
+## Qualitätsprüfung (Teil 2)
+
+| | |
+|---|---|
+| VISUAL | Bild für Bild geprüft von Tag 6 bis 14; Befunde oben |
+| MATERIAL | Gewebe mit Streuung, Schleimfilm glänzt, im Drüsenschlauch kein Glanz und kein Streulicht |
+| SCALE | Keim 0,2 → 1,2 mm gegen Drüsenöffnungen von 22–56 µm und Epithelzellen von 7 µm |
+| LIGHTING | eine Quelle (Kaltlicht am Hysteroskop, 5600 K), physikalisch geregelt über den Abstand, Belichtung gemessen |
+| ANIMATION | Der Keim dreht sich beim Anlagern, sinkt ein; die Kamera folgt gedämpft |
+| PHYSICS | Lage, Tiefe und Größe kommen aus der Simulation, nichts ist von Hand gesetzt |
+| PERFORMANCE | offen: im gebauten Spiel noch nicht gemessen |
+| ORIGINALITY | eigene Geometrie und eigene Materialien, keine gekauften Assets |
+
 ## Offen
 
-- Szene der zweiten Woche: Die Schleimhaut der Gebärmutter fehlt. Der Keim ist noch im Eileiter zu sehen. Biologisch
-  gelangt er schon als Morula (Tag 4) in die Gebärmutter.
+- Biologisch erreicht der Keim die Gebärmutter schon als Morula (Tag 4); im Spiel wechselt der Ort erst beim Schlüpfen
+  (Tag 5–6). Die erste Woche bleibt so ganz beim Bild aus dem Brutschrank.
+- Die leere Zona, aus der der Keim geschlüpft ist, fehlt noch: gestaucht wirkte sie wie eine Kontaktlinse.
+- Die Bildrate der Szene ist im gebauten Spiel noch nicht gemessen.
+- Das Bild ist noch nicht auf die Bildsprache des Covers gezogen (Gold gegen kalte Tiefe).
 - Der Durchlauf hält bei gescheiterter Einnistung nur an. Eine eigene Szene dafür fehlt, und für den Spieler kommt sie
   nicht vor.

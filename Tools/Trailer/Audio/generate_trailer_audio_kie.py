@@ -48,14 +48,19 @@ SCENE = ("Cinematic reveal trailer for a video game about the whole circle of li
 CONTEXT = ("German voice-over. Calm, warm, deep and human, tender and a little mysterious. "
            "Not a loud announcer. Unhurried, with small breaths.")
 
-# Neue Saetze der In-Engine-Fassung (die uebrigen stammen aus den Takes vom 17.09.)
+# Ganze Gedanken als EINE durchgehende Aufnahme (Pause im Satz statt Schnitt zwischen zwei Takes) - v3, 2026-09-22.
+# Frueher: jeder Satzteil einzeln -> Betonung und Atem passten nicht zusammen, der Satz klang abgehackt.
 VO_LINES = [
-    ("VO_G_03", "[softly] Millionen machen sich auf den Weg."),
-    ("VO_G_04", "[quietly, with weight] Nur einer kommt an."),
-    ("VO_G_05", "[with quiet wonder] Aus einer Zelle werden zwei."),
-    ("VO_G_06", "[tenderly] Aus zweien … ein Mensch."),
-    ("VO_G_09", "[slowly] Und jede Entscheidung …"),
-    ("VO_G_10", "[softly, with gravity] … hinterlässt ein Echo."),
+    ("VO_S01", "[softly] Bevor du deinen ersten Atemzug nahmst … [short pause] hatte deine Geschichte bereits begonnen."),
+    ("VO_S02", "[softly] Millionen machen sich auf den Weg. [pause] [quietly, with weight] Nur einer kommt an."),
+    ("VO_S03", "[with quiet wonder] Aus einer Zelle werden zwei. [short pause] [tenderly] Aus zweien … ein Mensch."),
+    ("VO_S04", "[warmly] Du wirst lieben. [pause] [quietly, with sadness] Du wirst verlieren."),
+    ("VO_S05", "[thoughtfully] Du wirst Entscheidungen treffen … [short pause] deren Folgen du vielleicht erst Jahrzehnte später verstehst."),
+    ("VO_S06", "[gently] Doch kein Weg ist falsch. [pause] [softly] Jeder Weg hinterlässt Spuren."),
+    ("VO_S07", "[slowly, tenderly] Am Ende bleiben nicht die Jahre. [pause] Es bleiben die Augenblicke."),
+    ("VO_S08", "[softly, mysterious] Und wenn du glaubst, dass alles vorbei ist … [short pause] [with quiet wonder] beginnt erst die nächste Reise."),
+    ("VO_S09", "[softly] Und eines Tages … [short pause] [with quiet awe] erschaffst du selbst Leben."),
+    ("VO_S10", "[slowly, with gravity] Jede Entscheidung … [short pause] hinterlässt ein Echo."),
 ]
 
 

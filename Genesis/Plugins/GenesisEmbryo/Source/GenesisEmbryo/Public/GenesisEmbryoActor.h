@@ -75,6 +75,13 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Rendering")
 	float SectionMarginFraction = 0.35f;
 
+	/**
+	 * Mikroskop (Eileiter, erste Woche): optischer Schnitt und Embryoblast auf 3 Uhr. In der Gebärmutter (GENESIS-040)
+	 * sieht das Hysteroskop den ganzen Keim von außen, Lage und Drehung bestimmt die Einnistungsstelle.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Rendering")
+	bool bMicroscopeView = true;
+
 private:
 	void UpdateSection(const FGenesisEmbryoState& State);
 

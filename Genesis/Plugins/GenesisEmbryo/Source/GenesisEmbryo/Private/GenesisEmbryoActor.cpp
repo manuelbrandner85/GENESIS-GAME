@@ -105,7 +105,7 @@ void AGenesisEmbryo::UpdateSection(const FGenesisEmbryoState& State)
 	const APlayerCameraManager* CameraManager = Controller ? Controller->PlayerCameraManager.Get() : nullptr;
 	float Front = -1.0e6f;
 	float Back = 1.0e6f;
-	if (CameraManager && State.Cavity > 0.02f)
+	if (CameraManager && State.Cavity > 0.02f && bMicroscopeView)
 	{
 		const FVector Camera = CameraManager->GetCameraLocation();
 		const FVector Forward = CameraManager->GetCameraRotation().Vector();
