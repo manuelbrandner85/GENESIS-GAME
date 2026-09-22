@@ -10,6 +10,26 @@ namespace GenesisEmbryoLogic
 		/** Fester Rechenschritt. Feiner als jede sichtbare Änderung, grob genug für eine Woche in einem Rutsch. */
 		constexpr double StepHours = 0.25;
 
+		/** Wert aus einer Stützstellentabelle (Stunden → Wert), dazwischen linear, außerhalb gehalten. */
+		float NidationTable(std::initializer_list<FVector2f> List, float Hours)
+		{
+			const FVector2f* Points = List.begin();
+			const int32 Count = static_cast<int32>(List.size());
+			if (Hours <= Points[0].X)
+			{
+				return Points[0].Y;
+			}
+			for (int32 Index = 1; Index < Count; ++Index)
+			{
+				if (Hours <= Points[Index].X)
+				{
+					const float Alpha = (Hours - Points[Index - 1].X) / FMath::Max(1.0e-3f, Points[Index].X - Points[Index - 1].X);
+					return FMath::Lerp(Points[Index - 1].Y, Points[Index].Y, Alpha);
+				}
+			}
+			return Points[Count - 1].Y;
+		}
+
 		/** Deterministischer Strom für ein Ereignis: gleiche Zelle, gleiche Runde → gleicher Zufall. */
 		FGenesisRandomStream StreamFor(const FGenesisEmbryoState& State, int32 CellIndex, int32 Generation, uint64 Salt)
 		{
@@ -217,6 +237,100 @@ namespace GenesisEmbryoLogic
 				Cell.Position = FMath::Lerp(Cell.Position, Target, Alpha);
 			}
 		}
+
+		/**
+		 * Die zweite Woche. Alle Größen folgen der Uhr des mittleren Keims (Nominal): Ein Keim, der sich später anlegt,
+		 * durchläuft dieselben Stufen entsprechend später. Jede Größe rechnet sich aus der Uhr, statt sich Schritt für
+		 * Schritt aufzusummieren – dasselbe Ergebnis bei jeder Schrittweite und nach dem Laden.
+		 */
+		void AdvanceNidation(FGenesisEmbryoState& State, const FGenesisEmbryoTuning& Tuning)
+		{
+			FGenesisImplantationState& Nid = State.Nidation;
+			const float T = NominalImplantationHours(State, Tuning);
+			if (T < Tuning.NominalAppositionHours)
+			{
+				Nid.Phase = EGenesisImplantationPhase::None;
+				return;
+			}
+
+			// Stufen
+			EGenesisImplantationPhase Phase = EGenesisImplantationPhase::Apposition;
+			if (T >= Tuning.AdhesionHours) Phase = EGenesisImplantationPhase::Adhesion;
+			if (T >= Tuning.InvasionHours) Phase = EGenesisImplantationPhase::Invasion;
+			if (T >= Tuning.LacunarHours) Phase = EGenesisImplantationPhase::Lacunar;
+			if (T >= Tuning.EmbeddedHours) Phase = EGenesisImplantationPhase::Embedded;
+			if (T >= Tuning.UteroplacentalHours) Phase = EGenesisImplantationPhase::Uteroplacental;
+			if (T >= Tuning.PrimaryVilliHours) Phase = EGenesisImplantationPhase::PrimaryVilli;
+			Nid.Phase = Phase;
+
+			// Größe: 0,2 mm beim Anlegen; Hertig-Rock-Präparate ~0,45 mm an Tag 9,5, ~0,9 mm an Tag 12
+			Nid.ConceptusDiameterUm = NidationTable({ {144.0f, 200.0f}, {168.0f, 230.0f}, {216.0f, 330.0f}, {240.0f, 450.0f}, {264.0f, 600.0f}, {288.0f, 900.0f}, {312.0f, 1200.0f} }, T);
+
+			// Versinken: vom Anheften bis Tag 10 ganz unter die Oberfläche, danach etwas tiefer unter dem nachgewachsenen Epithel
+			Nid.Embedded = FMath::SmoothStep(Tuning.AdhesionHours, Tuning.EmbeddedHours, T);
+			Nid.DepthUm = Nid.Embedded * Nid.ConceptusDiameterUm + 40.0f * FMath::SmoothStep(Tuning.EmbeddedHours, Tuning.PrimaryVilliHours, T);
+
+			// Synzytium: entsteht mit der Invasion am Embryonalpol und wird zur dicken, vielkernigen Front
+			Nid.SyncytiumThicknessUm = T < Tuning.InvasionHours ? 0.0f
+				: NidationTable({ {168.0f, 5.0f}, {216.0f, 60.0f}, {264.0f, 90.0f}, {312.0f, 120.0f} }, T);
+
+			// Lakunen öffnen sich ab Tag 8,5; ab Tag 10,5 fließt mütterliches Blut hinein, ab Tag 12 hindurch
+			Nid.Lacunae = FMath::RoundToInt(40.0f * FMath::SmoothStep(Tuning.LacunarHours - 12.0f, Tuning.UteroplacentalHours, T));
+			Nid.LacunarBlood = FMath::SmoothStep(Tuning.UteroplacentalHours - 12.0f, Tuning.UteroplacentalHours + 24.0f, T);
+
+			// Oberfläche: Fibrinpfropf (Tag 9–10), darüber wächst das Epithel wieder zu (bis Tag 12)
+			Nid.SurfaceClosure = 0.5f * FMath::SmoothStep(Tuning.LacunarHours, Tuning.EmbeddedHours, T)
+				+ 0.5f * FMath::SmoothStep(Tuning.EmbeddedHours, Tuning.EmbeddedHours + 48.0f, T);
+			Nid.Decidualization = FMath::SmoothStep(Tuning.InvasionHours, Tuning.PrimaryVilliHours, T);
+
+			// Zweiblättrige Keimscheibe aus dem Embryoblasten (ab Tag 7,5). Die Zellen teilen sich wieder, rund einmal
+			// am Tag; Carnegie 6: Scheibe ~0,2 mm.
+			const float DiscStart = Tuning.InvasionHours + 12.0f;
+			if (T >= DiscStart)
+			{
+				const int32 Inner = CountInnerCellMass(State);
+				const float Epi0 = FMath::Clamp(0.3f * Inner, 8.0f, 24.0f);
+				const float Hypo0 = FMath::Clamp(0.25f * Inner, 6.0f, 20.0f);
+				Nid.EpiblastCells = FMath::RoundToInt(Epi0 * FMath::Pow(2.0f, (T - DiscStart) / 20.0f));
+				Nid.HypoblastCells = FMath::RoundToInt(Hypo0 * FMath::Pow(2.0f, (T - DiscStart) / 24.0f));
+				Nid.DiscDiameterUm = NidationTable({ {180.0f, 80.0f}, {240.0f, 130.0f}, {312.0f, 200.0f} }, T);
+			}
+
+			// Höhlen: Amnion (Tag 8), primärer Dottersack mit Heuser-Membran (Tag 9), der sich an Tag 12–13 abschnürt;
+			// der sekundäre (definitive) Dottersack bleibt. Extraembryonales Mesoderm, darin die Chorionhöhle.
+			Nid.AmnioticCavity = FMath::SmoothStep(Tuning.InvasionHours + 18.0f, Tuning.LacunarHours, T);
+			Nid.SecondaryYolkSac = FMath::SmoothStep(Tuning.PrimaryVilliHours - 24.0f, Tuning.PrimaryVilliHours, T);
+			Nid.PrimaryYolkSac = FMath::SmoothStep(Tuning.LacunarHours - 12.0f, Tuning.LacunarHours + 12.0f, T) * (1.0f - Nid.SecondaryYolkSac);
+			Nid.ExtraembryonicMesoderm = FMath::SmoothStep(Tuning.EmbeddedHours, Tuning.UteroplacentalHours + 12.0f, T);
+			Nid.ChorionicCavity = FMath::SmoothStep(Tuning.UteroplacentalHours + 6.0f, Tuning.PrimaryVilliHours, T);
+			Nid.PrimaryVilli = FMath::RoundToInt(30.0f * FMath::SmoothStep(Tuning.PrimaryVilliHours - 16.0f, Tuning.PrimaryVilliHours, T));
+
+			// Gesamtfortschritt für Anzeige und Regie
+			State.Implantation = FMath::Clamp((T - Tuning.NominalAppositionHours) / FMath::Max(1.0f, Tuning.PrimaryVilliHours - Tuning.NominalAppositionHours), 0.0f, 1.0f);
+		}
+
+		/** hCG im Blut der Mutter: vom Synzytium gebildet, exponentiell steigend. */
+		void UpdateHcg(FGenesisEmbryoState& State, const FGenesisEmbryoTuning& Tuning)
+		{
+			const float T = NominalImplantationHours(State, Tuning);
+			State.Nidation.HcgMilliIU = State.Nidation.AppositionAtHours <= 0.0f || T < Tuning.InvasionHours ? 0.0f
+				: 5.0f * FMath::Pow(2.0f, (T - Tuning.HcgDetectableHours) / FMath::Max(1.0f, Tuning.HcgDoublingHours));
+		}
+
+		/**
+		 * Beim Anheften entscheidet sich, ob die Schwangerschaft bleibt (Wilcox 1999). Der Zeitpunkt der Einnistung ist
+		 * der stärkste bekannte Einzelfaktor; die Entwicklungsqualität des Keims (Chromosomen, Energie) verschiebt ihn.
+		 */
+		void RollImplantationRisk(FGenesisEmbryoState& State, const FGenesisEmbryoTuning& Tuning)
+		{
+			FGenesisImplantationState& Nid = State.Nidation;
+			Nid.ImplantationDayPostOvulation = ImplantationDayPostOvulation(State, Tuning);
+			const float Quality = GetDevelopmentQuality(State);
+			Nid.EarlyLossRisk = FMath::Clamp(EarlyLossRiskForDay(Nid.ImplantationDayPostOvulation) * FMath::Lerp(1.4f, 0.7f, Quality), 0.0f, 0.95f);
+			Nid.bRiskRolled = true;
+			FGenesisRandomStream Rng(GenesisHash::Combine(State.Seed, 0x1A91A7ull));
+			Nid.bWillFail = !State.bPlayerEmbryo && Rng.Bernoulli(Nid.EarlyLossRisk);
+		}
 	}
 
 	FGenesisEmbryoState CreateZygote(const FGuid& EntityId, const FGuid& GenomeId, float Vitality, float Resilience,
@@ -253,7 +367,13 @@ namespace GenesisEmbryoLogic
 			Remaining -= Step;
 			State.HoursSinceFusion += Step;
 
-			if (State.Stage == EGenesisEmbryoStage::Arrested || State.Stage == EGenesisEmbryoStage::Implanted)
+			if (State.Stage == EGenesisEmbryoStage::Implanted)
+			{
+				// Das hCG steigt weiter – es hält den Gelbkörper, bis die Plazenta selbst Progesteron bildet
+				UpdateHcg(State, Tuning);
+				continue;
+			}
+			if (State.Stage == EGenesisEmbryoStage::Arrested)
 			{
 				continue;
 			}
@@ -313,13 +433,28 @@ namespace GenesisEmbryoLogic
 					if (State.ZonaThicknessUm <= 0.0f)
 					{
 						State.Stage = EGenesisEmbryoStage::Implanting;
+						// Geschlüpft treibt der Keim noch einige Stunden frei, dann legt er sich an
+						State.Nidation.AppositionAtHours = static_cast<float>(State.HoursSinceFusion) + Tuning.FloatAfterHatchingHours;
 					}
 				}
 			}
 			if (State.Stage == EGenesisEmbryoStage::Implanting)
 			{
-				State.Implantation = FMath::Clamp(State.Implantation + static_cast<float>(Step) / FMath::Max(1.0f, Tuning.ImplantationHours), 0.0f, 1.0f);
-				if (State.Implantation >= 1.0f)
+				AdvanceNidation(State, Tuning);
+				UpdateHcg(State, Tuning);
+				if (!State.Nidation.bRiskRolled && State.Nidation.Phase >= EGenesisImplantationPhase::Adhesion)
+				{
+					RollImplantationRisk(State, Tuning);
+				}
+				// Wer scheitert, scheitert dort, wo das Synzytium mütterliches Blut erreichen müsste
+				if (State.Nidation.bWillFail && State.Nidation.Phase >= EGenesisImplantationPhase::Uteroplacental)
+				{
+					State.Stage = EGenesisEmbryoStage::Arrested;
+					State.ArrestReason = EGenesisEmbryoArrestReason::ImplantationFailed;
+					State.Nidation.HcgMilliIU = 0.0f;
+					continue;
+				}
+				if (State.Nidation.Phase == EGenesisImplantationPhase::PrimaryVilli)
 				{
 					State.Stage = EGenesisEmbryoStage::Implanted;
 				}
@@ -388,6 +523,68 @@ namespace GenesisEmbryoLogic
 		OutVisibility = State.Stage <= EGenesisEmbryoStage::Blastocyst && bStillDividing
 			? FMath::Clamp((ToDivision - 0.4f * Mitosis) / (0.6f * Mitosis), 0.0f, 1.0f)
 			: 1.0f;
+	}
+
+	float NominalImplantationHours(const FGenesisEmbryoState& State, const FGenesisEmbryoTuning& Tuning)
+	{
+		if (State.Nidation.AppositionAtHours <= 0.0f)
+		{
+			return 0.0f;
+		}
+		return static_cast<float>(State.HoursSinceFusion) - State.Nidation.AppositionAtHours + Tuning.NominalAppositionHours;
+	}
+
+	float ImplantationDayPostOvulation(const FGenesisEmbryoState& State, const FGenesisEmbryoTuning& Tuning)
+	{
+		const float Shift = State.Nidation.AppositionAtHours - Tuning.NominalAppositionHours;
+		return (Shift + Tuning.InvasionHours + Tuning.HcgFirstRiseAfterInvasionHours + Tuning.HoursFusionAfterOvulation) / 24.0f;
+	}
+
+	float EarlyLossRiskForDay(float DayPostOvulation)
+	{
+		// Wilcox, Baird, Weinberg 1999: bis Tag 9 13 %, Tag 10 26 %, Tag 11 52 %, danach 82 %
+		return NidationTable({ {9.0f, 0.13f}, {10.0f, 0.26f}, {11.0f, 0.52f}, {12.0f, 0.82f} }, DayPostOvulation);
+	}
+
+	FString GetImplantationPhaseName(EGenesisImplantationPhase Phase)
+	{
+		switch (Phase)
+		{
+		case EGenesisImplantationPhase::None: return TEXT("frei in der Gebärmutter");
+		case EGenesisImplantationPhase::Apposition: return TEXT("Anlagerung");
+		case EGenesisImplantationPhase::Adhesion: return TEXT("Anheftung");
+		case EGenesisImplantationPhase::Invasion: return TEXT("Invasion");
+		case EGenesisImplantationPhase::Lacunar: return TEXT("Lakunenstadium");
+		case EGenesisImplantationPhase::Embedded: return TEXT("ganz eingebettet");
+		case EGenesisImplantationPhase::Uteroplacental: return TEXT("uteroplazentarer Kreislauf");
+		case EGenesisImplantationPhase::PrimaryVilli: return TEXT("Primärzotten");
+		default: return TEXT("unbekannt");
+		}
+	}
+
+	FString DescribeImplantation(EGenesisImplantationPhase Phase)
+	{
+		switch (Phase)
+		{
+		case EGenesisImplantationPhase::None:
+			return TEXT("Geschlüpft – der Keim treibt frei in der Gebärmutter, gut einen Fünftelmillimeter groß.");
+		case EGenesisImplantationPhase::Apposition:
+			return TEXT("Tag 6 – der Keim legt sich mit dem Embryoblast-Pol an die Schleimhaut der Gebärmutter.");
+		case EGenesisImplantationPhase::Adhesion:
+			return TEXT("Anheftung – Haftmoleküle halten ihn fest, er rollt nicht mehr ab.");
+		case EGenesisImplantationPhase::Invasion:
+			return TEXT("Tag 7–8 – die äußere Zellschicht verschmilzt zum Synzytium und frisst sich in die Schleimhaut. Innen trennen sich Epiblast und Hypoblast: die zweiblättrige Keimscheibe. Das hCG beginnt.");
+		case EGenesisImplantationPhase::Lacunar:
+			return TEXT("Tag 9 – im Synzytium öffnen sich Lakunen. Amnionhöhle und Dottersack sind da. Ein Fibrinpfropf verschließt die Eintrittsstelle.");
+		case EGenesisImplantationPhase::Embedded:
+			return TEXT("Tag 10 – ganz in der Schleimhaut. Darüber wächst die Oberfläche wieder zu.");
+		case EGenesisImplantationPhase::Uteroplacental:
+			return TEXT("Tag 11–12 – das Synzytium öffnet die Kapillaren der Mutter. Ihr Blut strömt durch die Lakunen: der erste gemeinsame Kreislauf.");
+		case EGenesisImplantationPhase::PrimaryVilli:
+			return TEXT("Tag 13 – die ersten Zotten wachsen. Die zweite Woche ist vorbei.");
+		default:
+			return FString();
+		}
 	}
 
 	FString GetStageName(EGenesisEmbryoStage Stage)

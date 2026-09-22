@@ -137,7 +137,15 @@ void UGenesisEmbryoSubsystem::AdvanceHours(double Hours)
 	}
 
 	const EGenesisEmbryoStage Previous = State.Stage;
-	if (GenesisEmbryoLogic::Advance(State, Tuning, Hours))
+	const EGenesisImplantationPhase PreviousPhase = State.Nidation.Phase;
+	const bool bStageChanged = GenesisEmbryoLogic::Advance(State, Tuning, Hours);
+	if (State.Nidation.Phase != PreviousPhase)
+	{
+		UE_LOG(LogGenesis, Display, TEXT("Einnistung: %s (Tag %.1f, Tiefe %.0f µm, Keim %.0f µm, hCG %.1f mIU/ml)"),
+			*GenesisEmbryoLogic::GetImplantationPhaseName(State.Nidation.Phase), State.HoursSinceFusion / 24.0,
+			State.Nidation.DepthUm, State.Nidation.ConceptusDiameterUm, State.Nidation.HcgMilliIU);
+	}
+	if (bStageChanged)
 	{
 		HandleStageChange(Previous);
 	}
@@ -210,7 +218,7 @@ void UGenesisEmbryoSubsystem::RegisterDebugPage()
 	TWeakObjectPtr<UGenesisEmbryoSubsystem> WeakThis(this);
 	GenesisDebug::RegisterPage({
 		TEXT("Embryo"),
-		TEXT("Embryo – die erste Woche"),
+		TEXT("Embryo – die ersten zwei Wochen"),
 		[WeakThis](const UWorld*, TArray<FString>& OutLines)
 		{
 			const UGenesisEmbryoSubsystem* Self = WeakThis.Get();
@@ -231,6 +239,17 @@ void UGenesisEmbryoSubsystem::RegisterDebugPage()
 				State.Stage == EGenesisEmbryoStage::Arrested
 					? *FString::Printf(TEXT(" | Stillstand: %s"), *GenesisEmbryoLogic::GetArrestReasonName(State.ArrestReason))
 					: TEXT("")));
+			const FGenesisImplantationState& Nid = State.Nidation;
+			if (Nid.AppositionAtHours > 0.0f)
+			{
+				OutLines.Add(FString::Printf(TEXT("Einnistung: %s | Tiefe %.0f µm | Keim %.0f µm | Synzytium %.0f µm | Lakunen %d (Blut %.0f %%)"),
+					*GenesisEmbryoLogic::GetImplantationPhaseName(Nid.Phase), Nid.DepthUm, Nid.ConceptusDiameterUm,
+					Nid.SyncytiumThicknessUm, Nid.Lacunae, 100.0f * Nid.LacunarBlood));
+				OutLines.Add(FString::Printf(TEXT("Keimscheibe %.0f µm: Epiblast %d, Hypoblast %d | Amnion %.0f %% | Dottersack %.0f/%.0f %% | Zotten %d | hCG %.1f mIU/ml | Risiko %.0f %% (Tag %.1f n. ES)"),
+					Nid.DiscDiameterUm, Nid.EpiblastCells, Nid.HypoblastCells, 100.0f * Nid.AmnioticCavity,
+					100.0f * Nid.PrimaryYolkSac, 100.0f * Nid.SecondaryYolkSac, Nid.PrimaryVilli, Nid.HcgMilliIU,
+					100.0f * Nid.EarlyLossRisk, Nid.ImplantationDayPostOvulation));
+			}
 		}
 	});
 #endif

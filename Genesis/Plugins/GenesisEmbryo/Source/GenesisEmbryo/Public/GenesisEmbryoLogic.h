@@ -35,6 +35,22 @@ namespace GenesisEmbryoLogic
 	GENESISEMBRYO_API void GetNucleusDisplay(const FGenesisEmbryoState& State, int32 CellIndex, const FGenesisEmbryoTuning& Tuning,
 		float& OutVisibility, bool& bOutPronuclei);
 
+	/**
+	 * Die zweite Woche (GENESIS-040). Die Uhr des mittleren Keims: Stunden nach der Befruchtung, verschoben um den
+	 * Zeitpunkt, zu dem sich dieser Keim tatsächlich anlegte (0 = noch nicht geschlüpft).
+	 */
+	GENESISEMBRYO_API float NominalImplantationHours(const FGenesisEmbryoState& State, const FGenesisEmbryoTuning& Tuning);
+
+	/** Tag nach dem Eisprung, an dem hCG erstmals ansteigt – so zählt Wilcox den Tag der Einnistung. */
+	GENESISEMBRYO_API float ImplantationDayPostOvulation(const FGenesisEmbryoState& State, const FGenesisEmbryoTuning& Tuning);
+
+	/** Frühes Ende der Schwangerschaft nach dem Tag der Einnistung (Wilcox 1999): 13 % bis Tag 9 … 82 % ab Tag 12. */
+	GENESISEMBRYO_API float EarlyLossRiskForDay(float DayPostOvulation);
+
+	GENESISEMBRYO_API FString GetImplantationPhaseName(EGenesisImplantationPhase Phase);
+	/** Ein Satz für den Spieler: was in dieser Stufe geschieht. */
+	GENESISEMBRYO_API FString DescribeImplantation(EGenesisImplantationPhase Phase);
+
 	GENESISEMBRYO_API FString GetStageName(EGenesisEmbryoStage Stage);
 	GENESISEMBRYO_API FString GetArrestReasonName(EGenesisEmbryoArrestReason Reason);
 }

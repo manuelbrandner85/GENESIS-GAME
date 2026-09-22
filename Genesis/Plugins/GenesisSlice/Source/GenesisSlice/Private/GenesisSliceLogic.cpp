@@ -70,7 +70,7 @@ namespace GenesisSliceLogic
 		switch (Phase)
 		{
 		case EGenesisSlicePhase::Conception: return TEXT("Befruchtung");
-		case EGenesisSlicePhase::Embryo: return TEXT("Erste Woche");
+		case EGenesisSlicePhase::Embryo: return TEXT("Die ersten zwei Wochen");
 		case EGenesisSlicePhase::Gestation: return TEXT("Schwangerschaft");
 		case EGenesisSlicePhase::Birth: return TEXT("Geburt");
 		case EGenesisSlicePhase::FirstHour: return TEXT("Erste Stunde");
@@ -98,7 +98,7 @@ namespace GenesisSliceLogic
 		switch (Phase)
 		{
 		case EGenesisSlicePhase::Conception: return TEXT("Der Schwarm im Eileiter, eine Eizelle, ein Treffer.");
-		case EGenesisSlicePhase::Embryo: return TEXT("Furchung, Morula, Blastozyste, Schlüpfen, Einnistung.");
+		case EGenesisSlicePhase::Embryo: return TEXT("Furchung, Morula, Blastozyste, Schlüpfen, Einnistung, Keimscheibe.");
 		case EGenesisSlicePhase::Gestation: return TEXT("Neun Monate im Zeitraffer – der Körper wächst.");
 		case EGenesisSlicePhase::Birth: return TEXT("Wehen, Enge, Drehung, Licht, der erste Atemzug.");
 		case EGenesisSlicePhase::FirstHour: return TEXT("Wärme, eine vertraute Stimme, das erste Anlegen.");

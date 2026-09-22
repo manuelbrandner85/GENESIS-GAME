@@ -15,6 +15,7 @@
 #include "GenesisSpermSwarm.h"
 #include "GenesisMicroscopeCameraRig.h"
 #include "GenesisEmbryoSubsystem.h"
+#include "GenesisEmbryoLogic.h"
 #include "GenesisSliceLogic.h"
 #include "CanvasItem.h"
 #include "EngineUtils.h"
@@ -565,11 +566,19 @@ void AGenesisSliceHud::DrawHUD()
 		{
 			const FGenesisEmbryoState& Keim = Embryo->GetState();
 			const float Scale = (Canvas->SizeY / 900.0f) * (Frontend->GetSettings().TextScalePercent / 100.0f);
-			const FString Clock = FString::Printf(TEXT("%.1f hpi · Tag %d · %d %s"),
-				Keim.HoursSinceFusion, static_cast<int32>(Keim.HoursSinceFusion / 24.0) + 1,
-				Keim.GetCellCount(), Keim.GetCellCount() == 1 ? TEXT("Zelle") : TEXT("Zellen"));
+			// Die zweite Woche (GENESIS-040): Ab der Einnistung zählen Größe und hCG, nicht mehr die Zellen
+			const bool bSecondWeek = Keim.Stage >= EGenesisEmbryoStage::Implanting && Keim.Stage != EGenesisEmbryoStage::Arrested;
+			const FGenesisImplantationState& Nid = Keim.Nidation;
+			const FString Clock = bSecondWeek
+				? FString::Printf(TEXT("%.0f hpi · Tag %d · Keim %.2f mm%s"),
+					Keim.HoursSinceFusion, static_cast<int32>(Keim.HoursSinceFusion / 24.0) + 1, Nid.ConceptusDiameterUm / 1000.0f,
+					Nid.HcgMilliIU >= 1.0f ? *FString::Printf(TEXT(" · hCG %.0f mIU/ml"), Nid.HcgMilliIU) : TEXT(""))
+				: FString::Printf(TEXT("%.1f hpi · Tag %d · %d %s"),
+					Keim.HoursSinceFusion, static_cast<int32>(Keim.HoursSinceFusion / 24.0) + 1,
+					Keim.GetCellCount(), Keim.GetCellCount() == 1 ? TEXT("Zelle") : TEXT("Zellen"));
 			DrawCentered(Clock, Canvas->SizeY - 118.0f * Scale, Scale * 1.15f, 0.85f, false);
-			DrawCentered(GenesisSliceLogic::DescribeEmbryoStage(Keim.Stage), Canvas->SizeY - 88.0f * Scale, Scale * 0.95f, 0.7f, false);
+			DrawCentered(bSecondWeek ? GenesisEmbryoLogic::DescribeImplantation(Nid.Phase) : GenesisSliceLogic::DescribeEmbryoStage(Keim.Stage),
+				Canvas->SizeY - 88.0f * Scale, Scale * 0.95f, 0.7f, false);
 		}
 		return;
 	}

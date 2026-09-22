@@ -46,6 +46,7 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 27. [Setup: Entwicklungsumgebung](Docs/Setup/01_Entwicklungsumgebung.md)
 28. [Ton und Sprache im ganzen Spiel](Docs/28_Ton_und_Sprache.md)
 29. [Die Hebamme: Kleidung aus der Stoffsimulation, Arme, Abtrocknen und Zudecken](Docs/29_Die_Hebamme.md)
+30. [Einnistung und Keimscheibe: die zweite Woche](Docs/30_Einnistung.md)
 
 ## Voraussetzungen
 

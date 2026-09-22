@@ -61,9 +61,191 @@ bool FGenesisEmbryoTimelineTest::RunTest(const FString& Parameters)
 	GenesisEmbryoLogic::Advance(State, Tuning, 96.0); // 240 h = Tag 10
 	AddInfo(FString::Printf(TEXT("240 h: Stufe %s, Einnistung %.0f %%, Qualität %.2f"),
 		*GenesisEmbryoLogic::GetStageName(State.Stage), 100.0f * State.Implantation, State.Quality));
-	TestTrue(TEXT("Tag 10: eingenistet"), State.Stage == EGenesisEmbryoStage::Implanted);
+	// Seit GENESIS-040 heißt „eingenistet" das Ende der zweiten Woche (Primärzotten, Tag 13); an Tag 10 liegt der Keim
+	// ganz in der Schleimhaut
+	TestTrue(TEXT("Tag 10: in der Schleimhaut versunken"), State.Stage == EGenesisEmbryoStage::Implanting && State.Nidation.Embedded > 0.9f);
 	TestEqual(TEXT("Zona ist aufgebraucht"), State.ZonaThicknessUm, 0.0f);
 
+	GenesisEmbryoLogic::Advance(State, Tuning, 96.0); // 336 h = Tag 14
+	TestTrue(TEXT("Tag 14: eingenistet"), State.Stage == EGenesisEmbryoStage::Implanted);
+
+	return true;
+}
+
+namespace
+{
+	/**
+	 * Ein geschlüpfter Keim ohne Zellen – in der zweiten Woche zählen Gewebe, nicht einzelne Zellen. So lassen sich
+	 * Tausende Keime rechnen, ohne jedes Mal die Furchung durchzuspielen.
+	 */
+	FGenesisEmbryoState MakeHatched(uint32 Seed, float AppositionAtHours, bool bPlayer)
+	{
+		FGenesisEmbryoState State = MakeEmbryo(Seed, 0.75f, bPlayer);
+		State.Cells.Reset();
+		State.Stage = EGenesisEmbryoStage::Implanting;
+		State.ZonaThicknessUm = 0.0f;
+		State.Cavity = 1.0f;
+		State.HoursSinceFusion = AppositionAtHours - 4.0;
+		State.Nidation.AppositionAtHours = AppositionAtHours;
+		return State;
+	}
+
+	void AdvanceTo(FGenesisEmbryoState& State, double Hours)
+	{
+		GenesisEmbryoLogic::Advance(State, FGenesisEmbryoTuning(), Hours - State.HoursSinceFusion);
+	}
+}
+
+/**
+ * Die zweite Woche gegen die Embryologie (Langman, Moore, Carnegie 5–6): jede Stufe an ihrem Tag, die Keimscheibe
+ * zweiblättrig, die Höhlen in der richtigen Reihenfolge, das hCG erst ab Tag 9–10 messbar und dann mit klinischer Steigung.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisEmbryoSecondWeekTest, "Genesis.Embryo.SecondWeek",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FGenesisEmbryoSecondWeekTest::RunTest(const FString& Parameters)
+{
+	using namespace GenesisEmbryoLogic;
+	FGenesisEmbryoState State = MakeHatched(21, 144.0f, true);
+	const FGenesisImplantationState& Nid = State.Nidation;
+
+	AdvanceTo(State, 142.0);
+	TestTrue(TEXT("Vor Tag 6 treibt er frei"), Nid.Phase == EGenesisImplantationPhase::None);
+
+	AdvanceTo(State, 150.0);
+	TestTrue(TEXT("Tag 6: angelagert"), Nid.Phase == EGenesisImplantationPhase::Apposition);
+	TestTrue(TEXT("Tag 6: noch an der Oberfläche"), Nid.Embedded < 0.05f);
+	TestTrue(TEXT("Tag 6: kein Synzytium, kein hCG"), Nid.SyncytiumThicknessUm == 0.0f && Nid.HcgMilliIU == 0.0f);
+
+	AdvanceTo(State, 180.0);
+	TestTrue(TEXT("Tag 7,5: Invasion"), Nid.Phase == EGenesisImplantationPhase::Invasion);
+	TestTrue(TEXT("Tag 7,5: Synzytium wächst"), Nid.SyncytiumThicknessUm > 5.0f);
+	TestTrue(TEXT("Tag 7,5: teilweise versunken"), Nid.Embedded > 0.1f && Nid.Embedded < 0.6f);
+	TestTrue(TEXT("Tag 7,5: hCG gebildet, im Blut noch nicht messbar"), Nid.HcgMilliIU > 0.0f && Nid.HcgMilliIU < 5.0f);
+	TestTrue(TEXT("Tag 7,5: zweiblättrige Keimscheibe"), Nid.EpiblastCells > 0 && Nid.HypoblastCells > 0);
+	TestTrue(TEXT("Tag 7,5: noch keine Lakunen"), Nid.Lacunae == 0);
+
+	AdvanceTo(State, 216.0);
+	AddInfo(FString::Printf(TEXT("Tag 9: %s, versunken %.0f %%, Lakunen %d, Amnion %.0f %%, Dottersack %.0f %%, hCG %.1f"),
+		*GetImplantationPhaseName(Nid.Phase), 100.0f * Nid.Embedded, Nid.Lacunae, 100.0f * Nid.AmnioticCavity, 100.0f * Nid.PrimaryYolkSac, Nid.HcgMilliIU));
+	TestTrue(TEXT("Tag 9: Lakunenstadium"), Nid.Phase == EGenesisImplantationPhase::Lacunar);
+	TestTrue(TEXT("Tag 9: Lakunen offen, noch ohne Blut"), Nid.Lacunae > 0 && Nid.LacunarBlood == 0.0f);
+	TestTrue(TEXT("Tag 9: Amnionhöhle offen"), Nid.AmnioticCavity > 0.99f);
+	TestTrue(TEXT("Tag 9: primärer Dottersack"), Nid.PrimaryYolkSac > 0.4f);
+	TestTrue(TEXT("Tag 9: fast ganz versunken"), Nid.Embedded > 0.7f && Nid.Embedded < 1.0f);
+
+	AdvanceTo(State, 240.0);
+	TestTrue(TEXT("Tag 10: ganz eingebettet"), Nid.Phase == EGenesisImplantationPhase::Embedded && Nid.Embedded > 0.99f);
+	TestTrue(TEXT("Tag 10: Fibrinpfropf, Epithel noch offen"), Nid.SurfaceClosure >= 0.5f && Nid.SurfaceClosure < 0.75f);
+	TestTrue(TEXT("Tag 10: hCG im Blut messbar (ab 5 mIU/ml)"), Nid.HcgMilliIU >= 5.0f);
+	const float HcgDay10 = Nid.HcgMilliIU;
+
+	AdvanceTo(State, 288.0);
+	TestTrue(TEXT("Tag 12: uteroplazentarer Kreislauf"), Nid.Phase == EGenesisImplantationPhase::Uteroplacental);
+	TestTrue(TEXT("Tag 12: mütterliches Blut in den Lakunen"), Nid.LacunarBlood > 0.9f);
+	TestTrue(TEXT("Tag 12: Oberfläche wieder geschlossen"), Nid.SurfaceClosure > 0.99f);
+	TestTrue(TEXT("Tag 12: extraembryonales Mesoderm"), Nid.ExtraembryonicMesoderm > 0.99f);
+	// Barnhart 2004: Eine intakte frühe Schwangerschaft steigt in 48 h um mindestens 53 %; typisch Verdopplung in 1,3–2 Tagen
+	const float Rise = Nid.HcgMilliIU / HcgDay10;
+	AddInfo(FString::Printf(TEXT("hCG Tag 10 → 12: %.1f → %.1f mIU/ml (×%.2f)"), HcgDay10, Nid.HcgMilliIU, Rise));
+	TestTrue(TEXT("hCG steigt in 48 h klinisch (×2–4)"), Rise >= 2.0f && Rise <= 4.0f);
+
+	AdvanceTo(State, 312.0);
+	AddInfo(FString::Printf(TEXT("Tag 13: %s, Keim %.0f µm, Tiefe %.0f µm, Scheibe %.0f µm (Epiblast %d, Hypoblast %d), Zotten %d, hCG %.1f"),
+		*GetImplantationPhaseName(Nid.Phase), Nid.ConceptusDiameterUm, Nid.DepthUm, Nid.DiscDiameterUm,
+		Nid.EpiblastCells, Nid.HypoblastCells, Nid.PrimaryVilli, Nid.HcgMilliIU));
+	TestTrue(TEXT("Tag 13: Primärzotten, eingenistet"), Nid.Phase == EGenesisImplantationPhase::PrimaryVilli && State.Stage == EGenesisEmbryoStage::Implanted);
+	TestTrue(TEXT("Tag 13: Zotten"), Nid.PrimaryVilli > 0);
+	TestTrue(TEXT("Tag 13: sekundärer Dottersack ersetzt den primären"), Nid.SecondaryYolkSac > 0.99f && Nid.PrimaryYolkSac < 0.01f);
+	TestTrue(TEXT("Carnegie 6: Keimscheibe 0,1–0,25 mm"), Nid.DiscDiameterUm >= 100.0f && Nid.DiscDiameterUm <= 250.0f);
+	TestTrue(TEXT("Keim um 1 mm"), Nid.ConceptusDiameterUm >= 800.0f && Nid.ConceptusDiameterUm <= 1500.0f);
+	TestTrue(TEXT("Urintest (25 mIU/ml) schlägt um Tag 12–13 an"), Nid.HcgMilliIU >= 25.0f && Nid.HcgMilliIU < 100.0f);
+	TestTrue(TEXT("Hunderte bis wenige Tausend Epiblastzellen"), Nid.EpiblastCells >= 300 && Nid.EpiblastCells <= 5000);
+
+	// Nach der Einnistung steigt das hCG weiter
+	AdvanceTo(State, 360.0);
+	TestTrue(TEXT("hCG steigt nach der Einnistung weiter"), Nid.HcgMilliIU > 60.0f);
+	return true;
+}
+
+/**
+ * Eine Rechnung, egal in welchen Schritten: Die zweite Woche folgt der Uhr, nicht der Schrittweite –
+ * dasselbe Ergebnis in einem Rutsch, in krummen Schritten und nach dem Laden.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisEmbryoSecondWeekStepTest, "Genesis.Embryo.SecondWeekStepIndependent",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FGenesisEmbryoSecondWeekStepTest::RunTest(const FString& Parameters)
+{
+	FGenesisEmbryoState Once = MakeHatched(5, 150.0f, true);
+	FGenesisEmbryoState Many = Once;
+	AdvanceTo(Once, 260.0);
+	while (Many.HoursSinceFusion < 259.5)
+	{
+		GenesisEmbryoLogic::Advance(Many, FGenesisEmbryoTuning(), 0.37);
+	}
+	AdvanceTo(Many, 260.0);
+	TestEqual(TEXT("Tiefe"), Once.Nidation.DepthUm, Many.Nidation.DepthUm, 0.5f);
+	TestEqual(TEXT("Lakunen"), Once.Nidation.Lacunae, Many.Nidation.Lacunae);
+	TestEqual(TEXT("hCG"), Once.Nidation.HcgMilliIU, Many.Nidation.HcgMilliIU, 0.05f);
+	TestTrue(TEXT("Stufe"), Once.Nidation.Phase == Many.Nidation.Phase);
+	// Wer sich 6 h später anlegt, ist 6 h später dran
+	FGenesisEmbryoState Late = MakeHatched(5, 156.0f, true);
+	AdvanceTo(Late, 266.0);
+	TestEqual(TEXT("Später Keim: dieselbe Tiefe 6 h später"), Late.Nidation.DepthUm, Once.Nidation.DepthUm, 0.5f);
+	return true;
+}
+
+/**
+ * Das Risiko der Einnistung gegen Wilcox 1999: Der Zeitpunkt entscheidet. Je 1000 Keime zu zwei Zeitpunkten;
+ * der Keim des Spielers scheitert nie.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisEmbryoImplantationRiskTest, "Genesis.Embryo.ImplantationRisk",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FGenesisEmbryoImplantationRiskTest::RunTest(const FString& Parameters)
+{
+	using namespace GenesisEmbryoLogic;
+	TestEqual(TEXT("Tag 9: 13 %"), EarlyLossRiskForDay(9.0f), 0.13f, 0.001f);
+	TestEqual(TEXT("Tag 10: 26 %"), EarlyLossRiskForDay(10.0f), 0.26f, 0.001f);
+	TestEqual(TEXT("Tag 11: 52 %"), EarlyLossRiskForDay(11.0f), 0.52f, 0.001f);
+	TestEqual(TEXT("ab Tag 12: 82 %"), EarlyLossRiskForDay(13.0f), 0.82f, 0.001f);
+
+	const FGenesisEmbryoTuning Tuning;
+	const FGenesisEmbryoState Median = MakeHatched(1, Tuning.NominalAppositionHours, false);
+	TestEqual(TEXT("Mittlerer Keim nistet an Tag 9 nach dem Eisprung ein (Wilcox-Median)"), ImplantationDayPostOvulation(Median, Tuning), 9.0f, 0.01f);
+
+	auto FailShare = [this](float AppositionAt, bool bPlayer, float& OutMeanRisk)
+	{
+		int32 Failed = 0;
+		double RiskSum = 0.0;
+		const int32 Count = 1000;
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			FGenesisEmbryoState State = MakeHatched(1000 + Index, AppositionAt, bPlayer);
+			AdvanceTo(State, AppositionAt + 200.0f);
+			const bool bFailed = State.Stage == EGenesisEmbryoStage::Arrested;
+			Failed += bFailed ? 1 : 0;
+			RiskSum += State.Nidation.EarlyLossRisk;
+			if (bFailed && (State.ArrestReason != EGenesisEmbryoArrestReason::ImplantationFailed || State.Nidation.HcgMilliIU != 0.0f))
+			{
+				AddError(TEXT("Gescheitert, aber nicht als gescheiterte Einnistung (oder hCG bleibt)"));
+			}
+		}
+		OutMeanRisk = static_cast<float>(RiskSum / Count);
+		return static_cast<float>(Failed) / Count;
+	};
+
+	float RiskEarly = 0.0f, RiskLate = 0.0f, RiskPlayer = 0.0f;
+	const float Early = FailShare(144.0f, false, RiskEarly);
+	const float Late = FailShare(144.0f + 48.0f, false, RiskLate);
+	const float Player = FailShare(144.0f + 48.0f, true, RiskPlayer);
+	AddInfo(FString::Printf(TEXT("Anlage Tag 6: %.1f %% gescheitert (Risiko %.1f %%), Tag 8: %.1f %% (Risiko %.1f %%), Spieler: %.1f %%"),
+		100.0f * Early, 100.0f * RiskEarly, 100.0f * Late, 100.0f * RiskLate, 100.0f * Player));
+	TestTrue(TEXT("Rechtzeitig: um 13 % (±6)"), FMath::Abs(Early - 0.13f) <= 0.06f);
+	TestTrue(TEXT("Zwei Tage zu spät (Tag 11): etwa jede zweite verloren"), Late >= 0.45f && Late <= 0.7f);
+	TestTrue(TEXT("Anteil folgt dem Risiko"), FMath::Abs(Early - RiskEarly) <= 0.03f && FMath::Abs(Late - RiskLate) <= 0.04f);
+	TestEqual(TEXT("Der Keim des Spielers scheitert nie"), Player, 0.0f);
 	return true;
 }
 

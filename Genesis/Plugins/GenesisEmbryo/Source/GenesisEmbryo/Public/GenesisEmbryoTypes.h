@@ -48,6 +48,98 @@ enum class EGenesisEmbryoArrestReason : uint8
 };
 
 /**
+ * Die zweite Woche (GENESIS-040): Einnistung und zweiblättrige Keimscheibe, Carnegie-Stadien 5 und 6.
+ * Die Zeiten der Stufen sind Tage nach der Befruchtung (Langman, Moore „The Developing Human", Hertig-Rock-Präparate).
+ */
+UENUM(BlueprintType)
+enum class EGenesisImplantationPhase : uint8
+{
+	/** Noch frei in der Gebärmutter. */
+	None,
+	/** Tag 6: Die geschlüpfte Blastozyste legt sich mit dem Embryoblast-Pol an die Schleimhaut. */
+	Apposition,
+	/** Tag 6,5: Fest verhaftet (Integrine, L-Selektin) – sie rollt nicht mehr ab. */
+	Adhesion,
+	/** Tag 7–8: Der Trophoblast teilt sich in Zyto- und Synzytiotrophoblast; das Synzytium frisst sich ins Stroma. */
+	Invasion,
+	/** Tag 9: Im Synzytium öffnen sich Lakunen, der Keim ist fast ganz versunken, ein Fibrinpfropf verschließt die Lücke. */
+	Lacunar,
+	/** Tag 10: Ganz in der Schleimhaut, die Oberfläche wächst darüber wieder zu. */
+	Embedded,
+	/** Tag 11–12: Das Synzytium öffnet mütterliche Kapillaren – Blut strömt durch die Lakunen (erster Kreislauf). */
+	Uteroplacental,
+	/** Tag 13: Primärzotten aus Zytotrophoblast wachsen ins Synzytium, sekundärer Dottersack. Die zweite Woche ist vorbei. */
+	PrimaryVilli
+};
+
+/**
+ * Zustand der Einnistung. Längen in µm wie der übrige Keim. Der Keim ist hier weit größer als die Zellen,
+ * die ihn bilden – ab jetzt beschreiben Gewebe (Schichten, Höhlen) den Keim, nicht mehr einzelne Zellen.
+ */
+USTRUCT(BlueprintType)
+struct GENESISEMBRYO_API FGenesisImplantationState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") EGenesisImplantationPhase Phase = EGenesisImplantationPhase::None;
+
+	/** Stunden nach der Verschmelzung, zu denen sich der Keim anlegte (0 = noch nicht). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float AppositionAtHours = 0.0f;
+
+	/** Durchmesser des ganzen Keims (Trophoblast bis Trophoblast, µm): 200 beim Anlegen, ~1,2 mm an Tag 13. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float ConceptusDiameterUm = 0.0f;
+
+	/** 0..1 – Anteil des Keims unter der Oberfläche der Schleimhaut. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float Embedded = 0.0f;
+
+	/** Wie tief der Keim ins Stroma reicht (µm unter der Oberfläche). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float DepthUm = 0.0f;
+
+	/** Dicke des Synzytiotrophoblasten am Embryonalpol (µm). Er ist das eindringende Gewebe. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float SyncytiumThicknessUm = 0.0f;
+
+	/** Lakunen im Synzytium und wie weit sie mit mütterlichem Blut gefüllt sind (0..1). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") int32 Lacunae = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float LacunarBlood = 0.0f;
+
+	/** 0..1 – der Verschluss der Oberfläche: erst Fibrinpfropf (bis 0,5), dann nachgewachsenes Epithel (1). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float SurfaceClosure = 0.0f;
+
+	/** 0..1 – Deziduareaktion: Stromazellen schwellen, speichern Glykogen und Fett, Kapillaren weiten sich. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float Decidualization = 0.0f;
+
+	/** Zweiblättrige Keimscheibe: Epiblast (hochprismatisch, daraus wird der ganze Mensch) und Hypoblast (kubisch). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") int32 EpiblastCells = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") int32 HypoblastCells = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float DiscDiameterUm = 0.0f;
+
+	/** 0..1 – Amnionhöhle (öffnet sich an Tag 8 im Epiblast), primärer Dottersack (Tag 9, Heuser-Membran), sekundärer (Tag 12–13). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float AmnioticCavity = 0.0f;
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float PrimaryYolkSac = 0.0f;
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float SecondaryYolkSac = 0.0f;
+
+	/** 0..1 – extraembryonales Mesoderm und die Chorionhöhle, die sich darin öffnet (Tag 11–13). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float ExtraembryonicMesoderm = 0.0f;
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float ChorionicCavity = 0.0f;
+
+	/** Primärzotten (Tag 13). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") int32 PrimaryVilli = 0;
+
+	/** hCG im Blut der Mutter (mIU/ml). Hält den Gelbkörper am Leben – ohne hCG bliebe die Regel nicht aus. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float HcgMilliIU = 0.0f;
+
+	/** Tag nach dem Eisprung, an dem hCG erstmals messbar wird – die Größe, nach der Wilcox das Risiko misst. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float ImplantationDayPostOvulation = 0.0f;
+
+	/** Wahrscheinlichkeit, dass diese Schwangerschaft früh endet (0..1), aus dem Zeitpunkt der Einnistung. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo") float EarlyLossRisk = 0.0f;
+
+	/** Einmal ausgewürfelt beim Anheften: Kommt das Synzytium nicht an mütterliches Blut? */
+	UPROPERTY() bool bRiskRolled = false;
+	UPROPERTY() bool bWillFail = false;
+};
+
+/**
  * Eine Zelle des Keims (Blastomere). Positionen in µm relativ zur Mitte,
  * damit Darstellung und Simulation dieselben Zahlen benutzen (1 µm = 1 Unreal-Einheit).
  */
@@ -125,6 +217,10 @@ struct GENESISEMBRYO_API FGenesisEmbryoState
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo")
 	float Implantation = 0.0f;
 
+	/** Die zweite Woche im Einzelnen (GENESIS-040). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Embryo")
+	FGenesisImplantationState Nidation;
+
 	/** Zufallsstrom des Keims (deterministisch aus dem Genom). */
 	UPROPERTY() uint64 Seed = 0;
 
@@ -193,7 +289,39 @@ struct GENESISEMBRYO_API FGenesisEmbryoTuning
 	/** Ab diesem Ausdehnungsgrad reißt die Zona. */
 	UPROPERTY(EditAnywhere, Category = "Timing", meta = (ClampMin = "0", ClampMax = "1")) float HatchingCavity = 0.95f;
 
-	/** Dauer der Einnistung (h). */
+	/**
+	 * Die zweite Woche (GENESIS-040), Stunden nach der Befruchtung beim mittleren Keim. Ein Keim, der später
+	 * schlüpft, legt sich später an – alle Stufen verschieben sich mit. Tag 6 = 144 h.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Implantation") float NominalAppositionHours = 144.0f;
+	/** Nach dem Schlüpfen treibt der Keim noch einige Stunden frei, bis er sich anlegt. */
+	UPROPERTY(EditAnywhere, Category = "Implantation") float FloatAfterHatchingHours = 4.0f;
+	UPROPERTY(EditAnywhere, Category = "Implantation") float AdhesionHours = 156.0f;
+	UPROPERTY(EditAnywhere, Category = "Implantation") float InvasionHours = 168.0f;
+	UPROPERTY(EditAnywhere, Category = "Implantation") float LacunarHours = 216.0f;
+	UPROPERTY(EditAnywhere, Category = "Implantation") float EmbeddedHours = 240.0f;
+	UPROPERTY(EditAnywhere, Category = "Implantation") float UteroplacentalHours = 264.0f;
+	UPROPERTY(EditAnywhere, Category = "Implantation") float PrimaryVilliHours = 312.0f;
+
+	/**
+	 * hCG: ab ~5 mIU/ml im Blut messbar (empfindlicher Labortest), in den ersten Wochen Verdopplung alle 1,3–2 Tage
+	 * (Barnhart 2004: mindestens +53 % in zwei Tagen). Ein Urintest (25 mIU/ml) schlägt damit um Tag 12–13 an,
+	 * rund zum Termin der ausgebliebenen Regel.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Implantation") float HcgDetectableHours = 228.0f;
+	UPROPERTY(EditAnywhere, Category = "Implantation") float HcgDoublingHours = 31.0f;
+
+	/**
+	 * Frühes Ende nach dem Tag der Einnistung (Wilcox 1999, NEJM, 189 Schwangerschaften mit täglichem hCG):
+	 * bis Tag 9 nach dem Eisprung 13 %, Tag 10 26 %, Tag 11 52 %, später 82 %. Ein spät ankommender Keim trifft auf eine
+	 * Schleimhaut, deren Empfänglichkeitsfenster sich schließt.
+	 * Wilcox zählt als Einnistung den ersten Anstieg von hCG im Urin (hochempfindlicher Test): beim mittleren Keim
+	 * 36 h nach Beginn der Invasion, Tag 9 nach dem Eisprung. Die Befruchtung liegt ~12 h nach dem Eisprung.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Implantation") float HcgFirstRiseAfterInvasionHours = 36.0f;
+	UPROPERTY(EditAnywhere, Category = "Implantation") float HoursFusionAfterOvulation = 12.0f;
+
+	/** Nicht mehr benutzt (vor GENESIS-040: lineare Einnistung in 48 h). */
 	UPROPERTY(EditAnywhere, Category = "Timing") float ImplantationHours = 48.0f;
 
 	/** Zellen teilen sich nicht mehr, wenn sie so klein geworden sind (µm). */
