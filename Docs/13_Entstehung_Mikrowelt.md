@@ -770,3 +770,85 @@ Bildreihe beim Einstellen: 14 µm → Kopf unter dem Bildrand; 30 µm → Kopf k
 - Coronazellen wirken aus der Nähe wie glatte Eier: Kerne, Zellgrenzen und Hoffman-artiger Rand fehlen.
   Das Zielbild dafür liegt jetzt vor (Docs/26, Abschnitt 4).
 - Schlagfrequenz im zähen Eileiter (10 Hz) – siehe oben.
+## GENESIS-040 (Teil 3) – Die Vertexfarben kamen immer an; die Messung log
+
+Befund des Game Directors: Die Eileiterwand wirkt flach, Faltenspitzen und Spalten sehen gleich aus, das
+Kapillarnetz sitzt falsch. Gemessen mit `unreal.EditorStaticMeshLibrary.has_vertex_colors`:
+`SM_GEN_OviductWall = False`, `SM_GEN_MucosaFolds = False`. Daraus stand seit GENESIS-036 in den
+Unterlagen: „Vertexfarben kommen in Unreal nicht an."
+
+Der Satz war falsch. Die Farben kommen an – und zwar vollständig.
+
+### Was wirklich gemessen wurde
+
+**In der FBX** (Blender 5.2, `SM_GEN_OviductWall.fbx`, binär FBX 7400): eine Farbschicht `Tissue` als
+`LayerElementColor`, ByPolygonVertex/IndexToDirect, ordentlich in `Layer 0` eingetragen, 1.356.225 Farben.
+**Nach dem Import in Unreal 5.8** steht dasselbe in den Quelldaten des Meshes:
+
+| Kanal | Bedeutung | in der FBX | im importierten Mesh |
+|---|---|---|---|
+| R | Spalttiefe | 0,000…1,000 (M 0,616) | 0,000…0,996 (M 0,612) |
+| G | Höhe in der Falte | 0,000…1,000 (M 0,333) | 0,000…1,000 (M 0,331) |
+| B | großflächige Variation | 0,000…1,000 (M 0,513) | 0,000…0,996 (M 0,510) |
+| A | – | 1,000 | 1,000 |
+
+Gegenproben: mit Nanite und ohne – gleich. Klassischer FBX-Weg und Interchange – gleich. Trianguliert und
+nicht trianguliert – gleich. Fünf Testwürfel mit Farbattribut auf Ecken und auf Punkten, als BYTE_COLOR und
+als FLOAT_COLOR, exportiert sRGB und linear, als FBX und als glTF – alle kommen an.
+
+### Warum die Messung log
+
+`unreal.EditorStaticMeshLibrary.has_vertex_colors` gehört zum seit UE 5.0 veralteten Plugin *Editor
+Scripting Utilities*. Im Kommandlet – also genau in dem `-run=pythonscript`-Lauf, in dem die GENESIS-Skripte
+messen – antwortet es grundsätzlich `False`. Im selben Lauf meldeten die Geschwister derselben Bibliothek
+für einen Würfel mit 8 Vertices und einem UV-Kanal `get_number_verts = 0` und `get_num_uv_channels = 0`.
+Diese Funktionen lesen Renderdaten, die ein Kommandlet gar nicht aufbaut. Es war also nie eine Aussage über
+das Mesh, sondern eine über die Betriebsart.
+
+### Das Bild als Beweis
+
+Die zweite Aufnahme zeigt dieselbe Karte mit einem unbeleuchteten Material, dessen Farbe die Vertexfarbe
+selbst ist. Grün sind die Faltenspitzen (G → 1), Magenta und Rot die Spalten (R → 1, G → 0), der Wechsel von
+Magenta zu Rot ist die großflächige Variation in B. Genau das, was `M_GEN_OviductMucosa` erwartet – und
+was es auch bekommt.
+
+| Die Szene im Spiel | Dieselbe Szene, Farbe = Vertexfarbe |
+|---|---|
+| ![](Media/GENESIS-040_Eileiter.png) | ![](Media/GENESIS-040_Eileiter_Vertexfarben.png) |
+
+Die Wand ist damit nicht flach: Die Faltenspitzen sind heller und wärmer, die Spalten dunkler und gesättigter,
+das Zellmosaik liegt darüber. Was das Auge als „flach" gelesen hat, kommt aus der Belichtung dieser Szene und
+aus der Tiefenschärfe, nicht aus fehlenden Daten – das bleibt als eigene Aufgabe offen.
+
+### Was daraus im Code wurde
+
+- `Tools/Unreal/genesis_vertex_colors.py` misst die Vertexfarben an den **Quelldaten** (MeshDescription über
+  Geometry Script) und protokolliert Spannweite und Mittelwert je Kanal. Es meldet einen Fehler, wenn ein
+  erwarteter Kanal **keine Spannweite** hat – das ist der Befund, auf den es ankommt. „Gibt es überhaupt
+  Farben" ist die falsche Frage: Ein durchgehend weißes Mesh hat Farben, die nichts tragen.
+- `setup_conception_scene.py` misst jetzt nach jedem Import (Spermienzelle, Eileiterwand) und schreibt die
+  Zahlen ins Protokoll, statt eine Zusicherung zu behaupten.
+- `Tools/Unreal/show_vertex_colors.py` legt auf Wunsch eine Kopie einer Karte an, in der die Vertexfarben
+  unbeleuchtet sichtbar sind, und räumt sie auf Wunsch wieder weg. Damit entsteht das Bild oben reproduzierbar.
+- Dafür ist `GeometryScripting` im Projekt eingeschaltet – mit `TargetAllowList: ["Editor"]`, also nicht im
+  gebauten Spiel.
+
+### Zwei Dinge, die richtig bleiben
+
+- **`SM_GEN_MucosaFolds` hat wirklich keine Vertexfarben** – aber aus einem anderen Grund: Die FBX enthält
+  gar keine Farbschicht, `Tools/Trailer/Blender/build_origin_assets.py` schreibt keine. Das Mesh ist eine
+  Trailer-Kulisse, sein Material (`make_mucosa_material`) arbeitet mit einer Textur. Es fehlt nichts.
+- **Das Datenbild der Einnistung bleibt** (`T_GEN_EndometriumData.png`, GENESIS-040). Seine ursprüngliche
+  Begründung war die Fehlmessung; es trägt sich jetzt aus dem besseren Grund: Ein Bild behält seine Auflösung
+  auch dort, wo Nanite in der Ferne Vertices zusammenfasst, und hängt nicht an der Vertexdichte des Meshes.
+
+### Die Lehre
+
+Eine Messung, die immer dasselbe antwortet, ist keine Messung. `False` an zwei verschiedenen Meshes, in zwei
+verschiedenen Blöcken, ohne je ein `True` gesehen zu haben – das hätte auffallen müssen. Eine Prüffunktion
+braucht mindestens einmal eine Gegenprobe, die anschlägt, bevor man ihr glaubt.
+
+### Offen
+
+- Die Szene der ersten Woche ist dunkel und stark unscharf; ob Belichtung und Tiefenschärfe hier richtig
+  stehen, ist eine eigene Frage und in diesem Block nicht beantwortet.

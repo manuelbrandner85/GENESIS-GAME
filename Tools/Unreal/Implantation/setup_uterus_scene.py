@@ -512,7 +512,11 @@ def create_inner_cell_mass_material():
     return create_cell_layer_material("M_GEN_InnerCellMass", 6.5, 1.0, False, tint_value=0.38, relief=2.5)
 
 def import_data_texture():
-    """R Drüsenöffnung, G Furche, B Polster, A Kennwert der Drüse (Vertexfarben kamen in Unreal nicht an)."""
+    """R Drüsenöffnung, G Furche, B Polster, A Kennwert der Drüse.
+
+    Das Datenbild statt Vertexfarben: in der Ferne stabil, wo Nanite die Geometrie vereinfacht.
+    (Die frühere Begründung „Vertexfarben kommen nicht an" war eine Fehlmessung – siehe GENESIS-040 Teil 3, Docs/13.)
+    """
     task = unreal.AssetImportTask()
     task.set_editor_property("filename", os.path.join(SOURCE, "T_GEN_EndometriumData.png"))
     task.set_editor_property("destination_path", ENVIRONMENT)

@@ -147,3 +147,39 @@ Bilder sind Zielbilder für Blender/Unreal, keine Spielgrafik.
 
 Nächste Schritte damit: das Material der Furchungszellen auf das Hoffman-Bild ziehen (Teil 3), die
 Coronazellen ebenso (Kerne, Zellgrenzen, Randsaum statt glatter Eier).
+## 5. Blender → Unreal: welche Messung gilt (geprüft am 2026-09-22)
+
+Anlass: Seit GENESIS-036 stand in den Unterlagen, dass Vertexfarben aus Blender in Unreal nicht ankommen.
+Der Satz war falsch. Er stammte aus einer Messung, die im Kommandlet gar nicht messen kann. Deshalb hier,
+was geprüft wurde und welche Werkzeuge dafür taugen.
+
+**Der Weg selbst ist in Ordnung.** Blender 5.2 schreibt die Farbschicht als `LayerElementColor`
+(ByPolygonVertex, IndexToDirect, FBX 7400) und trägt sie in `Layer 0` ein; Unreal 5.8 liest sie – auf dem
+klassischen FBX-Weg **und** über Interchange, mit Nanite **und** ohne. Gemessen an der Eileiterwand
+(`SM_GEN_OviductWall`, 1.356.226 Vertices):
+
+| Kanal | in der FBX | nach dem Import in Unreal |
+|---|---|---|
+| R (Spalttiefe) | 0,000…1,000, Mittel 0,616 | 0,004…0,996, Mittel 0,612 |
+| G (Höhe in der Falte) | 0,000…1,000, Mittel 0,333 | 0,000…1,000, Mittel 0,332 |
+| B (Variation) | 0,000…1,000, Mittel 0,513 | 0,000…0,996, Mittel 0,512 |
+| A | 1,000 | 1,000 |
+
+Gegenprobe mit fünf Testwürfeln (Farbattribut auf Ecken und auf Punkten, BYTE_COLOR und FLOAT_COLOR,
+Export sRGB und linear, FBX und glTF): alle kommen an, die Werte stimmen mit den in Blender gesetzten überein.
+
+**Die Messung war das Problem.** `unreal.EditorStaticMeshLibrary.has_vertex_colors` gehört zum seit UE 5.0
+veralteten Plugin *Editor Scripting Utilities* und liefert im Kommandlet
+(`UnrealEditor-Cmd.exe -run=pythonscript`) grundsätzlich `False`. Im selben Lauf meldeten die Geschwister
+derselben Bibliothek für einen Würfel mit 8 Vertices und einem UV-Kanal `get_number_verts = 0` und
+`get_num_uv_channels = 0`. Diese Funktionen lesen Renderdaten, die ein Kommandlet nicht aufbaut.
+
+**Regel für die Pipeline:** Eine Eigenschaft des Meshes wird an den Quelldaten gemessen, nicht an den
+Renderdaten – `Tools/Unreal/genesis_vertex_colors.py` liest die MeshDescription über Geometry Script und
+meldet Spannweite und Mittelwert je Kanal. Ein Kanal ohne Spannweite ist der Befund, auf den es ankommt;
+„gibt es überhaupt Farben" ist die falsche Frage, denn ein durchgehend weißes Mesh hat Farben, die nichts
+tragen. Dafür ist `GeometryScripting` im Projekt eingeschaltet – nur für den Editor, nicht im gebauten Spiel.
+
+**Was bleibt:** Das Datenbild der Einnistung (`T_GEN_EndometriumData.png`, GENESIS-040) bleibt in Gebrauch.
+Sein ursprünglicher Grund war falsch, ein besserer trägt es: Ein Bild behält seine Auflösung auch dort, wo
+Nanite in der Ferne Vertices zusammenfasst, und hängt nicht an der Vertexdichte des Meshes.

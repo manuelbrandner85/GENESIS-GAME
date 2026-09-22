@@ -7,8 +7,12 @@
 
 import math
 import os
+import sys
 
 import unreal
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from genesis_vertex_colors import log_vertex_colors
 
 ROOT = "/Game/Genesis/Conception"
 CELLS = ROOT + "/Cells"
@@ -38,7 +42,8 @@ def ensure_folders():
 # Import
 # ---------------------------------------------------------------------------------------------------------------------
 def import_sperm_mesh():
-    # Klassischer FBX-Import: Farbattribut "Zones" muss als Vertex Color ankommen (Interchange ersetzt es sonst nicht zuverlässig)
+    # Klassischer FBX-Weg statt Interchange: nur er nimmt die Einstellungen aus FbxImportUI unten entgegen
+    # (Vertexfarben kommen auf beiden Wegen an – gemessen 2026-09-22, siehe Tools/Unreal/genesis_vertex_colors.py).
     unreal.SystemLibrary.execute_console_command(None, "Interchange.FeatureFlags.Import.FBX false")
 
     options = unreal.FbxImportUI()
@@ -76,6 +81,8 @@ def import_sperm_mesh():
         return None
     bounds = mesh.get_bounds()
     log("Spermienzelle Bounds Ursprung %s Ausdehnung %s" % (bounds.origin, bounds.box_extent))
+    # "Zones" trägt die Abschnitte der Zelle; das Material rechnet mit VC.g und VC.b
+    log_vertex_colors("Spermienzelle", mesh, expect=("g", "b"))
     return mesh
 
 
@@ -498,7 +505,7 @@ def create_cilia_material():
     return material
 
 
-def import_mesh(fbx_name, asset_name, destination, nanite):
+def import_mesh(fbx_name, asset_name, destination, nanite, expect_colors=None):
     unreal.SystemLibrary.execute_console_command(None, "Interchange.FeatureFlags.Import.FBX false")
     options = unreal.FbxImportUI()
     options.set_editor_property("import_mesh", True)
@@ -528,6 +535,8 @@ def import_mesh(fbx_name, asset_name, destination, nanite):
     asset = eal.load_asset(destination + "/" + asset_name)
     if asset:
         log("%s importiert, Ausdehnung %s" % (asset_name, asset.get_bounds().box_extent))
+        if expect_colors:
+            log_vertex_colors(asset_name, asset, expect=expect_colors)
     else:
         unreal.log_error("GENESIS: Import fehlgeschlagen: " + fbx_name)
     return asset
@@ -568,6 +577,8 @@ def import_wall():
         return None
     bounds = wall.get_bounds()
     log("Eileiterwand Bounds Ursprung %s Ausdehnung %s Nanite %s" % (bounds.origin, bounds.box_extent, wall.get_editor_property("nanite_settings").get_editor_property("enabled")))
+    # R Spalttiefe, G Höhe in der Falte, B großflächige Variation – M_GEN_OviductMucosa rechnet mit allen dreien
+    log_vertex_colors("Eileiterwand", wall, expect=("r", "g", "b"))
     return wall
 
 

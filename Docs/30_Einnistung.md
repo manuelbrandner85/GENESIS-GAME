@@ -154,6 +154,9 @@ Material-Parameter-Sammlung):
 - **Vertexfarben kommen in Unreal nicht an.** Die Maske der Drüsenöffnungen blieb wirkungslos. Gemessen:
   `has_vertex_colors = False` – auch an der Eileiterwand der ersten Woche, dort unbemerkt seit GENESIS-036. Jetzt trägt
   ein Datenbild (2048², 3,9 µm je Texel) die Masken; es liegt über der lokalen Lage und gilt für beide Wände.
+  **Nachtrag GENESIS-040 Teil 3 (2026-09-22): Dieser Befund war falsch.** Die Vertexfarben kommen an; `has_vertex_colors`
+  antwortet im Kommandlet immer `False`, unabhängig vom Mesh (Docs/13, Abschnitt GENESIS-040 Teil 3). Das Datenbild
+  bleibt trotzdem – es ist in der Ferne stabil, wo Nanite die Geometrie vereinfacht.
 - **Unreal überschreibt bei Alpha 0 die Farbe** durchsichtiger Pixel mit Nachbarfarben (PNG-Infill). Der Kennwert der
   Drüse liegt deshalb als 0,5…1 im Alpha.
 - **Format „Vector Displacement Map" vertauscht Rot und Blau** (gemessen: Polster statt Drüse im Rotkanal). Jetzt

@@ -7,8 +7,12 @@
 # (Zellleib r = 55 µm, Zona 58–72 µm, Cumulus bis 118 µm).
 
 import os
+import sys
 
 import unreal
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from genesis_vertex_colors import log_vertex_colors
 
 ROOT = "/Game/Genesis/Conception"
 OOCYTE = ROOT + "/Oocyte"
@@ -39,7 +43,7 @@ def ensure_folders():
 # ---------------------------------------------------------------------------------------------------------------------
 # Import
 # ---------------------------------------------------------------------------------------------------------------------
-def import_mesh(fbx_name, asset_name, nanite, compute_normals=False):
+def import_mesh(fbx_name, asset_name, nanite, compute_normals=False, expect_colors=None):
     unreal.SystemLibrary.execute_console_command(None, "Interchange.FeatureFlags.Import.FBX false")
     options = unreal.FbxImportUI()
     options.set_editor_property("import_mesh", True)
@@ -83,6 +87,8 @@ def import_mesh(fbx_name, asset_name, nanite, compute_normals=False):
         eal.save_loaded_asset(asset)
     if asset:
         log("%s importiert, Ausdehnung %s" % (asset_name, asset.get_bounds().box_extent))
+        if expect_colors:
+            log_vertex_colors(asset_name, asset, expect=expect_colors)
     else:
         unreal.log_error("GENESIS: Import fehlgeschlagen: " + fbx_name)
     return asset
@@ -672,7 +678,9 @@ else:
         "cytoplasm": import_mesh("SM_GEN_OocyteCytoplasm.fbx", "SM_GEN_OocyteCytoplasm", nanite=True),
         "zona": import_mesh("SM_GEN_OocyteZona.fbx", "SM_GEN_OocyteZona", nanite=False),
         "polar_body": import_mesh("SM_GEN_OocytePolarBody.fbx", "SM_GEN_OocytePolarBody", nanite=False),
-        "corona": import_mesh("SM_GEN_OocyteCorona.fbx", "SM_GEN_OocyteCorona", nanite=True, compute_normals=True),
+        # "Cell": R Tönung je Zelle, B Berührungstiefe – M_GEN_Corona rechnet mit beiden
+        "corona": import_mesh("SM_GEN_OocyteCorona.fbx", "SM_GEN_OocyteCorona", nanite=True, compute_normals=True,
+                              expect_colors=("r", "b")),
         "matrix": import_mesh("SM_GEN_OocyteMatrix.fbx", "SM_GEN_OocyteMatrix", nanite=False),
         # Fäden: Nanite aus, weil sie durchscheinend gerendert werden
         "strands": import_mesh("SM_GEN_OocyteStrands.fbx", "SM_GEN_OocyteStrands", nanite=False, compute_normals=True),

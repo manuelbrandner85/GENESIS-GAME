@@ -252,8 +252,10 @@ def resample_uniform(xs, field, size):
 def write_data_texture(xs, channels, path):
     """
     Datenbild für das Material: R Drüsenöffnung, G Furche, B Polster, A 0,5 + ½ Kennwert der Drüse – 3,9 µm je Texel über ±4 mm.
-    Vertexfarben kamen in Unreal nicht an (weder hier noch an der Eileiterwand); ein Bild ist außerdem in der Ferne
-    stabil, wo Nanite die Geometrie vereinfacht. Zeile 0 der Datei = größtes Y (Unreal liest Bilder von oben).
+    Der ursprüngliche Grund („Vertexfarben kommen in Unreal nicht an") war eine Fehlmessung (GENESIS-040 Teil 3,
+    Docs/13): Sie kommen an. Das Bild bleibt trotzdem, und aus dem besseren Grund – es ist in der Ferne stabil,
+    wo Nanite die Geometrie vereinfacht, und seine Auflösung hängt nicht an der Vertexdichte.
+    Zeile 0 der Datei = größtes Y (Unreal liest Bilder von oben).
     """
     planes = [resample_uniform(xs, channel, DATA_SIZE) for channel in channels]
     # Alpha nie 0: Sonst ersetzt der PNG-Import von Unreal die Farbe durchsichtiger Pixel durch Nachbarfarben (Infill)
