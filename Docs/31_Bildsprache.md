@@ -13,7 +13,7 @@ Entscheidung hinterlässt ein Echo.**
 |---|---|
 | Farben und Licht gemessen, Regeln festgeschrieben | **PRODUCTION READY** |
 | Startbildschirm und Titelkarte | **PRODUCTION READY**: im Bild geprüft |
-| Farbstimmung der Szenen | **IN ARBEIT** |
+| Farbstimmung der Szenen | **BETA**: gemeinsame Abstimmung liegt auf allen drei Karten, gemessen |
 
 ## Gemessen, nicht geschätzt
 
@@ -74,8 +74,31 @@ Eigene Fehler dabei: Der Import der Schrift bricht headless ab (die Oberfläche 
 Ein Font-Asset lässt sich aus einem Skript gar nicht bauen; das HUD baut die Laufzeitschrift selbst aus dem
 Schriftschnitt. Und weil kein Asset auf sie verweist, steht ihr Ordner in der Cook-Liste (Test `Genesis.Frontend.TitleFont`).
 
+## Die Szenen: gemessen statt geschätzt
+
+Alle drei Karten (Eileiter, Gebärmutter, Kreißsaal) bekommen dieselbe zurückhaltende Abstimmung
+(`Tools/Unreal/Frontend/apply_cover_look.py`): Tiefen einen Hauch Blau (Gain 0,96 / 0,99 / 1,07), Lichter einen Hauch
+Gold (1,05 / 1,00 / 0,93), Sättigung 0,98, Kontrast 1,02. Mehr wäre ein Filter, keine Stimmung.
+
+Danach gemessen (Mittelwerte über das ganze Bild):
+
+| | Leuchtdichte | warm | kalt | Tiefen | Spitzlichter |
+|---|---|---|---|---|---|
+| Cover | 0,28 | 27 % | 36 % | 3,1 % | 4,8 % |
+| Kreißsaal | 0,28 | 18 % | 0,3 % | 0,5 % | 11,9 % |
+| Gebärmutter (vorher) | **0,54** | 98 % | 0 % | 0 % | 0,9 % |
+| Gebärmutter (jetzt) | **0,40** | 100 % | 0 % | 0 % | 0 % |
+
+Die Gebärmutter war gleichmäßig hell – es fehlte der dunkle Halt des Covers. Die Abhilfe ist physikalisch, nicht
+farblich: Ein Endoskop leuchtet einen **Kegel** aus (jetzt 16°/38° statt 30°/58°), und die Uterusflüssigkeit streut
+leicht **bläulich** (kleine Teilchen streuen kurzwellig stärker). Damit fällt das Licht zum Bildrand ab, die
+Einnistungsstelle steht im Zentrum, und die Leuchtdichte sinkt auf 0,40. Dass das Bild warm bleibt, ist richtig: Es ist
+Gewebe im weißen Nahlicht. Der Kreißsaal liegt in der Leuchtdichte genau auf dem Cover, hat aber ausgebrannte
+Deckenfelder (11,9 %) und keinerlei kühlen Anteil – das ist der nächste Schritt.
+
 ## Als Nächstes
 
-- **Farbstimmung der Szenen:** ein gemeinsamer, zurückhaltender Look (kühle Tiefen, warme Lichter, Leuchtdichte im
-  gemessenen Band) statt je Szene eigener Einstellungen – `Tools/Unreal/Frontend/apply_cover_look.py`.
+- Kreißsaal: wärmeres Hauptlicht, kühlere Tiefen, die Deckenfelder nicht mehr ausbrennen lassen.
 - Kapitelkarten und Abspann in derselben Schrift.
+- Die Karte „Drücke eine beliebige Taste" steht vor dem hellen Zellkranz; der goldene Schriftzug ist dort weniger satt
+  als auf Schwarz.

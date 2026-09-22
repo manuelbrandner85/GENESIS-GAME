@@ -614,21 +614,28 @@ def build_level(mesh, material, mpc, shell, inner):
     inner_cell_mass.set_material(0, inner)
     # Die leere Zona (EmptyZona) bleibt vorerst leer: Gestaucht wirkte sie wie eine Kontaktlinse – weglassen statt falsch zeigen
     site.set_editor_property("target_illuminance_lux", float(os.environ.get("GENESIS_LUX", "90.0")))
+    # Ein Endoskop leuchtet einen Kegel aus: Zum Bildrand hin fällt das Licht deutlich ab. Gemessen war die Szene
+    # gleichmäßig hell (Leuchtdichte 0,54 gegen 0,28 auf dem Cover) und zu 98 % warm – es fehlte der dunkle Halt.
+    scope = site.get_editor_property("scope_light")
+    scope.set_editor_property("inner_cone_angle", 16.0)
+    scope.set_editor_property("outer_cone_angle", 38.0)
     # Belichtung wie beim Mikroskop: die Kamera belichtet selbst (physikalisch), das Volume nur für Bloom und Vignette
     # 8,5 EV: gemessen – bei 10 EV lagen die Flächen in der Schulter des Tonemappers, alles wirkte blass und flach
-    site.set_editor_property("exposure_bias", float(os.environ.get("GENESIS_EXPOSURE_BIAS", "8.5")))
+    site.set_editor_property("exposure_bias", float(os.environ.get("GENESIS_EXPOSURE_BIAS", "8.0")))
 
     # Uterusflüssigkeit: dünn streuend, sichtbar nur im Lichtkegel
     fog = actors.spawn_actor_from_class(unreal.ExponentialHeightFog, unreal.Vector(0, 0, -100000))
     fog.set_actor_label("UterineFluid")
     fog_component = fog.get_component_by_class(unreal.ExponentialHeightFogComponent)
-    fog_component.set_editor_property("fog_density", float(os.environ.get("GENESIS_FOG", "0.004")))
+    fog_component.set_editor_property("fog_density", float(os.environ.get("GENESIS_FOG", "0.010")))
     fog_component.set_editor_property("fog_height_falloff", 0.00001)
     fog_component.set_editor_property("fog_inscattering_luminance", unreal.LinearColor(0.0, 0.0, 0.0, 1.0))
     fog_component.set_editor_property("directional_inscattering_luminance", unreal.LinearColor(0.0, 0.0, 0.0, 1.0))
     fog_component.set_editor_property("enable_volumetric_fog", True)
     fog_component.set_editor_property("volumetric_fog_scattering_distribution", 0.55)
-    fog_component.set_editor_property("volumetric_fog_albedo", unreal.Color(236, 226, 220, 255))
+    # Streuung in der Uterusflüssigkeit ist leicht bläulich (kleine Teilchen streuen kurzwellig stärker):
+    # Die Ferne wird kühl, das nahe Gewebe bleibt warm – der Kontrast des Covers, physikalisch begründet
+    fog_component.set_editor_property("volumetric_fog_albedo", unreal.Color(205, 220, 240, 255))
 
     volume = actors.spawn_actor_from_class(unreal.PostProcessVolume, unreal.Vector(0, 0, 0))
     volume.set_actor_label("HysteroscopePostProcess")
