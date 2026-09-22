@@ -287,7 +287,10 @@ base = lerp(base, float3(0.22, 0.025, 0.035), blood * 0.75);
 // Im Wasserlinienkreis liegt nicht die Schleimhaut, sondern die untere Wand des Keims (Trophoblast, dichter Zellbelag):
 // Durch die glasige Hülle sah man sonst die flache Schleimhaut mitten im Keim
 float inside = (Waterline > 1.0 && Collar > 0.01) ? (1.0 - smoothstep(0.85, 0.98, d / Waterline)) * near : 0.0;
-base = lerp(base, float3(0.50, 0.44, 0.38) * (0.9 + 0.2 * e.Fbm(q / 12.0)), inside);
+base = lerp(base, float3(0.26, 0.23, 0.19) * (0.85 + 0.3 * e.Fbm(q / 12.0)), inside);
+// Die zweiblättrige Keimscheibe liegt als dichtere, etwas dunklere Scheibe auf dem Boden des Keims
+float disc = inside * (1.0 - smoothstep(0.3, 0.45, d / max(Waterline, 1.0)));
+base = lerp(base, float3(0.20, 0.17, 0.14) * (0.9 + 0.2 * e.Fbm(q / 5.0 + 31.0)), disc * 0.85);
 // Fibrinpfropf: gelblich-graues Gerinnsel aus Fasern, darin rote Blutkörperchen; unregelmäßiger, durchscheinender Rand
 float edgeNoise = 0.82 + 0.3 * e.Fbm((q - Site.xy) / 35.0 + 21.0);
 float plug = PlugR > 1.0 ? (1.0 - smoothstep(0.6, 1.0, d / (PlugR * edgeNoise))) * near : 0.0;
@@ -314,7 +317,7 @@ Specular = lerp(0.2, 0.0, pow(saturate(pit), 0.5));
 Sss = lerp(float3(0.62, 0.13, 0.09), float3(0.45, 0.03, 0.03), saturate(hyper * 0.6 + blood));
 // Im Drüsenschlauch kommt auch kein gestreutes Licht zurück – sonst leuchtet der Trichter rosa (gesehen)
 Sss *= 1.0 - pow(saturate(pit), 0.4);
-Sss = lerp(Sss, float3(0.35, 0.28, 0.22), inside * (1.0 - plug));
+Sss = lerp(Sss, float3(0.16, 0.13, 0.10), inside * (1.0 - plug));
 return saturate(base);
 """
 
@@ -429,6 +432,9 @@ struct GenesisTrophoblast
 		return float3(sqrt(f1), sqrt(f2), id);
 	}
 };
+// Was unter der Oberfläche der Schleimhaut liegt, steckt im Gewebe: Ohne diesen Schnitt zeichnete die glasige Hülle
+// auch ihre versunkene Innenseite – als helle Schale mitten im Gewebe (im Bild gesehen).
+clip(WP.z - Site.z + 1.0);
 GenesisTrophoblast t;
 float3 c = t.Worley(L / CellSize);
 float border = 1.0 - smoothstep(0.0, 0.08, c.y - c.x);
@@ -457,7 +463,7 @@ return base;
 """
 
 
-def create_cell_layer_material(name, cell_size, density, translucent, tint_value=1.0, relief=1.0):
+def create_cell_layer_material(name, mpc, cell_size, density, translucent, tint_value=1.0, relief=1.0):
     material = fresh_material(name)
     material.set_editor_property("tangent_space_normal", False)
     if translucent:
@@ -476,9 +482,12 @@ def create_cell_layer_material(name, cell_size, density, translucent, tint_value
     size = expression(material, unreal.MaterialExpressionScalarParameter, -1300, 500, parameter_name="CellSize", default_value=cell_size)
     dens = expression(material, unreal.MaterialExpressionScalarParameter, -1300, 600, parameter_name="Density", default_value=density)
     tint = expression(material, unreal.MaterialExpressionScalarParameter, -1300, 700, parameter_name="Tint", default_value=tint_value)
-    compose = custom(material, -800, 0, "Zellschicht", SHELL_CODE, ["L", "WP", "Nrm", "V", "Strength", "CellSize", "Density", "Tint"], FLOAT3,
+    site = expression(material, unreal.MaterialExpressionCollectionParameter, -1300, 800)
+    site.set_editor_property("collection", mpc)
+    site.set_editor_property("parameter_name", "Site")
+    compose = custom(material, -800, 0, "Zellschicht", SHELL_CODE, ["L", "WP", "Nrm", "V", "Strength", "CellSize", "Density", "Tint", "Site"], FLOAT3,
                      [("Roughness", FLOAT1), ("NormalWS", FLOAT3), ("Opacity", FLOAT1)])
-    for source, pin in ((local, "L"), (world, "WP"), (normal, "Nrm"), (view, "V"), (strength, "Strength"), (size, "CellSize"), (dens, "Density"), (tint, "Tint")):
+    for source, pin in ((local, "L"), (world, "WP"), (normal, "Nrm"), (view, "V"), (strength, "Strength"), (size, "CellSize"), (dens, "Density"), (tint, "Tint"), (site, "Site")):
         connect(source, "", compose, [pin])
     mel.connect_material_property(compose, "", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(compose, "Roughness", unreal.MaterialProperty.MP_ROUGHNESS)
@@ -501,15 +510,15 @@ def create_cell_layer_material(name, cell_size, density, translucent, tint_value
     return material
 
 
-def create_shell_material():
+def create_shell_material(mpc):
     # Kugel mit 55 µm Radius steht für 100 µm Keimradius: Zellen ~30 µm -> 16 Einheiten im Objektraum
-    return create_cell_layer_material("M_GEN_TrophoblastShell", 16.0, 0.10, True)
+    return create_cell_layer_material("M_GEN_TrophoblastShell", mpc, 16.0, 0.10, True)
 
 
-def create_inner_cell_mass_material():
+def create_inner_cell_mass_material(mpc):
     # Embryoblast: dicht gepackte, kleine Zellen (~12 µm) – ein trüber Knoten
     # Durch die Hülle gesehen gedämpft; dicht gepackte Zellen wölben sich deutlich (Maulbeerform)
-    return create_cell_layer_material("M_GEN_InnerCellMass", 6.5, 1.0, False, tint_value=0.38, relief=2.5)
+    return create_cell_layer_material("M_GEN_InnerCellMass", mpc, 6.5, 1.0, False, tint_value=0.38, relief=2.5)
 
 def import_data_texture():
     """R Drüsenöffnung, G Furche, B Polster, A Kennwert der Drüse (Vertexfarben kamen in Unreal nicht an)."""
@@ -646,8 +655,8 @@ unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous(["/Game/
 collection = create_parameter_collection()
 data_texture = eal.load_asset(ENVIRONMENT + "/T_GEN_EndometriumData") if os.environ.get("GENESIS_SKIP_IMPORT") else import_data_texture()
 endometrium_material = create_endometrium_material(collection, data_texture)
-shell_material = create_shell_material()
-inner_material = create_inner_cell_mass_material()
+shell_material = create_shell_material(collection)
+inner_material = create_inner_cell_mass_material(collection)
 endometrium = eal.load_asset(ENVIRONMENT + "/SM_GEN_Endometrium") if os.environ.get("GENESIS_SKIP_IMPORT") else import_endometrium()
 if endometrium and not os.environ.get("GENESIS_SKIP_LEVEL"):
     build_level(endometrium, endometrium_material, collection, shell_material, inner_material)

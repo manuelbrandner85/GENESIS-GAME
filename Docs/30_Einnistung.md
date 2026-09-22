@@ -165,6 +165,8 @@ Material-Parameter-Sammlung):
   bekommt das Gewebe Tiefe, und die Drüsengänge werden dunkel.
 - **Streifen auf den Trichterwänden:** Das Zellmuster liegt in der Draufsicht; an steilen Wänden wurde es zu Streifen
   gezogen. Es blendet dort jetzt aus.
+- **Die glasige Hülle zeichnete auch ihre versunkene Hälfte** – eine helle Schale mitten im Gewebe. Sie wird jetzt an
+  der Oberfläche der Schleimhaut abgeschnitten.
 - **Gefäße wie rote Blitze und Furchen wie gesprungene Farbe:** beides waren Vieleckkanten (Voronoi). Jetzt sind es
   Höhenlinien eines verwundenen Rauschens – sie laufen geschwungen und verzweigt.
 
@@ -178,7 +180,7 @@ Material-Parameter-Sammlung):
 | LIGHTING | eine Quelle (Kaltlicht am Hysteroskop, 5600 K), physikalisch geregelt über den Abstand, Belichtung gemessen |
 | ANIMATION | Der Keim dreht sich beim Anlagern, sinkt ein; die Kamera folgt gedämpft |
 | PHYSICS | Lage, Tiefe und Größe kommen aus der Simulation, nichts ist von Hand gesetzt |
-| PERFORMANCE | offen: im gebauten Spiel noch nicht gemessen |
+| PERFORMANCE | gemessen im fertigen Spiel, Full HD nativ: 15,4 ms je Bild (65 fps), GPU 9,7 ms, 78 Draw Calls, 2,1 GB RAM, 4,0 GB VRAM |
 | ORIGINALITY | eigene Geometrie und eigene Materialien, keine gekauften Assets |
 
 ## Offen
@@ -186,7 +188,7 @@ Material-Parameter-Sammlung):
 - Biologisch erreicht der Keim die Gebärmutter schon als Morula (Tag 4); im Spiel wechselt der Ort erst beim Schlüpfen
   (Tag 5–6). Die erste Woche bleibt so ganz beim Bild aus dem Brutschrank.
 - Die leere Zona, aus der der Keim geschlüpft ist, fehlt noch: gestaucht wirkte sie wie eine Kontaktlinse.
-- Die Bildrate der Szene ist im gebauten Spiel noch nicht gemessen.
+- Der Bildaufbau hängt am Renderthread (15,4 ms gegen 9,7 ms GPU); das ist Luft für später.
 - Das Bild ist noch nicht auf die Bildsprache des Covers gezogen (Gold gegen kalte Tiefe).
 - Der Durchlauf hält bei gescheiterter Einnistung nur an. Eine eigene Szene dafür fehlt, und für den Spieler kommt sie
   nicht vor.
