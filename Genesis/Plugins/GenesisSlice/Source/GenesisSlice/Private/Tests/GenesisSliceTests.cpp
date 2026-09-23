@@ -305,10 +305,34 @@ bool FGenesisSliceBodyPlanPaceTest::RunTest(const FString& Parameters)
 			HeartAt = Seconds;
 		}
 	}
-	AddInfo(FString::Printf(TEXT("Erster Herzschlag nach %.0f s, Bauplan fertig nach %.0f s"), HeartAt, Seconds));
+	AddInfo(FString::Printf(TEXT("Erster Herzschlag nach %.0f s, Bauplan fertig nach %.0f s, danach %.0f s Innehalten"),
+		HeartAt, Seconds, Slice.BodyPlanHoldSeconds));
 	TestTrue(TEXT("Der erste Herzschlag kommt nicht sofort"), HeartAt >= 12.0f);
 	TestTrue(TEXT("Und der Bauplan steht in gut einer halben Minute"), Seconds >= 25.0f && Seconds <= 45.0f);
 	TestTrue(TEXT("Am Ende schlägt das Herz"), State.bHeartBeating && State.HeartRateBpm > 100.0f);
+	// Der Moment des Innehaltens: lang genug für einige Herzschläge in Echtzeit, kurz genug, um nicht zu stehen
+	TestTrue(TEXT("Innehalten 4–20 s"), Slice.BodyPlanHoldSeconds >= 4.0f && Slice.BodyPlanHoldSeconds <= 20.0f);
+	return true;
+}
+
+/**
+ * Der Ort folgt dem Keim (GENESIS-040/041): Eileiter bis zum Schlüpfen, Gebärmutter ab der Einnistung, und ab dem
+ * Ende der vierten Woche die Fruchthöhle mit dem Embryo selbst – nicht früher, denn der Körper ist für Tag 28 gebaut.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSliceEmbryoSceneMapTest, "Genesis.Slice.EmbryoSceneMap", GenesisSliceTests::SliceFlags)
+bool FGenesisSliceEmbryoSceneMapTest::RunTest(const FString& Parameters)
+{
+	using namespace GenesisSliceLogic;
+	FGenesisSliceTuning Tuning;
+	TestEqual(TEXT("Furchung: Eileiter"), MapForEmbryo(EGenesisEmbryoStage::Morula, 3.5f, Tuning), Tuning.ConceptionMap);
+	TestEqual(TEXT("Einnistung: Gebärmutter"), MapForEmbryo(EGenesisEmbryoStage::Implanting, 8.0f, Tuning), Tuning.ImplantationMap);
+	TestEqual(TEXT("Dritte Woche: noch Gebärmutter"), MapForEmbryo(EGenesisEmbryoStage::Implanted, 20.0f, Tuning), Tuning.ImplantationMap);
+	TestEqual(TEXT("Kurz vor dem Ende der vierten Woche: noch Gebärmutter"),
+		MapForEmbryo(EGenesisEmbryoStage::Implanted, Tuning.EmbryoSceneFromDay - 0.1f, Tuning), Tuning.ImplantationMap);
+	TestEqual(TEXT("Ende der vierten Woche: Fruchthöhle"), MapForEmbryo(EGenesisEmbryoStage::Implanted, 26.5f, Tuning), Tuning.EmbryoMap);
+	TestEqual(TEXT("Ein Keim im Stillstand bleibt, wo er ist"), MapForEmbryo(EGenesisEmbryoStage::Arrested, 27.0f, Tuning), Tuning.ConceptionMap);
+	Tuning.EmbryoMap = NAME_None;
+	TestEqual(TEXT("Ohne Fruchthöhle bleibt es bei der Gebärmutter"), MapForEmbryo(EGenesisEmbryoStage::Implanted, 27.0f, Tuning), Tuning.ImplantationMap);
 	return true;
 }
 

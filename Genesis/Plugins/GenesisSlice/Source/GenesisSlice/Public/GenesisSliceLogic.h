@@ -35,4 +35,7 @@ namespace GenesisSliceLogic
 
 	/** Wo der Keim zu sehen ist: im Eileiter bis zum Schlüpfen, danach in der Gebärmutter (GENESIS-040). */
 	GENESISSLICE_API FName MapForEmbryoStage(EGenesisEmbryoStage Stage, const FGenesisSliceTuning& Tuning);
+
+	/** Wie MapForEmbryoStage – ab Tag EmbryoSceneFromDay aber die Fruchthöhle, in der der Embryo selbst zu sehen ist. */
+	GENESISSLICE_API FName MapForEmbryo(EGenesisEmbryoStage Stage, float DayPostFertilization, const FGenesisSliceTuning& Tuning);
 }

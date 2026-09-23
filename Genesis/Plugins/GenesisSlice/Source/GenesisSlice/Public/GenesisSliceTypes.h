@@ -215,4 +215,18 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	UPROPERTY(EditAnywhere, Category = "Slice") FName BirthMap = TEXT("L_GEN_Birth");
 	/** Die zweite Woche (GENESIS-040): Nach dem Schlüpfen zeigt das Spiel die Schleimhaut der Gebärmutter. */
 	UPROPERTY(EditAnywhere, Category = "Slice") FName ImplantationMap = TEXT("L_GEN_UterineCavity");
+
+	/**
+	 * Die Fruchthöhle (GENESIS-041 Teil 5): der Embryo selbst im Amnion, daneben der Dottersack. Erst ab diesem Tag
+	 * nach der Befruchtung – der Körper ist für das Ende der vierten Woche gebaut (Carnegie 12–13); die Tage davor
+	 * sehen anders aus und bekommen eigene Formen.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Slice") FName EmbryoMap = TEXT("L_GEN_Fruchthoehle");
+	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "15", ClampMax = "28")) float EmbryoSceneFromDay = 26.0f;
+
+	/**
+	 * Steht der Bauplan, hält der Zeitraffer an: So lange (s) schlägt das Herz in Echtzeit, bevor die Schwangerschaft
+	 * weiterläuft. Der eine Moment, in dem die Zeit stillsteht.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0", ClampMax = "60")) float BodyPlanHoldSeconds = 8.0f;
 };

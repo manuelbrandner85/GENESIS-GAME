@@ -10,8 +10,9 @@ Bauplan: vorn und hinten, links und rechts, oben und unten. In der vierten schl�
 | Simulation der dritten und vierten Woche (`GenesisEmbryogenesisLogic`) | **PRODUCTION READY**: gegen Lehrbuch und Ultraschalldaten geprüft |
 | Anzeige im Durchlauf (Tag, Länge, Somiten, Herzschlag), Entwicklerseite | **BETA** |
 | Der Körper an Tag 28, nach Referenzen in Blender (Form, innere Organe, Gewebe) | **ALPHA** – siehe „Der Körper" |
-| Der Körper in Unreal (Prüfkarte `L_GEN_EmbryoLookdev`, noch nicht im Durchlauf) | **ALPHA** – siehe „In Unreal" |
-| Szene: die Keimscheibe, das Neuralrohr, das schlagende Herz | **PLAN** (Teil 2) |
+| Der Körper in Unreal (Prüfkarte `L_GEN_EmbryoLookdev`) | **ALPHA** – siehe „In Unreal" |
+| Die Fruchthöhle im Durchlauf (`L_GEN_Fruchthoehle`): Amnion, Dottersack, Dottergang, Haftstiel, das schlagende Herz | **ALPHA** – siehe „Die Fruchthöhle" |
+| Die Formen der Tage 15–25 (Keimscheibe, Neuralrinne, erste Somiten) | **PLAN** |
 
 ## Die Stufen
 
@@ -152,16 +153,81 @@ Weg: `build_embryo_day28.py` exportiert (`export_all`) Hülle und Organe als FBX
    geprüft statt still übergangen.
 
 **Noch offen in Unreal:** feines Flimmern an den Knospen (Abtastung am Rand), der Hirnrand ist unten etwas bläulich
-(Aufhellung von unten), und der Embryo steht noch in einer Prüfkarte, nicht im Durchlauf.
+(Aufhellung von unten).
+
+## Die Fruchthöhle (Teil 5)
+
+![Die Fruchthöhle an Tag 28, im Spiel aufgenommen](Media/GENESIS-041_Fruchthoehle.png)
+
+Der Embryo in seiner Umgebung, so wie ihn ein Embryoskop sähe:
+- **Amnion:** eine Zellschicht, eng um den Embryo, am Nabel angesetzt. Im Fruchtwasser fast unsichtbar; man sieht es
+  nur, wo der Blick streifend durch die Haut läuft (Deckung 2,5 % in der Fläche, 45 % am Saum).
+- **Dottersack**, 3,5 mm (Ultraschall 6. SSW: 3–5 mm), außerhalb des Amnions. Auf ihm das erste Blut: Blutinseln am
+  fernen Pol, ein Netz von Dottergefäßen, das am Stiel zusammenläuft.
+- **Dottergang** vom Nabel zum Dottersack, Dotterarterie und -vene in seiner Wand.
+- **Haftstiel – die eigentliche Lebensleitung.** Kurz und kräftig, mit den Nabelgefäßen (zwei Arterien, zwei Venen),
+  vom Schwanzende des Nabels zur **Chorionplatte**: der Wand der Fruchtblase dort, wo sie in der Gebärmutterwand
+  (Decidua basalis) verankert ist. Hier wächst die Plazenta; von der Ansatzstelle verzweigen sich die Gefäße über die
+  Platte. Aus Haftstiel und Dottergang wird ab Woche 4–8 die Nabelschnur, wenn das Amnion beide umwächst.
+- Die **Chorionhöhle** (22 mm) ringsum, rötlich, im Hintergrund.
+
+**Recherche zur Frage des Game Directors** („Sollte da nicht die Gebärmutter dran sein und kein schwebender Ball?"):
+Beides stimmt. Der Dottersack schwebt tatsächlich frei in der Chorionhöhle und hängt nur am Dottergang, man sieht ihn
+im frühen Ultraschall als Ring. Die Verbindung zur Mutter aber ist der Haftstiel zur Chorionplatte an der
+Gebärmutterwand. In der ersten Fassung lief er ins Dunkel, und das Kind schien am Dottersack zu hängen. Quellen:
+[embryology.ch – Nabelschnur](https://embryology.ch/en/embryogenese/fetal-membranes-and-placenta/umbilical-cord/development.html),
+[StatPearls – Umbilical Cord](https://www.ncbi.nlm.nih.gov/books/NBK557490/),
+[ScienceDirect – Connecting Stalk](https://www.sciencedirect.com/topics/neuroscience/connecting-stalk).
+- Die Flüssigkeit der Chorionhöhle ist leicht trüb: Das Licht des Embryoskops steht als Hauch im Raum.
+
+Weg: `Tools/Blender/Embryogenesis/build_fruchthoehle.py` baut und exportiert die Umgebung im Koordinatensystem des
+Embryos; `Tools/Unreal/Embryogenesis/setup_fruchthoehle.py` importiert, legt die Materialien an und baut die Karte.
+
+**Der Szenen-Actor** `AGenesisEmbryoScene` (Plugin GenesisEmbryo) zeigt, was die Simulation rechnet:
+- Der Körper hat die simulierte Länge (Tag 26 kleiner als Tag 28; das Modell steht für 4,6 mm).
+- **Das Herz schlägt in Echtzeit** im simulierten Takt (111/min an Tag 28), auch während der Zeitraffer läuft – rasch
+  zusammen, langsam erschlaffen, Ruhe (Test `Genesis.Embryo.SceneView`).
+- Kamera wie ein Embryoskop: 18 mm Brennweite, nah und weitwinklig, sanftes Schwenken; das Licht am Lichtleiter regelt
+  nach, damit der Embryo bei jedem Abstand gleich hell ist. Bildaufbau vorher gegen die Geometrie durchgerechnet (die
+  Kamera muss in der 22-mm-Höhle bleiben).
+
+**Im Durchlauf:** Ab Tag 26 wechselt die Phase „Die ersten vier Wochen" aus der Gebärmutterhöhle in die Fruchthöhle
+(`MapForEmbryo`, Test `Genesis.Slice.EmbryoSceneMap`). Steht der Bauplan, hält die Zeit 8 Sekunden an – nur das Herz
+schlägt weiter –, dann beginnt die Schwangerschaft. Dort springt die Zeit in Wochen; ab Tag 29 blendet die Kamera ab,
+statt einen Embryo vom Ende der vierten Woche in der achten zu zeigen.
+
+**Gefunden und behoben:**
+1. Der Nabel lag in der Lücke zwischen Bauch und eingerolltem Schwanz, außerhalb der Haut – der Dottergang endete als
+   offenes Rohr im Wasser. Jetzt per Strahl gegen die Hülle gemessen und geschlossen in der Bauchwand angesetzt.
+2. Dottergang wie ein Strohhalm mit zwei knallroten Schläuchen obenauf; jetzt liegen die Gefäße in der Wand und
+   schimmern gedämpft durch.
+3. Der Dottersack beherrschte angeschnitten den unteren Bildrand; jetzt neben dem Embryo, ganz im Bild.
+4. Die Dottergefäße liefen als lange Bögen einmal um die Kugel – ein Ball mit Nähten; dazu zog der Hauptast seine
+   Länge bei jedem Schritt neu (Zickzack). Jetzt verschieden lange, geschlängelte Äste, die am Stiel zusammenlaufen.
+5. Der Haftstiel endete frei im Wasser und stand dann stirnseitig hinter dem Schwanz wie eine Fahne; jetzt läuft er
+   nach hinten in die Chorionwand.
+6. Der Hintergrund war reines Digitalschwarz (0/0/0 gemessen). Mit leicht streuender Flüssigkeit (Dichte 0,012;
+   0,03 nahm dem Embryo den Kontrast) steht der Lichtkegel als Hauch im Raum.
+7. **Im gebauten Spiel gefunden:** Die Kamera blendete in der Schwangerschaft nie ab. Steht der Bauplan, rechnet der
+   Embryo nicht weiter, und seine eigene Uhr blieb bei Tag 28 stehen. Die Szene liest das Alter jetzt aus der
+   Weltuhr, die in Wochen weiterspringt.
+8. Der Haftstiel lief ins Dunkel, die Chorionplatte fehlte (siehe Recherche oben). Jetzt steht die Platte hinter dem
+   Embryo; der Ansatz liegt auf dem Sichtstrahl der Kamera rechts unter ihm (eine erste Rechnung setzte den Versatz ohne
+   Perspektive an, der Ansatz landete hinter dem Embryo).
+9. **Alle selbst gebauten Kugeln und Röhren hatten ihre Flächen nach innen gedreht.** Unreal zeichnet nur
+   Vorderseiten: Vom Dottersack, den Stielen und Gefäßen sah man die Innenseite der Rückwand (es fiel kaum auf), die
+   Chorionwand dagegen war unsichtbar – deshalb lag der Hintergrund bisher im Schwarz. Jetzt im Skript geprüft:
+   Kugeln und Röhren nach außen, die Höhle nach innen.
+10. Die Gefäße der Platte kamen erst aus dem Gefäßbaum des Dottersacks und ringelten sich um den Ansatz wie
+    Stacheldraht; jetzt ein eigener, flacher Baum mit gabeligen Ästen.
 
 ## Offen
 
-- **Die Szene fehlt** (Teil 2): der Embryo in der Fruchthöhle, mit Dottersack und Dottergang (samt Gefäßen), Amnion
-  und Haftstiel; das Herz, das schlägt. Bis dahin bleibt die Kamera auf der Einnistungsstelle.
 - Der Körper steht für **Tag 28**. Die Tage davor (Keimscheibe, Neuralrinne, erste Somiten) brauchen eigene Formen
   derselben Bauart, damit die Wochen 3–4 sichtbar werden – dann als Übergänge zwischen den Tagen.
-- In Unreal: Hülle durchscheinend (wie die Hülle des Keims bei der Einnistung), Organe darin undurchsichtig; die
-  Netze sind für Nanite ausgelegt.
+- In der Fruchthöhle: Die Aortenbögen zeichnen sich am Hals als kräftig roter Knoten ab – im Leben schimmern sie
+  durch, aber zarter. Der Gefäßbaum der Chorionplatte ist noch recht regelmäßig gegabelt; die Wand hat keine
+  Feinstruktur (Zotten und Bluträume dahinter nur als Farbe).
 - Feinheiten: Gefäßgeflecht am Kopf, Kardinalvenen, feinere Kiemenfurchen, Nasenplakoden (erst ab Tag 32).
 - Der Herzschlag soll hörbar werden (der Klang liegt im Körperklang-System bereit) und den Spieler von hier an
   begleiten.

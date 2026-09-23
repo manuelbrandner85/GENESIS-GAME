@@ -439,15 +439,21 @@ def build_level(meshes, shell, instances):
     log("Karte gespeichert: %s -> %s" % (MAP_PATH, saved))
 
 
-ensure_folders()
-unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous(["/Game/Genesis"], True)
-organ_material = create_organ_material()
-organ_instances = create_organ_instances(organ_material)
-shell_material = create_shell_material()
-imported = {}
-for part, (use_nanite, _) in PARTS.items():
-    if os.environ.get("GENESIS_SKIP_IMPORT"):
-        imported[part] = eal.load_asset(MESHES + "/" + part)
-    else:
-        imported[part] = import_part(part, use_nanite)
-build_level(imported, shell_material, organ_instances)
+def main():
+    ensure_folders()
+    unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous(["/Game/Genesis"], True)
+    organ_material = create_organ_material()
+    organ_instances = create_organ_instances(organ_material)
+    shell_material = create_shell_material()
+    imported = {}
+    for part, (use_nanite, _) in PARTS.items():
+        if os.environ.get("GENESIS_SKIP_IMPORT"):
+            imported[part] = eal.load_asset(MESHES + "/" + part)
+        else:
+            imported[part] = import_part(part, use_nanite)
+    build_level(imported, shell_material, organ_instances)
+
+
+# Als Bibliothek (setup_fruchthoehle.py) nur die Funktionen laden
+if not os.environ.get("GENESIS_EMBRYO_LIB_ONLY"):
+    main()

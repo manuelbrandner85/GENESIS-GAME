@@ -52,7 +52,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-038 | Die erste Woche, Zelle für Zelle | Vorkerne und Syngamie (12–24 h), Teilungen 2→4→8 (bis Tag 3), Kompaktierung, Morula (Tag 4), Blastozyste mit Trophoblast und innerer Zellmasse (Tag 5), Schlüpfen aus der Zona (Tag 6), Anheften (Tag 7) – Carnegie-Stadien 1–4 in echten Maßen. Teil 1: Keim wieder sichtbar (war verloren), EmbryoScope-Zeitraffer 75 s, Laborbeschriftung, Zelltrümmer. Teil 2: echte Geißelwelle statt Wackeln, halbe Ich-Perspektive im Rennen, sechs kie.ai-Zielbilder. Teil 3: Uhr auf Klinik-Mediane (±2 h), Vorkerne und Kerne, Hoffman-Kontrast, optischer Schnitt durch die Blastozyste | DONE (Polkörper rosa, Glanzpunkt offen) |
 | GENESIS-039 | Ton und Sprache im ganzen Spiel | Szenenklang zur Laufzeit statt in den Karten (das Spiel war ab dem Menü stumm), Tonaufnahme zur Messung, 32 deutsche Sätze von Mutter und Hebamme (kie.ai Gemini TTS) mit Anlass aus der Simulation (Wehen, Erschwernisse, Geschlecht aus dem Genom, Haut an Haut, Blickkontakt), Geburtszeit dehnt sich zur Austreibung. Teil 2: echtes Schreien des Kindes (geprüft 410–471 Hz) nach Zustand, Raumklang des Kreißsaals, Cumuluszellen mit Kern/Granula/Saum statt Plastikeiern, kein erfundenes Rosa Teil 3: kein Klingeln, Ohr des Neugeborenen, Stimmen aus der Richtung der Sprecherin. Teil 4: sichtbare Hebamme (MetaHuman), lippensynchron (StreamingADA, im Editor vorberechnet), Kasackhose und Nitrilhandschuhe  Teil 5: Kasackhose aus Stoffsimulation und Clogs (Blender → Skeletal Mesh), Arme und Hände wie beim Halten eines Neugeborenen, Abtrocknen und Zudecken mit Wärmephysik, Lumen Hit Lighting. Teil 6: 25 → 15 ms je Bild in Full HD (Haar-Voxel im Szenenmaßstab, MegaLights). Teil 7: Kasack. Teil 8: Mutter mit Schweiß und Röte nach der Geburt | DONE (Stimmwahl offen) |
 | GENESIS-040 | Einnistung und Keimscheibe | Synzytiotrophoblast wächst in die Schleimhaut, Lakunen mit mütterlichem Blut, zweiblättrige Keimscheibe (Epiblast/Hypoblast), Amnionhöhle, Dottersack, hCG – Woche 2, Carnegie 5–6. Teil 1: Simulation der zweiten Woche (7 Stufen nach Lehrbuch, hCG nach Barnhart, Risiko nach Wilcox). Teil 2: die Gebärmutter als Ort (Schleimhaut aus anatomischen Maßen, durchscheinender Keim, Fibrinpfropf, Deziduareaktion, Hysteroskop-Kamera) | DONE (Bildsprache des Covers offen) |
-| GENESIS-041 | Gastrulation, Neuralrohr, erster Herzschlag | Primitivstreifen (Tag 15), drei Keimblätter, Chorda, Neuralplatte (Tag 18), Somiten, Neuralrohr schließt (Tag 22–28), der Herzschlauch schlägt (Tag 22) – Woche 3–4, Carnegie 7–13. Teil 1: Simulation mit Somitentakt, Herzfrequenzkurve und Neuralrohrrisiko an der Ernährung der Mutter. Teil 3: der Körper an Tag 28 nach Referenzen in Blender, mit inneren Organen (ALPHA). Teil 4: in Unreal (ALPHA, Prüfkarte) | IN ARBEIT (Szene offen) |
+| GENESIS-041 | Gastrulation, Neuralrohr, erster Herzschlag | Primitivstreifen (Tag 15), drei Keimblätter, Chorda, Neuralplatte (Tag 18), Somiten, Neuralrohr schließt (Tag 22–28), der Herzschlauch schlägt (Tag 22) – Woche 3–4, Carnegie 7–13. Teil 1: Simulation mit Somitentakt, Herzfrequenzkurve und Neuralrohrrisiko an der Ernährung der Mutter. Teil 3: der Körper an Tag 28 nach Referenzen in Blender, mit inneren Organen (ALPHA). Teil 4: in Unreal (ALPHA, Prüfkarte). Teil 5: die Fruchthöhle mit Amnion, Dottersack, Dottergang und Haftstiel im Durchlauf, das Herz schlägt in Echtzeit (ALPHA) | IN ARBEIT (Formen der Tage 15–25 offen) |
 | GENESIS-042 | Organogenese | Gliedmaßenknospen, Schlundbögen → Gesicht, Augenbecher und Linse, Herzscheidewände, Hirnbläschen, Finger und Zehen; Ende Woche 8: 3 cm, alle Organe angelegt – Carnegie 13–23 | PLAN |
 | GENESIS-043 | Die Verbindungen | Nervensystem: Neurone entstehen, wandern, bilden Axone; erste Synapsen im Rückenmark (~Woche 8), in der Hirnrinde ab ~Woche 23, Thalamus–Rinde ab Woche 24 (erste Wahrnehmung). Jede Verbindung gezählt nach Literaturkurven, sichtbar als wachsendes Netz; Reize (Herzschlag, Stimme der Mutter) hinterlassen Spuren im Gedächtnissystem | PLAN |
 | GENESIS-044 | Die Fetalzeit | Woche 9–40 nach Referenzkurven (Scheitel-Steiß-Länge, Gewicht): erste Bewegungen, Schlucken, Daumenlutschen, Kindsbewegungen spürbar (Woche 18–20), Hören (24–26), Augen öffnen (26–28), Lungenreife, Drehung in Schädellage (32–36). Der Spieler bewegt sich, hört, reagiert | PLAN |
@@ -526,3 +526,29 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 
 ### GENESIS-041 (Teil 4) – Der Embryo in Unreal
 - 2026-09-23: Export aus Blender (Hülle auf 30 % reduziert, Organe voll) und Import per `setup_embryo.py`: Organe undurchsichtig mit Streuung über Nanite, Hülle durchscheinend mit Tiefe nach Beer-Lambert (1 − e^(−d/0,7 mm)) und tiefenbewusster Streuunschärfe (13 Abtastpunkte) – so übernimmt die Hülle, was in Blender das Streuvolumen tut. Prüfkarte `L_GEN_EmbryoLookdev` mit Kamera und Licht wie in Blender, Farben an denselben Bildstellen gegen Blender gemessen. Grafikzeit 2,7 ms bei 1066 × 600. Sechs eigene Fehler gefunden (Doc 32), u. a. Farbkanäle von `unreal.Color` vertauscht (Gold wurde Blau), nur ein gerichtetes Licht für Durchscheinendes, AgX gegen Filmic. Stand ALPHA; der Embryo steht noch nicht im Durchlauf.
+
+### GENESIS-041 (Teil 5) – Die Fruchthöhle im Durchlauf
+- 2026-09-23: Der Embryo in seiner Umgebung, gebaut in Blender (`build_fruchthoehle.py`) und nach Unreal übertragen (`setup_fruchthoehle.py`, Karte `L_GEN_Fruchthoehle`). Zu sehen sind:
+  - das Amnion;
+  - der Dottersack (3,5 mm) mit Blutinseln und Dottergefäßen;
+  - der Dottergang;
+  - der Haftstiel mit den Nabelgefäßen zur Chorionplatte an der Gebärmutterwand, von der die Gefäße der werdenden Plazenta ausstrahlen;
+  - die Chorionhöhle mit leicht streuender Flüssigkeit.
+- Game Director: „Sollte da nicht die Gebärmutter dran sein und kein schwebender Ball?“ Recherchiert: Der Dottersack schwebt tatsächlich frei. Die Lebensleitung ist aber der Haftstiel zur Chorionplatte, und der lief in der ersten Fassung ins Dunkel. Das ist korrigiert, mit Quellen in Doc 32.
+- Neuer Szenen-Actor `AGenesisEmbryoScene`:
+  - Er zeigt die simulierte Länge.
+  - Das Herz schlägt in Echtzeit im simulierten Takt.
+  - Die Kamera arbeitet wie ein Embryoskop (18 mm, Bildaufbau gegen die Geometrie gerechnet).
+  - In der Schwangerschaft blendet er ab.
+- Im Durchlauf:
+  - Ab Tag 26 wechselt der Ort in die Fruchthöhle.
+  - Steht der Bauplan, hält die Zeit 8 Sekunden an, nur das Herz schlägt weiter.
+  - Danach beginnt die Schwangerschaft.
+- Geprüft im gebauten Spiel mit Autopilot: Befruchtung 64 s → Gebärmutterhöhle → nach 60 s Fruchthöhle → 12 s später Schwangerschaft → Geburt.
+- Zehn eigene Fehler gefunden (Doc 32). Die wichtigsten:
+  - Der Nabel lag außerhalb der Haut.
+  - Alle selbst gebauten Kugeln und Röhren hatten ihre Flächen nach innen gedreht, deshalb war die Chorionwand unsichtbar.
+  - Das Abblenden kam im gebauten Spiel nie, weil die Uhr des Embryos nach dem Bauplan stehen blieb.
+- Tests Embryo.SceneView und Slice.EmbryoSceneMap; 149 von 149.
+- Stand ALPHA.
+- Nächster Auftrag des Game Directors: die ganze Schwangerschaft statt eines schwarzen Zeitraffers, mit Ton und der Wahrnehmung des Kindes.

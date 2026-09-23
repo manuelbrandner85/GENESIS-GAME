@@ -79,8 +79,13 @@ private:
 	 * weitergeschwommen und hat die Eizelle womöglich schon erreicht.
 	 */
 	bool bForceTravel = false;
-	/** Einmal je Durchlauf in die Gebärmutter: Fehlt die Karte, würde sonst jedes Bild einen Ladeversuch starten. */
-	bool bUterusTravelTried = false;
+	/**
+	 * Der letzte Ort, zu dem der Keim den Durchlauf geführt hat (Gebärmutter, Fruchthöhle). Jeder Ort wird je Durchlauf
+	 * einmal versucht: Fehlt eine Karte, würde sonst jedes Bild einen Ladeversuch starten.
+	 */
+	FName EmbryoTravelTried;
+	/** Wie lange der fertige Bauplan schon steht – so lange hält der Zeitraffer an (Tuning.BodyPlanHoldSeconds). */
+	float BodyPlanHeldSeconds = 0.0f;
 	/** Wie lange der Durchlauf schon zu Ende ist – der Abspann kommt nicht im selben Augenblick. */
 	float EndedSeconds = 0.0f;
 	bool bEndReported = false;

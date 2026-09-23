@@ -96,7 +96,8 @@ void UGenesisSliceDirector::ReturnToMenu()
 	State = FGenesisSliceState();
 	bCareGiven = false;
 	bEndReported = false;
-	bUterusTravelTried = false;
+	EmbryoTravelTried = NAME_None;
+	BodyPlanHeldSeconds = 0.0f;
 	EndedSeconds = 0.0f;
 	bForceTravel = true;
 	TravelTo(Tuning.ConceptionMap);
@@ -142,7 +143,8 @@ void UGenesisSliceDirector::StartRun(uint64 Seed)
 	State.RunSeed = Seed != 0 ? Seed : GenesisHash::Mix64(static_cast<uint64>(FDateTime::UtcNow().GetTicks()));
 	State.StartTime = Clock ? Clock->GetNow() : FGenesisTimestamp();
 	bCareGiven = false;
-	bUterusTravelTried = false;
+	EmbryoTravelTried = NAME_None;
+	BodyPlanHeldSeconds = 0.0f;
 	bEndReported = false;
 	EndedSeconds = 0.0f;
 
@@ -178,7 +180,8 @@ FGenesisSliceSignals UGenesisSliceDirector::ReadSignals() const
 	{
 		const FGenesisEmbryoState& EmbryoState = Embryo->GetState();
 		Signals.bImplanted = EmbryoState.Stage == EGenesisEmbryoStage::Implanted;
-		Signals.bBodyPlanDone = Embryo->IsEmbryogenesisComplete();
+		// Fertig ist der Bauplan für den Durchlauf erst, wenn der Moment des Innehaltens vorbei ist
+		Signals.bBodyPlanDone = Embryo->IsEmbryogenesisComplete() && BodyPlanHeldSeconds >= Tuning.BodyPlanHoldSeconds;
 		Signals.bEmbryoArrested = EmbryoState.Stage == EGenesisEmbryoStage::Arrested;
 	}
 
@@ -306,15 +309,25 @@ void UGenesisSliceDirector::DrivePhase(float DeltaSeconds)
 		// Die erste Woche als Zeitraffer wie im EmbryoScope: gleichmäßig, das Tempo nach der Stufe.
 		// Sekundenbruchteile sammeln sich, bis eine ganze Sekunde Keimzeit übersprungen werden kann.
 		const UGenesisEmbryoSubsystem* EmbryoSystem = GameInstance->GetSubsystem<UGenesisEmbryoSubsystem>();
-		const EGenesisEmbryoStage EmbryoStage = EmbryoSystem && EmbryoSystem->HasEmbryo() ? EmbryoSystem->GetState().Stage : EGenesisEmbryoStage::Zygote;
-		// Geschlüpft: Der Ort wechselt in die Gebärmutter, weil der Keim dort ist
-		const FName EmbryoMap = GenesisSliceLogic::MapForEmbryoStage(EmbryoStage, Tuning);
+		const bool bHasEmbryo = EmbryoSystem && EmbryoSystem->HasEmbryo();
+		const EGenesisEmbryoStage EmbryoStage = bHasEmbryo ? EmbryoSystem->GetState().Stage : EGenesisEmbryoStage::Zygote;
+		const float EmbryoDay = bHasEmbryo ? static_cast<float>(EmbryoSystem->GetState().HoursSinceFusion / 24.0) : 0.0f;
+		// Der Ort folgt dem Keim: geschlüpft in die Gebärmutter, ab dem Ende der vierten Woche in die Fruchthöhle
+		const FName EmbryoMap = GenesisSliceLogic::MapForEmbryo(EmbryoStage, EmbryoDay, Tuning);
 		const UWorld* World = GameInstance->GetWorld();
-		if (!bTravelPending && !bUterusTravelTried && EmbryoMap == Tuning.ImplantationMap && World && !World->GetMapName().Contains(EmbryoMap.ToString()))
+		if (!bTravelPending && EmbryoMap != Tuning.ConceptionMap && EmbryoMap != EmbryoTravelTried
+			&& World && !World->GetMapName().Contains(EmbryoMap.ToString()))
 		{
-			bUterusTravelTried = true;
+			EmbryoTravelTried = EmbryoMap;
 			FadeOut(0.6f);
 			TravelTo(EmbryoMap);
+			break;
+		}
+		// Der Bauplan steht: Der Zeitraffer hält an, das Herz schlägt in Echtzeit – ein Moment, bevor die
+		// Schwangerschaft weiterläuft (ReadSignals meldet das Ende erst nach Tuning.BodyPlanHoldSeconds).
+		if (bHasEmbryo && EmbryoSystem->IsEmbryogenesisComplete())
+		{
+			BodyPlanHeldSeconds += DeltaSeconds;
 			break;
 		}
 		const float HoursPerSecond = GenesisSliceLogic::EmbryoHoursPerSecond(EmbryoStage, Tuning);

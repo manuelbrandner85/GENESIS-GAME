@@ -18,6 +18,8 @@
 #include "GenesisVoiceActor.h"
 #include "GenesisSceneSpeech.h"
 #include "GenesisMidwifeRig.h"
+#include "GenesisImplantationSite.h"
+#include "GenesisEmbryoScene.h"
 #include "GenesisPeopleRendering.h"
 #include "CineCameraComponent.h"
 #include "Engine/Engine.h"
@@ -172,11 +174,19 @@ void AGenesisSliceGameMode::EnsureSceneSound()
 
 	const bool bOviduct = Has(AGenesisSpermSwarm::StaticClass());
 	const bool bBirth = Has(AGenesisBirthCameraRig::StaticClass());
+	// Gebärmutter und Fruchthöhle: drinnen im Mutterleib. Die Gebärmutter war bis GENESIS-041 stumm.
+	const bool bInsideWomb = Has(AGenesisImplantationSite::StaticClass()) || Has(AGenesisEmbryoScene::StaticClass());
 
 	if (bOviduct)
 	{
 		// Im Eileiter: der Strom der Zilien, das ferne Pochen der mütterlichen Gefäße
 		Place(TEXT("OviductTone"), EGenesisPlace::OviductAmpulla, 0.9f, 0.1f, 0.5f, false, FVector::ZeroVector);
+	}
+	if (bInsideWomb)
+	{
+		// Das Rauschen der mütterlichen Gefäße, Darmgeräusche, die Welt draußen nur als Dröhnen. Leiser als bei der
+		// Geburt: Der Embryo hört noch nichts (Hören erst ab Woche 24) – das hier ist für den, der zusieht.
+		Place(TEXT("WombTone"), EGenesisPlace::Womb, 0.6f, 0.2f, 0.5f, false, FVector::ZeroVector);
 	}
 	if (bBirth)
 	{

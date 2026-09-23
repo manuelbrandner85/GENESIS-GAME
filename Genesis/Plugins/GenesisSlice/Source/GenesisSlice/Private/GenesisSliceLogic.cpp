@@ -134,6 +134,16 @@ namespace GenesisSliceLogic
 		return bUterus && !Tuning.ImplantationMap.IsNone() ? Tuning.ImplantationMap : Tuning.ConceptionMap;
 	}
 
+	FName MapForEmbryo(EGenesisEmbryoStage Stage, float DayPostFertilization, const FGenesisSliceTuning& Tuning)
+	{
+		// Eingenistet und alt genug: Der Blick geht in die Fruchthöhle, zum Embryo selbst
+		if (Stage == EGenesisEmbryoStage::Implanted && DayPostFertilization >= Tuning.EmbryoSceneFromDay && !Tuning.EmbryoMap.IsNone())
+		{
+			return Tuning.EmbryoMap;
+		}
+		return MapForEmbryoStage(Stage, Tuning);
+	}
+
 	FString DescribeEmbryoStage(EGenesisEmbryoStage Stage)
 	{
 		switch (Stage)

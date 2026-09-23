@@ -33,7 +33,7 @@ Start-Sleep -Seconds 2
 New-Item -ItemType Directory -Force -Path $Archive | Out-Null
 
 # Nur die Karten des Vertical Slice: Alles andere kostet Kochzeit ohne Nutzen
-$Maps = "/Game/Genesis/Conception/Maps/L_GEN_OviductAmpulla+/Game/Genesis/Implantation/Maps/L_GEN_UterineCavity+/Game/Genesis/Birth/Maps/L_GEN_Birth+/Game/Genesis/Maps/L_DevSandbox"
+$Maps = "/Game/Genesis/Conception/Maps/L_GEN_OviductAmpulla+/Game/Genesis/Implantation/Maps/L_GEN_UterineCavity+/Game/Genesis/Embryogenesis/Maps/L_GEN_Fruchthoehle+/Game/Genesis/Birth/Maps/L_GEN_Birth+/Game/Genesis/Maps/L_DevSandbox"
 
 $Arguments = @(
     "BuildCookRun",
