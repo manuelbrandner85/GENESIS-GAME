@@ -551,36 +551,6 @@ def create_strands_material():
     return material
 
 
-def create_matrix_material():
-    """Hyaluronsäure-Gallerte des Cumulus: fast unsichtbar, verrät sich nur durch Streulicht an den Rändern."""
-    material = load_or_create_material("M_GEN_Oocyte_Matrix")
-    material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
-    # Vor der Schaerfentiefe zeichnen. Unreal legt durchscheinende Flaechen sonst in einen Pass
-    # NACH der Schaerfentiefe - dann bleibt eine Zelle direkt vor der Linse gestochen scharf,
-    # waehrend alles andere weich ist. Genau daran erkennt man ein Bild als gerechnet.
-    material.set_editor_property("translucency_pass", unreal.MaterialTranslucencyPass.MTP_BEFORE_DOF)
-    material.set_editor_property("translucency_lighting_mode", unreal.TranslucencyLightingMode.TLM_SURFACE_PER_PIXEL_LIGHTING)
-    material.set_editor_property("two_sided", True)
-
-    base = color(material, -700, -100, 0.90, 0.90, 0.88)
-    mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
-
-    rim = fresnel(material, -1000, 120, 3.0, 0.02)
-    rim_amount = multiply(material, -700, 140, rim, constant(material, -950, 220, 0.05))
-    opacity = add(material, -450, 120, rim_amount, constant(material, -700, 260, 0.008))
-    mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
-
-    roughness = constant(material, -450, 320, 0.06)
-    mel.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
-    spec = constant(material, -450, 400, 0.03)
-    mel.connect_material_property(spec, "", unreal.MaterialProperty.MP_SPECULAR)
-
-    mel.recompile_material(material)
-    eal.save_loaded_asset(material)
-    log("Material M_GEN_Oocyte_Matrix gebaut")
-    return material
-
-
 # ---------------------------------------------------------------------------------------------------------------------
 # Szene
 # ---------------------------------------------------------------------------------------------------------------------
@@ -664,7 +634,6 @@ if os.environ.get("GENESIS_SKIP_OOCYTE_IMPORT"):
         "zona": eal.load_asset(OOCYTE + "/SM_GEN_OocyteZona"),
         "polar_body": eal.load_asset(OOCYTE + "/SM_GEN_OocytePolarBody"),
         "corona": eal.load_asset(OOCYTE + "/SM_GEN_OocyteCorona"),
-        "matrix": eal.load_asset(OOCYTE + "/SM_GEN_OocyteMatrix"),
         "strands": eal.load_asset(OOCYTE + "/SM_GEN_OocyteStrands"),
     }
 else:
@@ -673,7 +642,6 @@ else:
         "zona": import_mesh("SM_GEN_OocyteZona.fbx", "SM_GEN_OocyteZona", nanite=False),
         "polar_body": import_mesh("SM_GEN_OocytePolarBody.fbx", "SM_GEN_OocytePolarBody", nanite=False),
         "corona": import_mesh("SM_GEN_OocyteCorona.fbx", "SM_GEN_OocyteCorona", nanite=True, compute_normals=True),
-        "matrix": import_mesh("SM_GEN_OocyteMatrix.fbx", "SM_GEN_OocyteMatrix", nanite=False),
         # Fäden: Nanite aus, weil sie durchscheinend gerendert werden
         "strands": import_mesh("SM_GEN_OocyteStrands.fbx", "SM_GEN_OocyteStrands", nanite=False, compute_normals=True),
     }
@@ -682,7 +650,6 @@ material_assets = {
     "ooplasm": create_ooplasm_material(),
     "zona": create_zona_material(),
     "corona": create_corona_material(),
-    "matrix": create_matrix_material(),
     "strands": create_strands_material(),
 }
 

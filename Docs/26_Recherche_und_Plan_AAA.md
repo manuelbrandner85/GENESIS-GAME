@@ -133,7 +133,7 @@ Quellen: docs.kie.ai (llms.txt, market/quickstart, common-api/get-account-credit
 
 Sechs Bilder, 5504 × 3072, 144 Credits (≈ 0,72 $). Erzeugt mit `Tools/Reference/kie_reference_images.py`
 (Schlüssel nur aus der Umgebungsvariable `KIE_API_KEY`). Sie liegen **nur lokal** in
-`ArtSource/Reference/kie/`: Die Nutzungsrechte sind nicht geklärt, das Repository ist öffentlich, und die
+`ArtSource/Reference/Concept/kie/`: Die Nutzungsrechte sind nicht geklärt, das Repository ist öffentlich, und die
 Bilder sind Zielbilder für Blender/Unreal, keine Spielgrafik.
 
 | Bild | Brauchbar für | Fachliche Prüfung |

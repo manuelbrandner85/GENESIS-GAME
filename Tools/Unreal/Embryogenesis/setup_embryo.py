@@ -1,11 +1,12 @@
-# GENESIS – der Embryo an Tag 28 in Unreal (GENESIS-041 Teil 4): Import, Gewebe, Lookdev-Karte.
+# GENESIS – der Embryo an Tag 28 in Unreal (GENESIS-041 Teil 4): Import und Gewebe. Die Szene baut
+# setup_fruchthoehle.py; die frühere Prüfkarte L_GEN_EmbryoLookdev ist seit der Bestandsaufnahme (Doc 35) entfernt.
 #
 # Ausführung headless:
 #   UnrealEditor-Cmd.exe Genesis.uproject -run=pythonscript -script="Tools/Unreal/Embryogenesis/setup_embryo.py" -unattended
 #
 # Voraussetzung: Tools/Blender/Embryogenesis/build_embryo_day28.py (export_all) hat die FBX-Dateien nach
 # ArtSource/Generated/Embryogenesis geschrieben.
-# Umgebungsvariablen: GENESIS_SKIP_IMPORT=1, GENESIS_KEY_LUX (Hauptlicht), GENESIS_EXPOSURE_BIAS.
+# Umgebungsvariablen: GENESIS_SKIP_IMPORT=1.
 #
 # Maßstab der Mikrowelt: 1 µm = 1 Unreal-Einheit. Der Embryo ist 4600 Einheiten lang.
 #
@@ -13,7 +14,6 @@
 # durchscheinend (kein Nanite möglich, darum in Blender auf 30 % reduziert), die Organe darin sind
 # undurchsichtig mit Streuung (Subsurface) und laufen über Nanite in voller Auflösung.
 
-import math
 import os
 import unreal
 
@@ -22,7 +22,6 @@ SOURCE = os.path.join(REPO, "ArtSource", "Generated", "Embryogenesis")
 ROOT = "/Game/Genesis/Embryogenesis"
 MESHES = ROOT + "/Meshes"
 MATERIALS = ROOT + "/Materials"
-MAP_PATH = ROOT + "/Maps/L_GEN_EmbryoLookdev"
 
 asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
 mel = unreal.MaterialEditingLibrary
@@ -315,130 +314,6 @@ def import_part(asset, nanite):
     return mesh
 
 
-# ------------------------------------------------------------------------------------------------
-# Lookdev-Karte: dasselbe Licht wie in Blender (Cover: goldenes Hauptlicht, kühles Gegenlicht)
-# ------------------------------------------------------------------------------------------------
-
-def blender_dir(azimuth, elevation):
-    """Richtung vom Embryo zur Lichtquelle wie in lookdev_embryo.py, in Unreal-Achsen (Y gespiegelt)."""
-    a, e = math.radians(azimuth), math.radians(elevation)
-    return unreal.Vector(math.sin(a) * math.cos(e), math.cos(a) * math.cos(e), math.sin(e))
-
-
-TARGET = unreal.Vector(300.0, 0.0, 0.0)
-
-
-def spawn_directional(actors, label, azimuth, elevation, lux, colour, shadows):
-    d = blender_dir(azimuth, elevation)
-    position = TARGET + d * 20000.0
-    light = actors.spawn_actor_from_class(unreal.DirectionalLight, position)
-    light.set_actor_label(label)
-    light.set_actor_rotation(unreal.MathLibrary.find_look_at_rotation(position, TARGET), False)
-    comp = light.get_component_by_class(unreal.DirectionalLightComponent)
-    comp.set_editor_property("mobility", unreal.ComponentMobility.MOVABLE)
-    comp.set_editor_property("intensity", lux)
-    # Benannt: FColor liegt im Speicher als B, G, R, A – positionsweise übergeben wurde Gold zu Blau
-    comp.set_editor_property("light_color", unreal.Color(r=int(colour[0] * 255), g=int(colour[1] * 255), b=int(colour[2] * 255), a=255))
-    comp.set_editor_property("cast_shadows", shadows)
-    # weiche Schatten wie von einer großen Fläche (in Blender eine Scheibe von 90 m in 260 m)
-    comp.set_editor_property("light_source_angle", 12.0)
-    return light
-
-
-def spawn_spot(actors, label, azimuth, elevation, lux, colour, distance=20000.0):
-    """Scheinwerfer mit der Beleuchtungsstärke lux am Embryo: I = E · d² (d in Metern, 1 Einheit = 1 cm)."""
-    d = blender_dir(azimuth, elevation)
-    position = TARGET + d * distance
-    light = actors.spawn_actor_from_class(unreal.SpotLight, position)
-    light.set_actor_label(label)
-    light.set_actor_rotation(unreal.MathLibrary.find_look_at_rotation(position, TARGET), False)
-    comp = light.get_component_by_class(unreal.SpotLightComponent)
-    comp.set_editor_property("mobility", unreal.ComponentMobility.MOVABLE)
-    comp.set_editor_property("intensity_units", unreal.LightUnits.CANDELAS)
-    comp.set_editor_property("intensity", lux * (distance / 100.0) ** 2)
-    comp.set_editor_property("attenuation_radius", distance * 2.0)
-    comp.set_editor_property("outer_cone_angle", 20.0)
-    comp.set_editor_property("inner_cone_angle", 14.0)
-    comp.set_editor_property("source_radius", distance * 0.15)
-    comp.set_editor_property("light_color", unreal.Color(r=int(colour[0] * 255), g=int(colour[1] * 255), b=int(colour[2] * 255), a=255))
-    comp.set_editor_property("cast_shadows", False)
-    return light
-
-
-def build_level(meshes, shell, instances):
-    world = unreal.EditorLoadingAndSavingUtils.new_blank_map(False)
-    actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
-
-    for asset, (nanite, mi_name) in PARTS.items():
-        mesh = meshes.get(asset)
-        if mesh is None:
-            continue
-        mesh.set_material(0, shell if mi_name is None else instances[mi_name])
-        eal.save_loaded_asset(mesh)
-        actor = actors.spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(0, 0, 0))
-        actor.set_actor_label(asset.replace("SM_GEN_", ""))
-        comp = actor.static_mesh_component
-        comp.set_editor_property("mobility", unreal.ComponentMobility.MOVABLE)
-        comp.set_static_mesh(mesh)
-        # Die Hülle wirft keinen Schatten: Licht geht durch sie hindurch
-        comp.set_editor_property("cast_shadow", mi_name is not None)
-
-    # 3,6 lx: am Bild gegen das Blender-Lookdev gemessen (mit 4,5 lx war der Rumpf 15–20 % zu hell)
-    key = float(os.environ.get("GENESIS_KEY_LUX", "3.6"))
-    # Durchscheinende Flächen beleuchtet Unreal nur mit EINEM gerichteten Licht (Forward Shading). Mit drei
-    # Richtungslichtern bekam die Hülle nur das hellste – Gegenlicht und Aufhellung fehlten auf ihr.
-    # Deshalb: Hauptlicht gerichtet (Vorrang 1), Gegenlicht und Aufhellung als Scheinwerfer.
-    # Gold wie das Cover (#C6A28F: gedämpft warm). Das Orange aus Blender (1,0/0,8/0,6) entsättigt dort AgX;
-    # Unreals Filmic-Tonemapper behält es – das Gewebe sah aus wie orange Haut
-    sun = spawn_directional(actors, "L_Key_Gold", -60.0, 42.0, key, (1.0, 0.87, 0.76), True)
-    sun.get_component_by_class(unreal.DirectionalLightComponent).set_editor_property("forward_shading_priority", 1)
-    spawn_spot(actors, "L_Rim_Kuehl", 140.0, 30.0, key * 0.8, (0.62, 0.74, 1.0))
-    spawn_spot(actors, "L_Fill", 20.0, -25.0, key * 0.09, (0.75, 0.82, 1.0))
-
-    # Kamera wie in Blender ("dreiviertel"): 85 mm, 230 m = 23000 µm vom Embryo
-    d = blender_dir(-38.0, 14.0)
-    position = TARGET + d * 23000.0
-    camera = actors.spawn_actor_from_class(unreal.CineCameraActor, position)
-    camera.set_actor_label("CAM_Lookdev")
-    camera.set_actor_rotation(unreal.MathLibrary.find_look_at_rotation(position, TARGET), False)
-    cine = camera.get_cine_camera_component()
-    filmback = cine.get_editor_property("filmback")
-    filmback.set_editor_property("sensor_width", 36.0)
-    filmback.set_editor_property("sensor_height", 20.25)
-    cine.set_editor_property("filmback", filmback)
-    cine.set_editor_property("current_focal_length", 85.0)
-    focus = cine.get_editor_property("focus_settings")
-    focus.set_editor_property("focus_method", unreal.CameraFocusMethod.DISABLE)
-    cine.set_editor_property("focus_settings", focus)
-    camera.set_editor_property("auto_activate_for_player", unreal.AutoReceiveInput.PLAYER0)
-
-    volume = actors.spawn_actor_from_class(unreal.PostProcessVolume, unreal.Vector(0, 0, 0))
-    volume.set_actor_label("LookdevPostProcess")
-    volume.set_editor_property("unbound", True)
-    settings = volume.get_editor_property("settings")
-    for name, value in (
-        ("auto_exposure_method", unreal.AutoExposureMethod.AEM_MANUAL),
-        ("auto_exposure_apply_physical_camera_exposure", False),
-        ("auto_exposure_bias", float(os.environ.get("GENESIS_EXPOSURE_BIAS", "0.0"))),
-        ("bloom_intensity", 0.05),
-        ("lens_flare_intensity", 0.0),
-        ("scene_fringe_intensity", 0.0),
-        ("vignette_intensity", 0.2),
-        ("film_grain_intensity", 0.0),
-        ("motion_blur_amount", 0.0),
-    ):
-        settings.set_editor_property("override_" + name, True)
-        settings.set_editor_property(name, value)
-    volume.set_editor_property("settings", settings)
-
-    # Eigene Prüfkarte: kein Durchlauf, keine Anzeige des Spiels – nur der Embryo
-    world_settings = world.get_world_settings()
-    world_settings.set_editor_property("default_game_mode", unreal.GameModeBase.static_class())
-
-    saved = unreal.EditorLoadingAndSavingUtils.save_map(world, MAP_PATH)
-    log("Karte gespeichert: %s -> %s" % (MAP_PATH, saved))
-
-
 def main():
     ensure_folders()
     unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous(["/Game/Genesis"], True)
@@ -451,7 +326,7 @@ def main():
             imported[part] = eal.load_asset(MESHES + "/" + part)
         else:
             imported[part] = import_part(part, use_nanite)
-    build_level(imported, shell_material, organ_instances)
+    log("Embryo importiert, Materialien gebaut (Szene: setup_fruchthoehle.py)")
 
 
 # Als Bibliothek (setup_fruchthoehle.py) nur die Funktionen laden

@@ -570,8 +570,11 @@ def main():
             obj.name, dimensions.x / UM, dimensions.y / UM, dimensions.z / UM, len(obj.data.polygons)))
 
     if args.get("export"):
+        # Die Gallerte als Ganzes bleibt in Blender (sie macht das Cycles-Lookdev wolkig), geht aber nicht nach Unreal:
+        # Dort wirkte sie als Kugel mit harter Silhouette wie eine Plastikschale und ist ungesetzt (setup_oocyte.py).
         for obj in objects:
-            export_fbx(obj, os.path.join(out_dir, obj.name + ".fbx"))
+            if obj is not matrix:
+                export_fbx(obj, os.path.join(out_dir, obj.name + ".fbx"))
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, "Oocyte.blend"))
     if args.get("render"):
         render_lookdev(list(objects), out_dir, float(args.get("exposure", 0.0)),

@@ -10,7 +10,7 @@ Bauplan: vorn und hinten, links und rechts, oben und unten. In der vierten schl�
 | Simulation der dritten und vierten Woche (`GenesisEmbryogenesisLogic`) | **PRODUCTION READY**: gegen Lehrbuch und Ultraschalldaten geprüft |
 | Anzeige im Durchlauf (Tag, Länge, Somiten, Herzschlag), Entwicklerseite | **BETA** |
 | Der Körper an Tag 28, nach Referenzen in Blender (Form, innere Organe, Gewebe) | **ALPHA** – siehe „Der Körper" |
-| Der Körper in Unreal (Prüfkarte `L_GEN_EmbryoLookdev`) | **ALPHA** – siehe „In Unreal" |
+| Der Körper in Unreal (bis zur Fruchthöhle in der Prüfkarte `L_GEN_EmbryoLookdev`, seit Doc 35 entfernt) | **ALPHA** – siehe „In Unreal" |
 | Die Fruchthöhle im Durchlauf (`L_GEN_Fruchthoehle`): Amnion, Dottersack, Dottergang, Haftstiel, das schlagende Herz | **ALPHA** – siehe „Die Fruchthöhle" |
 | Die Formen der Tage 15–25 (Keimscheibe, Neuralrinne, erste Somiten) | **PLAN** |
 
@@ -91,7 +91,7 @@ Game Director: „Baue das in Blender live, recherchiere vorher alle Bilder und 
 
 ![Tag 28, Rücken: Somiten beiderseits des Neuralrohrs](Media/GENESIS-041_Embryo_Tag28_Ruecken.png)
 
-**Referenzen** (25 Bilder, Wikimedia Commons, Lizenz je Bild in `ArtSource/Reference/Embryo/QUELLEN.md` – nur lokal,
+**Referenzen** (25 Bilder, Wikimedia Commons, Lizenz je Bild in `ArtSource/Reference/Biology/Embryo/QUELLEN.md` – nur lokal,
 nicht im Repository): vor allem die Blechschmidt-Rekonstruktionsmodelle echter Embryonen mit 2,5 / 3,4 / 4,2 / 6,3 mm
 Länge (Form in 3D) und ein Präparat mit 4–5 Wochen (Oberfläche). Aus dem Präparat sind die Landmarken im Raster
 abgelesen (Kopfkuppe, Rückenlinie, Herz, Kiemenbögen, Knospen, Schwanz; 6,7 µm je Bildpunkt).

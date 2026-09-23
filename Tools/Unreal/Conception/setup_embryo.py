@@ -125,7 +125,7 @@ return saturate(v);
 """
 
 
-# Hoffman-Modulationskontrast (so zeigt jedes IVF-Labor den Keim, Zielbild ArtSource/Reference/kie/02):
+# Hoffman-Modulationskontrast (so zeigt jedes IVF-Labor den Keim, Zielbild ArtSource/Reference/Concept/kie/02):
 # Die Helligkeit folgt dem Gefälle der optischen Weglänge in EINER Bildrichtung – eine Seite jeder Zelle
 # hell gesäumt, die andere dunkel, die Mitte mittelgrau. Für eine Kugel ist das Gefälle an der Stelle q
 # (Lage im Bild relativ zur Zellmitte, 0 Mitte … 1 Rand) proportional zu q.x / sqrt(1 − |q|²).

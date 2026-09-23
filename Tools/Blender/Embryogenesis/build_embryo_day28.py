@@ -6,7 +6,7 @@
 #   * Blechschmidt-Rekonstruktionsmodelle 2,5 / 3,4 / 4,2 / 6,3 mm: Querschnitt und Tiefe.
 #   * Lehrbuch: größte Länge 4,6 mm an Tag 28, ~30 Somitenpaare, Armknospe als Leiste, Beinknospe
 #     gerade angelegt. Das Präparat ist etwas älter (Carnegie 14): Knospen hier kleiner als dort.
-# Die Referenzbilder liegen nur lokal (ArtSource/Reference/Embryo, siehe QUELLEN.md).
+# Die Referenzbilder liegen nur lokal (ArtSource/Reference/Biology/Embryo, siehe QUELLEN.md).
 #
 # Aufbau: weich verschmelzende Grundformen (Metaballs) entlang der gemessenen Achse, danach Netz,
 # gleichmäßig neu vernetzt, und die feinen Formen (Somitenstreifen, Kiemenfurchen) als Verschiebung.

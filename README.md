@@ -18,6 +18,7 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 ## Dokumentation
 
 0. [Globaler Masterprompt – verbindliche Grundvision](Docs/00_Masterprompt.md)
+0b. [Visual Reference, Quality & Cleanup Protocol](Docs/00b_Visuelles_Referenz_und_Aufraeumprotokoll.md)
 1. [Technische Architektur & Modulstruktur](Docs/01_Architektur.md)
 2. [Datenarchitektur & Save-/Persistence-Konzept](Docs/02_Daten_und_Persistenz.md)
 3. [Life Simulation Core](Docs/03_Life_Simulation_Core.md)
@@ -52,6 +53,8 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 32. [Der Bauplan: die dritte und vierte Woche](Docs/32_Der_Bauplan.md)
 33. [Der Vorfilm: der Trailer als Film vor dem Spiel](Docs/33_Der_Vorfilm.md)
 34. [Neun Monate: die Schwangerschaft von innen](Docs/34_Neun_Monate.md)
+35. [Bestandsaufnahme: visuell und technisch](Docs/35_Bestandsaufnahme.md)
+36. [Reference Boards: Vertical Slice](Docs/36_Reference_Boards_Vertical_Slice.md)
 
 ## Voraussetzungen
 
