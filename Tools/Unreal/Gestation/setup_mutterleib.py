@@ -2,7 +2,7 @@
 #
 # Ausführung headless (nach Tools/Blender/Gestation/build_mutterleib.py → export_all):
 #   UnrealEditor-Cmd.exe Genesis.uproject -run=pythonscript -script="Tools/Unreal/Gestation/setup_mutterleib.py" -unattended
-# Umgebungsvariablen: GENESIS_SKIP_IMPORT=1.
+# Umgebungsvariablen: GENESIS_SKIP_IMPORT=1, GENESIS_REIMPORT=<Skelettnetze, kommagetrennt>.
 #
 # Maßstab: 1 cm = 1 Unreal-Einheit, gebaut für 10 cm Innenradius; AGenesisWombScene skaliert mit der Woche.
 # Materialien nach den Referenzen (Docs/36): Wand eine glänzende Haut, durch die vorne Rotlicht dringt; Kindseite der
@@ -33,12 +33,15 @@ SPEECH = "/Game/Genesis/Audio/Speech/"
 VESSEL_CODE = """
 // u entlang der Schnur, v um sie herum. Drei Gefäße (zwei Arterien, eine Vene) winden sich spiralig: v = Phase/2pi + Windungen*u.
 // Von außen gesehen liegen sie als Schatten tief in der Sulze: sehr weicher Rand, die Vene breiter.
+// Der FBX-Import spiegelt V (in Unreal gemessen, GENESIS-047): Mit UV.y wanden sich die Gefäße rechtsherum. Echte
+// Nabelschnüre sind 7:1 linksgewunden (Lacro 1987, DOI 10.1016/s0002-9378(87)80067-4) – daher 1 − V wie in Blender.
 const float Phase[3] = { 0.0, 2.1, 4.2 };
 const float Width[3] = { 0.07, 0.07, 0.09 };
+float Around = 1.0 - UV.y;
 float Mask = 0.0;
 for (int Index = 0; Index < 3; ++Index)
 {
-    float Distance = abs(frac(UV.y - Turns * UV.x - Phase[Index] / 6.2831853 + 0.5) - 0.5);
+    float Distance = abs(frac(Around - Turns * UV.x - Phase[Index] / 6.2831853 + 0.5) - 0.5);
     Mask = max(Mask, 1.0 - smoothstep(0.1 * Width[Index], 1.6 * Width[Index], Distance));
 }
 return Mask;
@@ -156,8 +159,12 @@ def create_tissue_material():
     data.set_editor_property("coordinate_index", 1)
     nail_mask = lib.expression(material, unreal.MaterialExpressionComponentMask, -1550, -560, r=True, g=False, b=False, a=False)
     lib.link(data, nail_mask, "")
-    crease_mask = lib.expression(material, unreal.MaterialExpressionComponentMask, -1550, -440, r=False, g=True, b=False, a=False)
-    lib.link(data, crease_mask, "")
+    crease_channel = lib.expression(material, unreal.MaterialExpressionComponentMask, -1650, -440, r=False, g=True, b=False, a=False)
+    lib.link(data, crease_channel, "")
+    # Der FBX-Import spiegelt V auch im Datenkanal: In Unreal lag die Falte auf 91 % der Hand bei 1 (gemessen,
+    # GENESIS-047) – die ganze Hand war dunkel und ab SSW 36 ganz mit Käseschmiere belegt. Zurückspiegeln.
+    crease_mask = lib.expression(material, unreal.MaterialExpressionOneMinus, -1550, -440)
+    lib.link(crease_channel, crease_mask, "")
     anatomy = lib.scalar_param(material, "Anatomie", -1550, -320, 0.0)
     nail = lib.expression(material, unreal.MaterialExpressionMultiply, -1400, -560)
     lib.link(nail_mask, nail, "A")
@@ -459,9 +466,11 @@ def main():
             meshes[asset] = eal.load_asset(MESHES + "/" + asset)
         else:
             meshes[asset] = lib.import_part(asset, nanite, SOURCE, MESHES)
+    # GENESIS_REIMPORT=SK_GEN_Womb_Cord,… importiert einzelne Skelettnetze neu, auch wenn GENESIS_SKIP_IMPORT gesetzt ist
+    reimport = set(filter(None, (os.environ.get("GENESIS_REIMPORT") or "").split(",")))
     for asset, look in (("SK_GEN_FetalHand", "MI_GEN_Womb_Skin"), ("SK_GEN_Womb_Cord", "MI_GEN_Womb_Cord")):
-        meshes[asset] = (eal.load_asset(MESHES + "/" + asset) if os.environ.get("GENESIS_SKIP_IMPORT") and eal.does_asset_exist(MESHES + "/" + asset)
-                         else import_skinned(asset, looks[look]))
+        keep = os.environ.get("GENESIS_SKIP_IMPORT") and asset not in reimport and eal.does_asset_exist(MESHES + "/" + asset)
+        meshes[asset] = eal.load_asset(MESHES + "/" + asset) if keep else import_skinned(asset, looks[look])
     # Alte starre Nabelschnur und die unsichtbaren Gefäßröhren: ersetzt, aus dem Projekt nehmen
     for old in (MESHES + "/SM_GEN_Womb_Cord", MESHES + "/SM_GEN_Womb_CordVessels", MATERIALS + "/MI_GEN_Womb_CordVessels"):
         if eal.does_asset_exist(old):

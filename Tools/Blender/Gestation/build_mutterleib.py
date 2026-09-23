@@ -175,9 +175,12 @@ def build_cord(coll):
     ring = 24
     verts, faces = [], []
     for i in range(len(P)):
+        u = i / (len(P) - 1)
         for k in range(ring):
             ang = 2 * math.pi * k / ring
-            wobble = 1.0 + 0.05 * math.sin(3 * ang + i * 0.4)
+            # Die drei Gefäße wölben die Oberfläche: Wülste genau über ihnen, gleicher (linker) Drehsinn wie die
+            # Gefäßspirale im Material (Winkel = Phase + 2π·Windungen·u). Vorher liefen die Wülste gegensinnig.
+            wobble = 1.0 + 0.05 * math.cos(3 * (ang - 2 * math.pi * GEFAESS_WINDUNGEN * u))
             verts.append(P[i] + (math.cos(ang) * sides[i] + math.sin(ang) * ups[i]) * radius[i] * wobble)
     for i in range(len(P) - 1):
         for k in range(ring):
