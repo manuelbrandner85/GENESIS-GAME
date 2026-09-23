@@ -34,7 +34,7 @@ bool FGenesisAudioWombHearingTest::RunTest(const FString& Parameters)
 	FGenesisBodyTuning BodyTuning;
 	FGenesisHearingTuning Tuning;
 
-	// Woche 10: Gehör noch nicht ausgebildet – nur Vibrationen des mütterlichen Körpers
+	// Woche 10 nach Befruchtung (SSW 12): Das Gehör hört noch nichts (erst ab SSW 19, Docs/34)
 	const FGenesisBodyState Early = Fetus(10.0, BodyTuning);
 	const FGenesisHearingPerception EarlyHearing = GenesisAudioCoreLogic::ComputeHearing(&Early, Week(10.0), Tuning);
 	TestTrue(TEXT("Im Mutterleib"), EarlyHearing.bInWomb);
@@ -189,6 +189,37 @@ bool FGenesisAudioMixTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Stärker als einzeln"), Crowded.GetGainDb(EGenesisAudioBus::Music) < -12.0f);
 
 	TestTrue(TEXT("dB → linear"), FMath::IsNearlyEqual(GenesisAudioCoreLogic::DbToLinear(-6.0206f), 0.5f, 1.0e-3f));
+	return true;
+}
+
+/**
+ * Signature Moment 4, die erste Wahrnehmung von Geräuschen (GENESIS-044, Docs/34): Vor SSW 19 kommt nichts an; dann
+ * zuerst ein schmales Band um 500 Hz, schwach; es weitet sich und wird deutlicher, sobald Thalamus und Rinde verbunden sind.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisAudioFirstSoundTest, "Genesis.Audio.Core.FirstSound", GenesisAudioCoreTests::Flags)
+bool FGenesisAudioFirstSoundTest::RunTest(const FString& Parameters)
+{
+	using namespace GenesisAudioCoreTests;
+	FGenesisBodyTuning BodyTuning;
+	FGenesisHearingTuning Tuning;
+
+	// Wochen seit Befruchtung = SSW − 2
+	const FGenesisBodyState Before = Fetus(16.5, BodyTuning);
+	const FGenesisHearingPerception Silent = GenesisAudioCoreLogic::ComputeHearing(&Before, Week(16.5), Tuning);
+	TestEqual(TEXT("SSW 18,5: Stille – der Körper der Mutter ist noch nicht zu hören"), Silent.BodyAudibility, 0.0f);
+	TestEqual(TEXT("SSW 18,5: nichts von draußen"), Silent.ExternalAudibility, 0.0f);
+
+	const FGenesisBodyState Onset = Fetus(17.2, BodyTuning);
+	const FGenesisHearingPerception First = GenesisAudioCoreLogic::ComputeHearing(&Onset, Week(17.2), Tuning);
+	AddInfo(FString::Printf(TEXT("SSW 19,2: Band %.0f–%.0f Hz, Körper %.2f, draußen %.2f"), First.HighPassCutoffHz, First.LowPassCutoffHz, First.BodyAudibility, First.ExternalAudibility));
+	TestTrue(TEXT("SSW 19,2: ein schmales Band um 500 Hz"), First.HighPassCutoffHz > 300.0f && First.HighPassCutoffHz < 500.0f && First.LowPassCutoffHz > 500.0f && First.LowPassCutoffHz < 700.0f);
+	TestTrue(TEXT("SSW 19,2: schwach, aber da"), First.BodyAudibility > 0.02f && First.BodyAudibility < 0.2f);
+
+	const FGenesisBodyState Later = Fetus(26.0, BodyTuning);
+	const FGenesisHearingPerception Aware = GenesisAudioCoreLogic::ComputeHearing(&Later, Week(26.0), Tuning);
+	AddInfo(FString::Printf(TEXT("SSW 28: Band %.0f–%.0f Hz, Körper %.2f"), Aware.HighPassCutoffHz, Aware.LowPassCutoffHz, Aware.BodyAudibility));
+	TestTrue(TEXT("SSW 28: tiefe Töne kommen dazu (der Herzschlag der Mutter)"), Aware.HighPassCutoffHz < 120.0f);
+	TestTrue(TEXT("SSW 28: deutlich lauter als beim ersten Ton"), Aware.BodyAudibility > 3.0f * First.BodyAudibility);
 	return true;
 }
 

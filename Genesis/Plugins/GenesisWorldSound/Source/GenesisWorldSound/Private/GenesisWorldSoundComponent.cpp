@@ -53,12 +53,14 @@ void UGenesisWorldSoundComponent::TickComponent(float DeltaTime, ELevelTick Tick
 	if (bHeardFromOutside)
 	{
 		Hearing.CutoffHz = Perception.LowPassCutoffHz;
+		Hearing.HighPassHz = Perception.HighPassCutoffHz;
 		Hearing.Gain = FMath::Clamp(Perception.ExternalAudibility, 0.0f, 2.0f) * MixGain;
 	}
 	else
 	{
 		// Der Mutterleib von innen ist kein Geräusch von draußen – er ist der Ort selbst
 		Hearing.CutoffHz = 18000.0f;
+		Hearing.HighPassHz = 0.0f;
 		Hearing.Gain = MixGain;
 	}
 }

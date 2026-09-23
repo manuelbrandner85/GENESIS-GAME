@@ -35,6 +35,10 @@ struct GENESISAUDIOCORE_API FGenesisHearingPerception
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Audio")
 	float LowPassCutoffHz = 20000.0f;
 
+	/** Hochpass (Hz), 0 = offen. Beim Ungeborenen die untere Grenze seines Hörbands (anfangs ~400 Hz). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Audio")
+	float HighPassCutoffHz = 0.0f;
+
 	/** Hochton-Absenkung in dB (Altersschwerhörigkeit), ≤ 0. */
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Audio")
 	float HighShelfGainDb = 0.0f;

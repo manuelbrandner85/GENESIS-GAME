@@ -58,7 +58,10 @@ bool FGenesisBodyPrenatalTest::RunTest(const FString& Parameters)
 
 	GenesisBodyLogic::AdvanceDays(Body, AfterDays(26 * DaysPerWeek), 18 * DaysPerWeek, 0.0f, Tuning);
 	TestTrue(TEXT("Woche 26: Fetus"), GenesisBodyLogic::GetStage(Body, AfterDays(26 * DaysPerWeek)) == EGenesisDevelopmentStage::Fetus);
-	TestTrue(TEXT("Woche 26: hört die Welt draußen"), Body.Sense(EGenesisBodySense::Hearing).Development > 0.99f);
+	// Hören nach Hepper & Shahidullah (Docs/34): Woche 26 nach Befruchtung = SSW 28 – tiefe und mittlere Töne ja,
+	// 1000 Hz erst ab SSW 33, 3000 Hz ab SSW 35. (Bis GENESIS-044 verlangte dieser Test hier schon volles Hören.)
+	const float Hearing26 = Body.Sense(EGenesisBodySense::Hearing).Development;
+	TestTrue(FString::Printf(TEXT("Woche 26: hört, aber noch nicht voll (%.2f)"), Hearing26), Hearing26 > 0.4f && Hearing26 < 0.9f);
 	TestTrue(TEXT("Hören im Mutterleib gedämpft"), GenesisBodyLogic::GetSymptomIntensity(GenesisBodyLogic::DeriveSymptoms(Body, AfterDays(26 * DaysPerWeek)), GenesisBodyTags::Symptom_MuffledHearing) > 0.5f);
 
 	// Schwächere Entwicklungsqualität (z. B. Embryo-Minispiel) begrenzt die Ausbildung

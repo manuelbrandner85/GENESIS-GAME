@@ -1,6 +1,7 @@
 // GENESIS: Der Kreislauf des Lebens
 
 #include "GenesisBodyLogic.h"
+#include "GenesisFetalLogic.h"
 #include "GenesisBodyGameplayTags.h"
 #include "GenesisGeneticsGameplayTags.h"
 #include "GenesisGeneticsLogic.h"
@@ -35,11 +36,12 @@ namespace GenesisBodyLogic
 		};
 
 		const FDevelopmentWindow SenseSchedule[GenesisSenseCount] = {
-			{ 20.0f, 32.0f }, // Sehen (Augen öffnen sich ca. Woche 26)
-			{ 15.0f, 25.0f }, // Hören (Stimme der Mutter ab ca. Woche 18)
+			// Nach der Recherche in Docs/34 (dort in SSW; hier Wochen nach Befruchtung = SSW − 2)
+			{ 22.0f, 34.0f }, // Sehen: Lider öffnen sich SSW 26–28, Pupillen reagieren ab SSW 31
+			{ 17.0f, 33.0f }, // Hören: erster Ton SSW 19, 1000 Hz ab SSW 33, 3000 Hz ab SSW 35
 			{ 18.0f, 28.0f }, // Riechen
-			{ 10.0f, 18.0f }, // Schmecken
-			{ 7.0f, 18.0f }   // Tasten
+			{ 6.0f, 12.0f },  // Schmecken: Geschmacksknospen SSW 8, schluckt Fruchtwasser ab SSW 12
+			{ 5.5f, 12.0f }   // Tasten: um den Mund SSW 7,5–8, ganzer Körper SSW 14
 		};
 
 		/** Organspezifische Alterung: Höhepunkt und jährlicher Rückgang danach. */
@@ -211,9 +213,12 @@ namespace GenesisBodyLogic
 		{
 			if (!Body.bBorn)
 			{
-				const float Weeks = static_cast<float>(GetGestationalWeeks(Body, Now));
-				Body.HeightCm = 50.0f * SmoothStep(6.0f, static_cast<float>(FullTermWeeks), Weeks);
-				Body.WeightKg = 3.4f * FMath::Pow(SmoothStep(8.0f, static_cast<float>(FullTermWeeks), Weeks), 2.0f);
+				// Nach der Referenzkurve (WHO, Robinson & Fleming; Docs/34). Länge: Scheitel–Ferse, solange sie nicht messbar ist
+				// (vor SSW 14) die Scheitel-Steiß-Länge.
+				const FGenesisFetalView Fetal = GenesisFetalLogic::Evaluate(GenesisFetalLogic::GetReference(),
+					static_cast<float>(GetGestationalWeeks(Body, Now) + GenesisFetalLogic::WeeksFromConceptionToGestational));
+				Body.HeightCm = Fetal.CrownHeelCm > 0.0f ? Fetal.CrownHeelCm : Fetal.CrownRumpCm;
+				Body.WeightKg = Fetal.WeightGrams / 1000.0f;
 				return;
 			}
 
@@ -366,9 +371,11 @@ namespace GenesisBodyLogic
 
 		if (!Body.bBorn)
 		{
-			// Fetaler Herzschlag, sobald das Herz ausgebildet ist
+			// Fetaler Herzschlag, sobald das Herz ausgebildet ist; Frequenz nach der Referenz (am schnellsten in SSW 9–10, zum Termin 130–140), Adrenalin hebt sie an
 			const float HeartDevelopment = Body.Organ(EGenesisOrgan::Heart).Development;
-			Body.Vitals.HeartRate = HeartDevelopment > 0.3f ? 110.0f + 50.0f * HeartDevelopment * (0.6f + 0.4f * Body.Hormones.Adrenaline) : 0.0f;
+			const FGenesisFetalView Fetal = GenesisFetalLogic::Evaluate(GenesisFetalLogic::GetReference(),
+				static_cast<float>(GetGestationalWeeks(Body, End) + GenesisFetalLogic::WeeksFromConceptionToGestational));
+			Body.Vitals.HeartRate = HeartDevelopment > 0.3f ? Fetal.HeartRateBpm * (1.0f + 0.12f * Body.Hormones.Adrenaline) : 0.0f;
 			Body.Hormones.Adrenaline = static_cast<float>(GenesisMath::ExponentialDecay(Body.Hormones.Adrenaline, Hours, 0.25));
 			return;
 		}

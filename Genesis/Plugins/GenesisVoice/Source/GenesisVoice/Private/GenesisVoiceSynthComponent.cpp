@@ -88,6 +88,7 @@ void UGenesisVoiceSynthComponent::TickComponent(float DeltaTime, ELevelTick Tick
 	const FGenesisHearingPerception& Perception = Audio->GetHearingPerception();
 	FScopeLock ScopeLock(&Lock);
 	Hearing.CutoffHz = Perception.LowPassCutoffHz;
+	Hearing.HighPassHz = Perception.HighPassCutoffHz;
 	// Eine Stimme läuft über den Dialogbus: Was der Mix ihr zugesteht, gilt auch für sie selbst
 	Hearing.Gain = FMath::Clamp(Perception.ExternalAudibility * Loudness, 0.0f, 4.0f)
 		* Audio->GetBusGainLinear(EGenesisAudioBus::Dialogue);

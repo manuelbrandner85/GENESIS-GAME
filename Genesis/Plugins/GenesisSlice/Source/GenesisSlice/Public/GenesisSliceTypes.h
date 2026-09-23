@@ -116,8 +116,11 @@ struct GENESISSLICE_API FGenesisSliceTuning
 {
 	GENERATED_BODY()
 
-	/** Ab dieser Schwangerschaftswoche beginnt die Geburt. */
-	UPROPERTY(EditAnywhere, Category = "Slice") float BirthAtWeeks = 39.0f;
+	/**
+	 * Ab dieser Woche nach der Befruchtung beginnt die Geburt: 38 = SSW 40, der errechnete Termin. (Bis GENESIS-044
+	 * stand hier 39 – das war SSW 41, eine Woche über dem Termin.)
+	 */
+	UPROPERTY(EditAnywhere, Category = "Slice") float BirthAtWeeks = 38.0f;
 
 	/**
 	 * Zeitraffer der ersten Woche wie im EmbryoScope (Stunden Keimzeit je Sekunde Echtzeit, GENESIS-038):

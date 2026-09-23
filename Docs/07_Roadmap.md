@@ -55,7 +55,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 | GENESIS-041 | Gastrulation, Neuralrohr, erster Herzschlag | Primitivstreifen (Tag 15), drei Keimblätter, Chorda, Neuralplatte (Tag 18), Somiten, Neuralrohr schließt (Tag 22–28), der Herzschlauch schlägt (Tag 22) – Woche 3–4, Carnegie 7–13. Teil 1: Simulation mit Somitentakt, Herzfrequenzkurve und Neuralrohrrisiko an der Ernährung der Mutter. Teil 3: der Körper an Tag 28 nach Referenzen in Blender, mit inneren Organen (ALPHA). Teil 4: in Unreal (ALPHA, Prüfkarte). Teil 5: die Fruchthöhle mit Amnion, Dottersack, Dottergang und Haftstiel im Durchlauf, das Herz schlägt in Echtzeit (ALPHA) | IN ARBEIT (Formen der Tage 15–25 offen) |
 | GENESIS-042 | Organogenese | Gliedmaßenknospen, Schlundbögen → Gesicht, Augenbecher und Linse, Herzscheidewände, Hirnbläschen, Finger und Zehen; Ende Woche 8: 3 cm, alle Organe angelegt – Carnegie 13–23 | PLAN |
 | GENESIS-043 | Die Verbindungen | Nervensystem: Neurone entstehen, wandern, bilden Axone; erste Synapsen im Rückenmark (~Woche 8), in der Hirnrinde ab ~Woche 23, Thalamus–Rinde ab Woche 24 (erste Wahrnehmung). Jede Verbindung gezählt nach Literaturkurven, sichtbar als wachsendes Netz; Reize (Herzschlag, Stimme der Mutter) hinterlassen Spuren im Gedächtnissystem | PLAN |
-| GENESIS-044 | Die Fetalzeit | Woche 9–40 nach Referenzkurven (Scheitel-Steiß-Länge, Gewicht): erste Bewegungen, Schlucken, Daumenlutschen, Kindsbewegungen spürbar (Woche 18–20), Hören (24–26), Augen öffnen (26–28), Lungenreife, Drehung in Schädellage (32–36). Der Spieler bewegt sich, hört, reagiert | PLAN |
+| GENESIS-044 | Die Fetalzeit | Woche 9–40 nach Referenzkurven (Scheitel-Steiß-Länge, Gewicht): erste Bewegungen, Schlucken, Daumenlutschen, Kindsbewegungen spürbar (Woche 18–20), Hören (24–26), Augen öffnen (26–28), Lungenreife, Drehung in Schädellage (32–36). Der Spieler bewegt sich, hört, reagiert | IN ARBEIT (Teil 1a: Simulation BETA, Doc 34) |
 | GENESIS-045 | Die Bildsprache des Covers | Das Cover ist der Maßstab (Docs/31): Farben am Bild gemessen, Regeln für Licht, Farbe, Aufbau und Schrift; Startbildschirm in Gold und Cinzel mit dem Satz „Jede Entscheidung hinterlässt ein Echo", kühler tiefer Schleier statt Braun; danach die Farbstimmung der Szenen  | DONE (Kreißsaal-Licht offen) |
 | GENESIS-046 | Der Vorfilm | Der Trailer läuft als Film im Startablauf nach dem Hinweis auf Lichtwechsel und ersetzt den Prolog (beide sprechen dieselben Sätze); ohne Werbekarte, endet auf der Titelkarte, danach direkt der Startbildschirm; Untertitel an der Sprachspur gemessen und an das Bild gekoppelt; zweimal drücken zum Überspringen; Kodierung und Ton im gebauten Spiel gemessen (Doc 33) | DONE |
 
@@ -552,3 +552,12 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - Tests Embryo.SceneView und Slice.EmbryoSceneMap; 149 von 149.
 - Stand ALPHA.
 - Nächster Auftrag des Game Directors: die ganze Schwangerschaft statt eines schwarzen Zeitraffers, mit Ton und der Wahrnehmung des Kindes.
+
+### GENESIS-044 (Teil 1a) – Die Fetalzeit als Simulation, nach Recherche
+- 2026-09-23: Game Director: „Das Embryo ist nur ein Teil des ganzen neunmonatigen Prozesses – es soll der gesamte Schwangerschaftsverlauf sein, auch die Töne und dumpfe Sprache, die Wahrnehmung des Kindes.“ Dazu sein Masterprompt (Doc 00) mit der Vorgabe, gründlich zu recherchieren.
+- Recherchiert und in Doc 34 als Wochentafel mit Quellen abgelegt: Wachstum (WHO, Robinson & Fleming), Herzfrequenz, Bewegungen (de Vries 1982), Hören (Hepper & Shahidullah 1994, Schallwelt im Mutterleib), Sehen (Reid 2017), Bewusstsein (RCOG, Thalamus–Rinde), Schlafzustände (Nijhuis 1982), Kindslage.
+- Umgesetzt als datengetriebene Referenz mit Verhaltensmodell (`GenesisFetalLogic`).
+- Das Hören des Ungeborenen folgt jetzt der Forschung: vorher von Anfang an halbe Lautstärke, jetzt Stille bis SSW 19, dann ein schmales Band um 500 Hz. Der Hörfilter bekam dafür einen Hochpass.
+- Geburt zum Termin: SSW 40 statt 41.
+- Tests Fetal.Growth, Fetal.Senses, Fetal.Behaviour, Audio.FirstSound; 153 von 153.
+- Stand BETA (Simulation). Szene und Ablauf folgen nach der Bestandsaufnahme, die der Game Director mit dem Visual Reference & Cleanup Protocol verlangt hat.

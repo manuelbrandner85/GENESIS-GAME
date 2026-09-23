@@ -22,17 +22,25 @@ struct GENESISAUDIOCORE_API FGenesisHearingFilter
 	/** Grenzfrequenz der Hörwahrnehmung (Hz). Im Fruchtwasser einige hundert, an Luft fast alles. */
 	float CutoffHz = 16000.0f;
 
+	/**
+	 * Untere Grenze der Hörwahrnehmung (Hz), 0 = offen. Das Ungeborene hört zuerst nur ein schmales Band um 500 Hz, das
+	 * sich dann nach unten weitet (Hepper & Shahidullah 1994, Docs/34) – zwei einpolige Hochpässe, 12 dB je Oktave.
+	 */
+	float HighPassHz = 0.0f;
+
 	/** Lautstärke beim Hörer (Entfernung, Dämpfung durch Gewebe, Mix). */
 	float Gain = 1.0f;
 
 	/** Filtert einen Block an Ort und Stelle. Der Zustand läuft über Aufrufe hinweg weiter. */
 	void Process(float* Audio, int32 Frames, float SampleRate);
 
-	void Reset() { Stage1 = 0.0f; Stage2 = 0.0f; Stage3 = 0.0f; Stage4 = 0.0f; }
+	void Reset() { Stage1 = 0.0f; Stage2 = 0.0f; Stage3 = 0.0f; Stage4 = 0.0f; HighPassLow1 = 0.0f; HighPassLow2 = 0.0f; }
 
 private:
 	float Stage1 = 0.0f;
 	float Stage2 = 0.0f;
 	float Stage3 = 0.0f;
 	float Stage4 = 0.0f;
+	float HighPassLow1 = 0.0f;
+	float HighPassLow2 = 0.0f;
 };

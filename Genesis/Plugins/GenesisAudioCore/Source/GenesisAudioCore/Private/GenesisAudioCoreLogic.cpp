@@ -3,6 +3,7 @@
 #include "GenesisAudioCoreLogic.h"
 #include "GenesisBodyGameplayTags.h"
 #include "GenesisBodyLogic.h"
+#include "GenesisFetalLogic.h"
 #include "GenesisTypes.h"
 
 FGenesisAudioMixTuning::FGenesisAudioMixTuning()
@@ -59,16 +60,23 @@ namespace GenesisAudioCoreLogic
 			return Perception;
 		}
 
-		const float HearingDevelopment = Body->Sense(EGenesisBodySense::Hearing).Development;
-
 		if (!Body->bBorn)
 		{
-			// Mutterleib: Fruchtwasser und Gewebe lassen nur tiefe Frequenzen durch.
-			// Vibrationen des mütterlichen Körpers sind schon spürbar, bevor das Gehör fertig ist.
+			// Mutterleib (GENESIS-044, Docs/34): Das Kind hört erst ab SSW 19, zuerst ein schmales Band um 500 Hz, das sich
+			// dann nach unten und zuletzt nach oben weitet; die Schwelle sinkt bis zum Termin um 20–30 dB. Bauchdecke und
+			// Fruchtwasser dämpfen oberhalb 600–1000 Hz um ~30 dB – mehr als das Gehör später könnte, kommt nicht an.
+			// Vor der Verbindung Thalamus–Rinde (SSW 23–26) antwortet der Körper, erlebt wird noch wenig.
+			const FGenesisFetalView Fetal = GenesisFetalLogic::Evaluate(GenesisFetalLogic::GetReference(),
+				static_cast<float>(GenesisBodyLogic::GetGestationalWeeks(*Body, Now) + GenesisFetalLogic::WeeksFromConceptionToGestational));
 			Perception.bInWomb = true;
-			Perception.LowPassCutoffHz = FMath::Lerp(Tuning.WombCutoffMinHz, Tuning.WombCutoffMaxHz, HearingDevelopment);
-			Perception.ExternalAudibility = 0.05f + 0.45f * HearingDevelopment;
-			Perception.BodyAudibility = 0.5f + 0.5f * HearingDevelopment;
+			const bool bHears = Fetal.HearingHighHz > 0.0f;
+			Perception.LowPassCutoffHz = bHears ? FMath::Min(Fetal.HearingHighHz, Tuning.WombCutoffMaxHz) : Tuning.WombCutoffMinHz;
+			Perception.HighPassCutoffHz = bHears ? Fetal.HearingLowHz : 0.0f;
+			const float Experienced = Fetal.HearingSensitivity * (0.35f + 0.65f * Fetal.ConsciousAccess);
+			// Die Laute der Mutter (Herz, Blut, ihre Stimme durch den eigenen Körper) liegen im Mutterleib deutlich über
+			// allem von draußen
+			Perception.BodyAudibility = Experienced;
+			Perception.ExternalAudibility = 0.6f * Experienced;
 			return Perception;
 		}
 
@@ -155,6 +163,7 @@ namespace GenesisAudioCoreLogic
 		Result.LowPassCutoffHz = static_cast<float>(FMath::Exp(FMath::Lerp(CurrentLog, TargetLog, static_cast<double>(Alpha))));
 		// Angekommen, wenn der Tiefpass auf 2 % am Ziel liegt
 		Result.bInEnvironmentTransition = bFastTransition && FMath::Abs(FMath::Loge(FMath::Max(20.0f, Result.LowPassCutoffHz)) - TargetLog) > FMath::Loge(1.02);
+		Result.HighPassCutoffHz = FMath::Lerp(Current.HighPassCutoffHz, Target.HighPassCutoffHz, Alpha);
 		Result.HighShelfGainDb = FMath::Lerp(Current.HighShelfGainDb, Target.HighShelfGainDb, Alpha);
 		Result.ExternalAudibility = FMath::Lerp(Current.ExternalAudibility, Target.ExternalAudibility, Alpha);
 		Result.BodyAudibility = FMath::Lerp(Current.BodyAudibility, Target.BodyAudibility, Alpha);
