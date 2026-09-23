@@ -32,6 +32,9 @@ WURZEL = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 QUELLE = os.environ.get("GENESIS_TRAILER",
                         os.path.join(WURZEL, "Docs", "Media", "Trailer", "GENESIS_Trailer_v2.mp4"))
 ZIEL = os.environ.get("GENESIS_VORFILM", os.path.join(WURZEL, "Genesis", "Content", "Movies", "GENESIS_Vorfilm"))
+# Eigene Tonspur des Vorfilms (Tools/Intro/vorfilm_stimme.py): der Trailerton mit korrigiertem Satz
+# ("Hunderte kommen an. Nur eine verschmilzt." statt "Nur einer kommt an."). Fehlt sie, bleibt der Trailerton.
+TON = os.environ.get("GENESIS_VORFILM_TON", os.path.join(WURZEL, "Genesis", "Saved", "Intro", "GENESIS_Vorfilm_Ton.wav"))
 
 # --- Schnitt (Bilder der Quelle, 24 Bilder je Sekunde) ---------------------------------------
 # Gemessen an der Quelle: Titelkarte voll bei Bild 2860, ausgeblendet ab Bild 2895; die Werbekarte
@@ -65,7 +68,9 @@ def baue_szene():
 
     se = scn.sequence_editor_create()
     se.strips.new_movie("Bild", QUELLE, channel=1, frame_start=1)
-    ton = se.strips.new_sound("Ton", QUELLE, channel=2, frame_start=1)
+    eigener_ton = os.path.exists(TON)
+    print("GENESIS: Ton aus", TON if eigener_ton else QUELLE)
+    ton = se.strips.new_sound("Ton", TON if eigener_ton else QUELLE, channel=2, frame_start=1)
 
     # Ton sanft auslaufen lassen
     ton.volume = 1.0
