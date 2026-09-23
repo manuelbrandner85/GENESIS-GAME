@@ -363,7 +363,7 @@ void AGenesisSpermSwarm::SimulateFor(float SimulationDelta)
 					RaceOutcome = GenesisSpermRace::OutcomeAfterFusion(PlayerCellIndex, FertilizationResult.CellIndex);
 					UE_LOG(LogGenesis, Display, TEXT("Conception: %s"), RaceOutcome == EGenesisRaceOutcome::Won
 						? TEXT("Die eigene Zelle ist verschmolzen – dieses Leben beginnt.")
-						: TEXT("Eine andere Zelle war schneller."));
+						: TEXT("Eine andere Zelle ist verschmolzen."));
 				}
 
 				// Aus dem Mikrokosmos wird ein Mensch: Genom, erster Körper, Inkarnation, Leitmotiv.

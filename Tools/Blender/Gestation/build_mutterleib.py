@@ -21,7 +21,7 @@ import numpy as np
 CM = 0.01
 OUT_DIR = r"C:\Users\manue\Desktop\Genesis Game\ArtSource\Generated\Gestation"
 COLL = "Mutterleib"
-SEMI = np.array([10.0, 8.5, 9.0])                       # Innenhalbachsen (cm): länglich zum Fundus hin
+SEMI = np.array([8.6, 8.2, 10.5])                       # Innenhalbachsen (cm): vorn–hinten, quer, längs (Fundus oben) – am längsten von oben nach unten
 PLACENTA_DIR = np.array([-0.62, 0.25, 0.74])            # hinten oben
 PLACENTA_ANGLE = math.radians(38.0)
 NAVEL = np.array([-2.0, 0.0, -3.2])                     # Nabel des Kindes unter der Kamera

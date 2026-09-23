@@ -164,3 +164,37 @@ der Mutter → das Kind saugt mehr).
 
 ![Die eigene Hand, SSW 31 – das Fruchtwasser schmeckt nach Knoblauch](Media/GENESIS-044_2a_Hand_Geschmack.png)
 ![Ihre Hand auf dem Bauch – ein Schatten im Licht](Media/GENESIS-044_2a_IhreHand.png)
+
+## Teil 2b – das Kind in jeder Woche, von außen, dann in seine Augen (umgesetzt, ALPHA)
+
+**Grundmodell:** Ein anatomisch sauberer Säugling aus MPFB2 (MakeHuman; Blender-Erweiterung von extensions.blender.org,
+erzeugte Menschen CC0 – vom Game Director freigegeben). `Tools/Blender/Gestation/build_fetus.py` passt ihn je SSW an:
+- **Maße** (50. Perzentile): Scheitel-Steiß-Länge (Robinson & Fleming 1975; ab 16 SSW Archie 2006), Kopf-, Bauchumfang
+  und Femur (INTERGROWTH-21st, Papageorghiou 2014), Humerus und Fuß (Chitty & Altman 2002), Hand ≈ 0,8 × Fuß. Kopf zu
+  Bauch 1,22 (SSW 12) → 0,95 (Termin) ergibt sich daraus.
+- **Fett** nach Woche (Makro „weight“), **Lider geschlossen**, Finger locker gebeugt.
+- **Haltung** (Williams Obstetrics): Rücken gerundet, Kinn zur Brust, eine Hand am Kinn, eine an der Wange, Oberschenkel
+  seitlich am Bauch, Knie gebeugt, Unterschenkel gekreuzt. Wo sich Haut überschneidet, wird sie per Volumen-Neuvernetzung
+  zu einer geschlossenen Falte.
+- Je Woche (12–40) ein Netz und eine Tabelle mit Körpermitte, Nabel und 96 Hüllpunkten.
+
+**Im Spiel:** Jeder Moment beginnt mit dem Kind von außen (die Kamera sieht es wie im 3D-Ultraschall durch die leuchtende
+Wand), nach 9 s fährt sie in seine Augen. Das Kind liegt längs in der Gebärmutter, Gesicht zum Bauch; ab SSW ~32 dreht es
+sich mit dem Kopf nach unten (Beckenendlage bei SSW 28 ~20 %, am Termin 3–4 %, RCOG 2017). Die Nabelschnur endet an
+seinem Nabel.
+
+**Fehler gefunden (Game Director: „die Füße hängen aus der Fruchtblase“):**
+- Die Höhle war zu klein: SSW 28 nur 23 cm lang. Richtig ~28 cm (Symphysen-Fundus-Abstand ≈ SSW in cm), am Termin ~36 cm
+  innen – das gebeugte Kind (längste Ausdehnung ≈ Scheitel-Steiß-Länge) füllt sie dann fast aus.
+- Die Höhle war vorn–hinten am längsten statt von oben nach unten.
+- Das Kind war am Blick statt an seiner Körperachse ausgerichtet. Jetzt liegt die Hauptachse der Hülle längs in der Höhle;
+  eine Einpassung schiebt es, bis kein Hüllpunkt mehr herausragt (am Termin bleiben ~6 % – es ist wirklich eng).
+- Die Beine steckten im Bauch (Skinning kennt keine Kollision): Haltung „Froschbeine“ und geschlossene Haut.
+
+**Geprüft** im gebauten Spiel (SSW 36): außen, dann Ich-Sicht mit eigener Hand; GPU 2,8–4,3 ms. 158 von 158 Tests.
+
+**Offen:** Knie von vorn noch etwas flach; Lanugo, Käseschmiere und Haut je Woche auf dem ganzen Körper; SSW 8–10 (der
+Embryo, bisher nur in der Fruchthöhle); Gesicht mit offenen Augen ab SSW 28.
+
+![Das Kind von außen, SSW 36, Kopf unten](Media/GENESIS-044_2b_Kind_aussen.png)
+![Das Kind aus Blender, SSW 36](Media/GENESIS-044_2b_Fetus_Blender.png)

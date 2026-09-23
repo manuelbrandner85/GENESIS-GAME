@@ -76,6 +76,21 @@ struct GENESISSLICE_API FGenesisWombInput
 	int32 EyeToggles = 0;
 };
 
+/** Das Kind in einem Alter (Blender build_fetus.py): Netz, Körpermitte und Nabel relativ zu den Augen (cm, +X Blick). */
+USTRUCT(BlueprintType)
+struct GENESISSLICE_API FGenesisFetusStage
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") float Weeks = 20.0f;
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") TObjectPtr<UStaticMesh> Mesh;
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") FVector Center = FVector::ZeroVector;
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") FVector Navel = FVector::ZeroVector;
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") float CrownRumpCm = 16.0f;
+	/** Äußerste Punkte des Körpers (cm, relativ zu den Augen) – damit das Kind ganz in der Fruchtblase liegt. */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") TArray<FVector> Hull;
+};
+
 /** Eine Handlung, die der Spieler in dieser Woche kann – für die Hinweise im Bild. */
 struct GENESISSLICE_API FGenesisWombHint
 {
@@ -110,6 +125,12 @@ public:
 	/** Die Nabelschnur: Skelettnetz mit Knochenkette, weich simuliert (SimulateCord). */
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UPoseableMeshComponent> Cord;
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UCineCameraComponent> Camera;
+	/** Das Kind selbst, von außen (Teil 2b) – nur während der Kamerafahrt in seine Augen sichtbar. */
+	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> Fetus;
+	/** Die gebauten Alter des Kindes (SSW 12–40). */
+	UPROPERTY(EditAnywhere, Category = "Fetus") TArray<FGenesisFetusStage> FetusStages;
+	/** Dauer der Fahrt von außen in die Augen (s). */
+	UPROPERTY(EditAnywhere, Category = "Fetus") float ExteriorSeconds = 9.0f;
 	/** Die eigene Hand des Kindes (Teil 2a): an der Kamera, mit Skelett – öffnen, schließen, zum Mund. */
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UPoseableMeshComponent> OwnHand;
 	/** Die Stimme der Mutter, durch ihren Körper und das Gehör des Kindes gefiltert. */
@@ -127,7 +148,7 @@ public:
 	/** Leuchtdichte der Wand je lx im Mutterleib (Material-Emission), gegen das Bild abgeglichen. */
 	UPROPERTY(EditAnywhere, Category = "Light") float GlowPerLux = 0.03f;
 	/** Blickrichtung des Kindes (in der Höhle): nach vorn ins Licht, leicht hinauf und zur Seite. */
-	UPROPERTY(EditAnywhere, Category = "Camera") FVector LookDirection = FVector(1.0, 0.35, 0.25);
+	UPROPERTY(EditAnywhere, Category = "Camera") FVector LookDirection = FVector(1.0, 0.25, 0.1);
 	/**
 	 * Unreal-Einheiten je Zentimeter. Lumen gibt Teilen unter ~10 Einheiten keine Oberflächenkarten – bei 1 cm = 1 Einheit
 	 * bekäme die Nabelschnur kein Streulicht von der leuchtenden Wand und stünde schwarz im Bild. Die Optik (Fokus, Blende)
@@ -163,6 +184,9 @@ public:
 	FString GetCaption(float& OutAlpha) const;
 	/** Entwickler (genesis.Womb.Do): eine Handlung auslösen, als hätte der Spieler die Taste gedrückt. */
 	void DebugAction(const FString& Action, const FVector2D& Value);
+	/** Das Kind von außen zeigen, dann in seine Augen fahren (jeder neue Moment, genesis.Womb.Exterior). */
+	void StartExterior();
+	bool IsExterior() const { return ExteriorAge >= 0.0f; }
 
 private:
 	void UpdateTime();
@@ -180,6 +204,13 @@ private:
 	void UpdateOwnHand(float DeltaSeconds);
 	/** Handlänge (cm) in dieser Woche – Näherung: 0,83 × Fußlänge (Neugeborene: Hand ~6,2, Fuß ~7,5 cm). */
 	float HandLengthCm() const;
+	/** Das passende Alter des Kindes zur Woche; setzt FetusScale für das Wachstum dazwischen. */
+	const FGenesisFetusStage* CurrentFetusStage();
+	void UpdateExterior(float DeltaSeconds, const FVector& FirstPersonLocation, const FRotator& FirstPersonRotation);
+	/** Die Augen so legen, dass alle Hüllpunkte des Kindes in der (etwas verkleinerten) Höhle liegen. */
+	FVector FitFetus(const FGenesisFetusStage& Stage, const FQuat& Orientation, float Radius) const;
+	/** Lage des Kindes: Körperlängsachse längs in der Höhle (Kopf oben bzw. unten), Gesicht zum Bauch. */
+	FQuat FetusOrientation(const FGenesisFetusStage& Stage, const FVector& HeadUp) const;
 	/** Knochen im Komponentenraum bei gegebener Beugung je Fingergelenk (Reihenfolge wie CurlBones). */
 	TArray<FTransform> HandComponentPose(const TArray<float>& Curl) const;
 	/** Berührt dieses Fingerglied (als Kapsel) die Nabelschnur? */
@@ -273,6 +304,16 @@ private:
 	TArray<FVector4> CordDents;
 	/** Sichtbare Dellen mit Gedächtnis (klingen über Sekunden ab). */
 	TArray<FVector4> ShownDents;
+	UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> FetusMaterial;
+	float FetusScale = 1.0f;
+	/** Lage der Augen in der Höhle (cm), so gelegt, dass der ganze Körper hineinpasst; neu bei Wechsel von Woche oder Lage. */
+	FVector FittedEyes = FVector::ZeroVector;
+	float FittedWeeks = -1.0f;
+	float FittedHeadDown = -1.0f;
+	float ExteriorAge = -1.0f;
+	float ExteriorSpin = 0.0f;
+	FVector NavelWorld = FVector::ZeroVector;
+	bool bHasNavel = false;
 	UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> HandMaterials;
 	/** Hand zum Mund: Fortschritt der Bewegung (0..1), daraus die gebremste Kurve HandToMouth. */
 	float MouthProgress = 0.0f;

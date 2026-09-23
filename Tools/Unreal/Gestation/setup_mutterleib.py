@@ -8,6 +8,7 @@
 # Materialien nach den Referenzen (Docs/36): Wand eine glänzende Haut, durch die vorne Rotlicht dringt; Kindseite der
 # Plazenta bläulich-violett durchscheinend, Gefäße erhaben; Nabelschnur weißlich-bläulich, Gefäße dunkel darin.
 
+import json
 import os
 import sys
 
@@ -80,7 +81,11 @@ LOOKS = {
     # Haut des Kindes (die eigene Hand, Teil 2a): dünn, rosig über dem Blut darunter – im Gegenlicht leuchten die
     # Finger rot durch wie eine Hand vor einer Taschenlampe
     "MI_GEN_Womb_Skin": ((0.55, 0.33, 0.30), (0.85, 0.25, 0.18), 0.35, 0.95, 0.6, 0.0),
+    # Das Kind selbst (Teil 2b): dieselbe Haut, ohne die Nagel- und Faltenkanäle der eigenen Hand
+    "MI_GEN_Womb_FetusSkin": ((0.55, 0.33, 0.30), (0.85, 0.25, 0.18), 0.4, 0.95, 0.5, 0.0),
 }
+
+FETUS_WEEKS = (12, 16, 20, 24, 28, 32, 36, 40)
 
 
 def ensure_folders():
@@ -372,6 +377,34 @@ def import_skinned(name, material):
     return mesh
 
 
+def import_fetuses():
+    """Das Kind je Woche (Tools/Blender/Gestation/build_fetus.py): Nanite-Netze und die Tabelle mit Mitte und Nabel."""
+    table = json.load(open(os.path.join(SOURCE, "fetus_weeks.json"), encoding="utf-8"))
+    stages = []
+    for week in FETUS_WEEKS:
+        name = "SM_GEN_Fetus_W%02d" % week
+        if os.environ.get("GENESIS_SKIP_IMPORT") and eal.does_asset_exist(MESHES + "/" + name):
+            mesh = eal.load_asset(MESHES + "/" + name)
+        else:
+            mesh = lib.import_part(name, True, SOURCE, MESHES)
+        info = table.get(str(week))
+        if not mesh or not info:
+            unreal.log_error("GENESIS: Fetus SSW %d fehlt" % week)
+            continue
+        stage = unreal.GenesisFetusStage()
+        stage.set_editor_property("weeks", float(week))
+        stage.set_editor_property("mesh", mesh)
+        # Blender → Unreal: Y gespiegelt (links bleibt links)
+        c, n = info["center"], info["navel"]
+        stage.set_editor_property("center", unreal.Vector(c[0], -c[1], c[2]))
+        stage.set_editor_property("navel", unreal.Vector(n[0], -n[1], n[2]))
+        stage.set_editor_property("crown_rump_cm", float(info["crl"]))
+        stage.set_editor_property("hull", [unreal.Vector(h[0], -h[1], h[2]) for h in info.get("hull", [])])
+        stages.append(stage)
+    lib.log("Fetus: %d Alter" % len(stages))
+    return stages
+
+
 def build_level(meshes, wall_material, looks):
     unreal.EditorLoadingAndSavingUtils.new_blank_map(False)
     actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
@@ -386,6 +419,8 @@ def build_level(meshes, wall_material, looks):
         component = scene.get_editor_property(prop)
         component.set_static_mesh(meshes[asset])
         component.set_material(0, materials[asset])
+    scene.set_editor_property("fetus_stages", meshes.get("fetus_stages", []))
+    scene.get_editor_property("fetus").set_material(0, looks["MI_GEN_Womb_FetusSkin"])
     for asset, prop, look in (("SK_GEN_FetalHand", "own_hand", "MI_GEN_Womb_Skin"), ("SK_GEN_Womb_Cord", "cord", "MI_GEN_Womb_Cord")):
         skinned = meshes.get(asset)
         if skinned:
@@ -431,6 +466,7 @@ def main():
     for old in (MESHES + "/SM_GEN_Womb_Cord", MESHES + "/SM_GEN_Womb_CordVessels", MATERIALS + "/MI_GEN_Womb_CordVessels"):
         if eal.does_asset_exist(old):
             eal.delete_asset(old)
+    meshes["fetus_stages"] = import_fetuses()
     build_level(meshes, wall, looks)
 
 

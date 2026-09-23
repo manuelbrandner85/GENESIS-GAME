@@ -427,7 +427,7 @@ bool FGenesisSliceWombPerceptionTest::RunTest(const FString& Parameters)
 		Last = Radius;
 	}
 	TestTrue(TEXT("Die Höhle wächst mit jeder Woche"), bGrows);
-	TestTrue(TEXT("Am Termin 13–16 cm Innenradius"), Last >= 13.0f && Last <= 16.0f);
+	TestTrue(TEXT("Am Termin 16–18 cm Innenradius (längs ~36 cm)"), Last >= 16.0f && Last <= 18.0f);
 	return true;
 }
 

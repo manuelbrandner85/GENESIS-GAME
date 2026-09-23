@@ -606,7 +606,8 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 	// Niederlage: groß, ruhig, ohne Häme
 	if (Swarm->GetRaceOutcome() == EGenesisRaceOutcome::Lost)
 	{
-		DrawCentered(TEXT("Eine andere Zelle war schneller."), 0.40f * Canvas->SizeY, Scale * 2.0f, 0.95f, true);
+		// Viele kommen an, eine verschmilzt – nicht die schnellste (Docs/38)
+		DrawCentered(TEXT("Eine andere Zelle ist verschmolzen."), 0.40f * Canvas->SizeY, Scale * 2.0f, 0.95f, true);
 		DrawCentered(TEXT("Dieses Leben beginnt nicht. Noch einmal."), 0.40f * Canvas->SizeY + 70.0f * Scale, Scale * 1.3f, 0.8f, false);
 		return true;
 	}
@@ -683,9 +684,9 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 		Status = FString::Printf(TEXT("Durch die Zona: %.1f von %.0f µm"), Swarm->GetPlayerPenetrationUm(), Swarm->GetZonaThicknessUm());
 		break;
 	default:
-		Status = FString::Printf(TEXT("Abstand zur Eizelle %.0f µm · Platz %d von %d · %s"),
-			Swarm->GetPlayerDistanceToZonaUm(), FMath::Max(1, Swarm->GetPlayerPlace()), Swarm->GetCellCount(),
-			Swarm->IsPlayerHyperactivated() ? TEXT("hyperaktiviert") : TEXT("progressiv"));
+		// Keine Platzierung: Es ist kein Wettlauf um Tempo (Docs/38)
+		Status = FString::Printf(TEXT("Abstand zur Eizelle %.0f µm · %s"),
+			Swarm->GetPlayerDistanceToZonaUm(), Swarm->IsPlayerHyperactivated() ? TEXT("hyperaktiviert") : TEXT("progressiv"));
 		break;
 	}
 	if (Director.GetRaceAttempts() > 0)

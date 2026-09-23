@@ -23,7 +23,7 @@ enum class EGenesisRaceOutcome : uint8
 	Running,
 	/** Die eigene Zelle ist verschmolzen – dieses Leben beginnt. */
 	Won,
-	/** Eine andere Zelle war schneller. */
+	/** Eine andere Zelle ist verschmolzen – nicht die schnellste gewinnt, sondern die, die zur richtigen Zeit bereit ist (Docs/38). */
 	Lost
 };
 

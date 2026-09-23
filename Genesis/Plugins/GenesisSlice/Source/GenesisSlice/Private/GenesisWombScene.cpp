@@ -42,6 +42,18 @@ namespace
 			}
 		}));
 
+	/** Entwickler: die Kamerafahrt von außen in die Augen des Kindes starten – genesis.Womb.Exterior. */
+	FAutoConsoleCommandWithWorldAndArgs GenesisWombExteriorCommand(
+		TEXT("genesis.Womb.Exterior"),
+		TEXT("Mutterleib: das Kind von außen zeigen und in seine Augen fahren"),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			for (TActorIterator<AGenesisWombScene> It(World); It; ++It)
+			{
+				It->StartExterior();
+			}
+		}));
+
 	/** Entwickler: eine Handlung des Kindes auslösen – genesis.Womb.Do kick|stretch|yawn|thumb|swallow|grasp|eyes|touch|hand <x> <y>. */
 	FAutoConsoleCommandWithWorldAndArgs GenesisWombDoCommand(
 		TEXT("genesis.Womb.Do"),
@@ -61,9 +73,12 @@ namespace GenesisWombPerception
 	float CavityRadiusCm(float Weeks)
 	{
 		// Stützpunkte (SSW, Innenradius cm) – Näherung, siehe Deklaration
+		// Die Höhle ist längs gut 2 × 1,05 × dieser Radius lang: SSW 28 ≈ 28 cm, am Termin ≈ 36 cm innen – entsprechend
+		// dem Symphysen-Fundus-Abstand (≈ SSW in cm ab SSW 20) abzüglich Wand; das gebeugte Kind (längste Ausdehnung ≈
+		// Scheitel-Steiß-Länge) füllt sie am Termin fast aus
 		static const FVector2D Points[] = {
-			FVector2D(8.0f, 1.5f), FVector2D(12.0f, 3.5f), FVector2D(16.0f, 5.5f), FVector2D(20.0f, 8.0f), FVector2D(24.0f, 9.5f),
-			FVector2D(28.0f, 11.0f), FVector2D(32.0f, 12.5f), FVector2D(36.0f, 13.5f), FVector2D(40.0f, 14.5f) };
+			FVector2D(8.0f, 1.5f), FVector2D(12.0f, 3.5f), FVector2D(16.0f, 6.5f), FVector2D(20.0f, 9.5f), FVector2D(24.0f, 11.5f),
+			FVector2D(28.0f, 13.3f), FVector2D(32.0f, 15.0f), FVector2D(36.0f, 16.3f), FVector2D(40.0f, 17.2f) };
 		if (Weeks <= Points[0].X) { return Points[0].Y; }
 		for (int32 Index = 1; Index < UE_ARRAY_COUNT(Points); ++Index)
 		{
@@ -122,6 +137,13 @@ AGenesisWombScene::AGenesisWombScene()
 	Camera = CreateDefaultSubobject<UCineCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(Root);
 
+	// Das Kind selbst – von außen zu sehen, bevor die Kamera in seine Augen fährt (Teil 2b)
+	Fetus = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Fetus"));
+	Fetus->SetupAttachment(Root);
+	Fetus->SetMobility(EComponentMobility::Movable);
+	Fetus->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Fetus->SetVisibility(false);
+
 	OwnHand = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("OwnHand"));
 	OwnHand->SetupAttachment(Camera);
 	OwnHand->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -147,6 +169,11 @@ void AGenesisWombScene::BeginPlay()
 		}
 	}
 	CordMaterial = LitMaterials.Num() > 3 ? LitMaterials[3] : nullptr;
+	if (Fetus && Fetus->GetMaterial(0))
+	{
+		FetusMaterial = Fetus->CreateAndSetMaterialInstanceDynamic(0);
+		LitMaterials.Add(FetusMaterial);
+	}
 	InitCord();
 	Camera->Filmback.SensorWidth = 36.0f;
 	Camera->Filmback.SensorHeight = 20.25f;
@@ -363,6 +390,14 @@ void AGenesisWombScene::SimulateCord(float DeltaSeconds, const TArray<FVector>& 
 	{
 		A.Add(CordToWorld.InverseTransformPosition(FingerA[Index]));
 		B.Add(CordToWorld.InverseTransformPosition(FingerB[Index]));
+	}
+	// Das Ende der Schnur sitzt am Nabel des Kindes (wo auch immer sein Körper gerade liegt)
+	if (bHasNavel)
+	{
+		const FVector Navel = CordToWorld.InverseTransformPosition(NavelWorld);
+		CordRest.Last() = Navel;
+		CordX.Last() = Navel;
+		CordPrev.Last() = Navel;
 	}
 	const float Reach = FingerRadius / Scale + CordRadius;
 	const float Allowed = 0.25f * CordRadius * FMath::Max(0.2f, HandClosed);
@@ -608,7 +643,9 @@ void AGenesisWombScene::UpdateOwnHand(float DeltaSeconds)
 	const FQuat Oriented = FQuat(Along, FMath::DegreesToRadians(Roll)) * FRotationMatrix::MakeFromXZ(Along, Back).ToQuat();
 	OwnHand->SetRelativeLocationAndRotation(HandPos * WorldScale, Oriented.Rotator());
 	OwnHand->SetRelativeScale3D(FVector(Body * WorldScale));
-	for (UMaterialInstanceDynamic* Skin : HandMaterials)
+	TArray<UMaterialInstanceDynamic*> Skins(HandMaterials);
+	if (FetusMaterial) { Skins.Add(FetusMaterial); }
+	for (UMaterialInstanceDynamic* Skin : Skins)
 	{
 		const float Fat = FMath::SmoothStep(28.0f, 40.0f, Weeks);
 		Skin->SetScalarParameterValue(TEXT("Durchlass"), FMath::Lerp(0.8f, 0.45f, Fat));
@@ -760,8 +797,10 @@ void AGenesisWombScene::UpdateTime()
 		const int32 MomentIndex = Director->GetGestationPlanPoint().MomentIndex;
 		if (MomentIndex != LastMomentIndex && MomentIndex >= 0)
 		{
-			// Ein neuer Moment: Sie spricht bald, wenn sie wach ist und spricht (erst ab SSW 16)
+			// Ein neuer Moment: Sie spricht bald, wenn sie wach ist und spricht (erst ab SSW 16) – und zuerst sieht man das
+			// Kind von außen, dann fährt die Kamera in seine Augen
 			SinceVoice = 17.0f;
+			StartExterior();
 			const FGenesisMotherMoment Now = GenesisMotherDay::Evaluate(FGenesisMotherDayTuning(), HourOfDay, DayIndex, Weeks, Seed);
 			UE_LOG(LogGenesis, Display, TEXT("Mutterleib: Moment %d – SSW %.1f, %02d:%02d Uhr, Mutter: %s, %.2f lx im Mutterleib"),
 				MomentIndex, Weeks, FMath::FloorToInt32(HourOfDay), FMath::FloorToInt32(FMath::Fmod(HourOfDay, 1.0) * 60.0),
@@ -878,18 +917,68 @@ void AGenesisWombScene::UpdateCamera(float DeltaSeconds, const TArray<EGenesisFe
 	const float Press = MotherTouchAge < 0.0f ? 0.0f : FMath::SmoothStep(0.0f, 0.8f, MotherTouchAge)
 		* (1.0f - FMath::SmoothStep(MotherTouchSeconds - 1.5f, MotherTouchSeconds, MotherTouchAge));
 	const FVector Pushed = -MotherTouchDirection * 0.04f * Radius * Press;
-	const FVector Head(-0.25f * Radius - 0.04f * Radius * Room * Stretch, BodyOffset.X * Radius,
-		0.1f * Radius + BodyOffset.Y * Radius + Walk + Breath);
-	Camera->SetRelativeLocation((Head + Jolt + Pushed) * WorldScale);
-	const FRotator Look = LookDirection.Rotation() + FRotator(-6.0f + 3.0f * FMath::Sin(0.07f * SceneSeconds), 8.0f * FMath::Sin(0.05f * SceneSeconds), 0.0f)
-		+ FRotator(HeadLook.Y + 5.0f * Stretch + 8.0f * Yawn, HeadLook.X, 0.0f);
-	Camera->SetRelativeRotation(Look + FRotator(Jolt.Z * 20.0f / FMath::Max(1.0f, Radius), Jolt.Y * 20.0f / FMath::Max(1.0f, Radius), 0.0f));
+	// Lage des Kindes: längs in der Gebärmutter, das Gesicht zum Bauch der Mutter (dorthin kommt das Licht). Bis zum
+	// letzten Drittel liegt es oft mit dem Kopf oben, dann dreht es sich: Beckenendlage bei SSW 28 noch ~20 %, am Termin
+	// 3–4 % (RCOG 2017) – hier ab SSW 32 kopfunter, die Drehung über zwei Wochen.
+	const float HeadDown = FMath::SmoothStep(31.0f, 33.0f, Weeks);
+	const FVector HeadUp = FVector(0.0f, 0.0f, 1.0f).RotateAngleAxis(180.0f * HeadDown, FVector(1.0f, 0.0f, 0.0f));
+	FQuat BodyFrame = FRotationMatrix::MakeFromXZ(LookDirection.GetSafeNormal(), HeadUp).ToQuat();
+	const FGenesisFetusStage* Stage = CurrentFetusStage();
+	if (Stage && Stage->Hull.Num() > 3)
+	{
+		// Die Längsachse des Körpers (Kopf bis Steiß) liegt längs in der Gebärmutter, das Gesicht so weit es geht zum Bauch
+		BodyFrame = FetusOrientation(*Stage, HeadUp);
+	}
+	const FRotator BodyLook = (BodyFrame * FRotator(-6.0f + 3.0f * FMath::Sin(0.07f * SceneSeconds), 8.0f * FMath::Sin(0.05f * SceneSeconds), 0.0f).Quaternion()).Rotator();
+	// Die Augen liegen dort, wo der Körper des Kindes in der Höhle Platz hat: seine Mitte in der Mitte der Höhle
+	FVector Eyes(-0.25f * Radius, 0.0f, 0.1f * Radius);
+	if (Stage)
+	{
+		// Die Lage nur bei Wechsel von Woche oder Drehung neu suchen (die Wackel-Bewegungen des Kopfes bleiben klein)
+		if (FMath::Abs(Weeks - FittedWeeks) > 0.05f || FMath::Abs(HeadDown - FittedHeadDown) > 0.02f)
+		{
+			FittedEyes = FitFetus(*Stage, BodyFrame, Radius);
+			FittedWeeks = Weeks;
+			FittedHeadDown = HeadDown;
+		}
+		Eyes = FittedEyes;
+	}
+	const FVector Head = Eyes + FVector(-0.04f * Radius * Room * Stretch, BodyOffset.X * Radius, BodyOffset.Y * Radius + Walk + Breath);
+	const FVector FirstPersonLocation = (Head + Jolt + Pushed) * WorldScale;
+	const FRotator Look = (BodyLook.Quaternion() * FRotator(HeadLook.Y + 5.0f * Stretch + 8.0f * Yawn, HeadLook.X, 0.0f).Quaternion()).Rotator();
+	const FRotator FirstPersonRotation = (Look.Quaternion() * FRotator(Jolt.Z * 20.0f / FMath::Max(1.0f, Radius), Jolt.Y * 20.0f / FMath::Max(1.0f, Radius), 0.0f).Quaternion()).Rotator();
+	// Das Kind: Ursprung zwischen den Augen, +X der Blick – es bewegt sich mit (Atem, Wiegen, eigene Rucke)
+	if (Stage && Fetus)
+	{
+		if (Fetus->GetStaticMesh() != Stage->Mesh)
+		{
+			Fetus->SetStaticMesh(Stage->Mesh);
+		}
+		Fetus->SetRelativeLocationAndRotation((Head + Jolt + Pushed) * WorldScale, BodyLook);
+		Fetus->SetRelativeScale3D(FVector(FetusScale * WorldScale));
+		NavelWorld = Fetus->GetComponentTransform().TransformPosition(Stage->Navel);
+		bHasNavel = true;
+	}
+	UpdateExterior(DeltaSeconds, FirstPersonLocation, FirstPersonRotation);
 
 	// Wahrnehmung: Das Auge im Dunkeln passt sich an die Lichtmenge an (die Wand leuchtet linear mit den lx) –
 	// wie hell es sich anfühlt, folgt der Wahrnehmung (logarithmisch, Lider, Pupille). Was nicht ankommt, bleibt
 	// dunkel; vor dem bewussten Erleben (Thalamus–Rinde) gedämpft.
 	const float Adapted = -FMath::Log2(FMath::Max(0.05f, Mother.WombLux) / ReferenceLux);
 	const float Felt = FMath::Log2(FMath::Max(0.01f, Perception.Brightness) / ReferenceBrightness);
+	if (ExteriorAge >= 0.0f)
+	{
+		// Von außen: ein Beobachter mit gewöhnlichen Augen – die Wahrnehmung des Kindes beginnt erst in seinen Augen
+		const float Inside = FMath::SmoothStep(ExteriorSeconds - 1.2f, ExteriorSeconds, ExteriorAge);
+		Camera->PostProcessSettings.AutoExposureBias = ExposureBias + Adapted + FMath::Lerp(1.8f, Felt - 2.0f * (1.0f - Perception.Presence), Inside);
+		Camera->PostProcessSettings.bOverride_ColorOffset = true;
+		Camera->PostProcessSettings.ColorOffset = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
+		Camera->PostProcessSettings.bOverride_FilmGrainIntensity = true;
+		Camera->PostProcessSettings.FilmGrainIntensity = 0.0f;
+		Camera->PostProcessSettings.bOverride_ColorSaturation = true;
+		Camera->PostProcessSettings.ColorSaturation = FVector4(1.0f, 1.0f, 1.0f, 0.95f);
+		return;
+	}
 	Camera->PostProcessSettings.AutoExposureBias = ExposureBias + Adapted + Felt - 2.0f * (1.0f - Perception.Presence);
 	// Eigengrau: Auch ohne Licht ist das Dunkel nicht schwarz, sondern ein schwaches, rauschendes Dunkelrotbraun
 	const float Dark = 1.0f - FMath::Clamp(Perception.Brightness / 0.3f, 0.0f, 1.0f);
@@ -909,6 +998,172 @@ void AGenesisWombScene::UpdateCamera(float DeltaSeconds, const TArray<EGenesisFe
 	Camera->SetCurrentAperture(FMath::Lerp(5.6f, 1.4f, Perception.Blur) / FMath::Max(1.0f, WorldScale));
 	Camera->PostProcessSettings.bOverride_ColorSaturation = true;
 	Camera->PostProcessSettings.ColorSaturation = FVector4(1.0f, 1.0f, 1.0f, FMath::Lerp(0.5f, 0.9f, Perception.EyesOpen));
+}
+
+const FGenesisFetusStage* AGenesisWombScene::CurrentFetusStage()
+{
+	// Das nächstkleinere gebaute Alter, dazwischen wächst das Kind stetig (Scheitel-Steiß-Länge)
+	const FGenesisFetusStage* Best = nullptr;
+	const FGenesisFetusStage* Next = nullptr;
+	for (const FGenesisFetusStage& Stage : FetusStages)
+	{
+		if (!Stage.Mesh) { continue; }
+		if (Stage.Weeks <= Weeks && (!Best || Stage.Weeks > Best->Weeks)) { Best = &Stage; }
+		if (Stage.Weeks > Weeks && (!Next || Stage.Weeks < Next->Weeks)) { Next = &Stage; }
+	}
+	if (!Best) { Best = Next; }
+	if (!Best)
+	{
+		return nullptr;
+	}
+	float Length = Best->CrownRumpCm;
+	if (Next && Next != Best && Next->Weeks > Best->Weeks)
+	{
+		Length = FMath::Lerp(Best->CrownRumpCm, Next->CrownRumpCm, FMath::Clamp((Weeks - Best->Weeks) / (Next->Weeks - Best->Weeks), 0.0f, 1.0f));
+	}
+	FetusScale = Length / FMath::Max(0.1f, Best->CrownRumpCm);
+	return Best;
+}
+
+FQuat AGenesisWombScene::FetusOrientation(const FGenesisFetusStage& Stage, const FVector& HeadUp) const
+{
+	// Hauptachse der Hülle (Potenzverfahren auf der Kovarianz), gerichtet von der Körpermitte zu den Augen (zum Kopf)
+	FVector Mid = FVector::ZeroVector;
+	for (const FVector& P : Stage.Hull) { Mid += P; }
+	Mid /= Stage.Hull.Num();
+	FMatrix Cov(ForceInitToZero);
+	for (const FVector& P : Stage.Hull)
+	{
+		const FVector D = P - Mid;
+		for (int32 R = 0; R < 3; ++R)
+		{
+			for (int32 C = 0; C < 3; ++C)
+			{
+				Cov.M[R][C] += D[R] * D[C];
+			}
+		}
+	}
+	FVector Axis(0.2f, 0.1f, 1.0f);
+	for (int32 Iteration = 0; Iteration < 40; ++Iteration)
+	{
+		Axis = FVector(Cov.M[0][0] * Axis.X + Cov.M[0][1] * Axis.Y + Cov.M[0][2] * Axis.Z,
+			Cov.M[1][0] * Axis.X + Cov.M[1][1] * Axis.Y + Cov.M[1][2] * Axis.Z,
+			Cov.M[2][0] * Axis.X + Cov.M[2][1] * Axis.Y + Cov.M[2][2] * Axis.Z).GetSafeNormal();
+	}
+	if (FVector::DotProduct(Axis, -Mid) < 0.0f)
+	{
+		Axis = -Axis;                                   // die Augen liegen am Kopfende
+	}
+	// Im Körper: Achse zum Kopf und Blickrichtung (senkrecht dazu); in der Höhle: nach oben bzw. unten und zum Bauch
+	const FVector Belly = (LookDirection - HeadUp * FVector::DotProduct(LookDirection, HeadUp)).GetSafeNormal();
+	const FQuat FromBody = FRotationMatrix::MakeFromZX(Axis, FVector::ForwardVector).ToQuat();     // die Körperachse exakt
+	const FQuat ToCavity = FRotationMatrix::MakeFromZX(HeadUp, Belly).ToQuat();
+	return ToCavity * FromBody.Inverse();
+}
+
+FVector AGenesisWombScene::FitFetus(const FGenesisFetusStage& Stage, const FQuat& Orientation, float Radius) const
+{
+	// Höhle als Ellipsoid (Blender build_mutterleib.py: 8,6 × 8,2 × 10,5 cm bei 10 cm), mit Rand für Wand und Plazenta
+	const FVector Semi = FVector(8.6f, 8.2f, 10.5f) * (Radius / 10.0f) * 0.96f;
+	TArray<FVector> Points;
+	for (const FVector& P : Stage.Hull)
+	{
+		Points.Add(Orientation.RotateVector(P * FetusScale));
+	}
+	if (Points.Num() == 0)
+	{
+		return -Orientation.RotateVector(Stage.Center * FetusScale);
+	}
+	// Start: die Mitte des Körpers (aus der Hülle) in die Mitte der Höhle
+	FVector Mid = FVector::ZeroVector;
+	for (const FVector& P : Points) { Mid += P; }
+	FVector Eyes = -Mid / Points.Num();
+	// Dann schrittweise vom am weitesten herausragenden Punkt weg – gedämpft, damit nichts aufschaukelt
+	float Worst = 0.0f;
+	for (int32 Iteration = 0; Iteration < 200; ++Iteration)
+	{
+		Worst = 0.0f;
+		FVector WorstQ = FVector::ZeroVector;
+		for (const FVector& P : Points)
+		{
+			const FVector Q = (P + Eyes) / Semi;
+			const float Out = Q.Size();
+			if (Out > Worst) { Worst = Out; WorstQ = Q; }
+		}
+		if (Worst <= 1.0f)
+		{
+			break;
+		}
+		const FVector Step = (WorstQ / Worst) * Semi * FMath::Min(Worst - 1.0f, 0.2f) * 0.3f;
+		Eyes -= Step;
+	}
+	if (!Eyes.ContainsNaN() && Worst > 1.02f)
+	{
+		UE_LOG(LogGenesis, Warning, TEXT("Mutterleib: Das Kind (SSW %.1f) passt nicht ganz in die Höhle (%.0f %% zu groß)."), Weeks, (Worst - 1.0f) * 100.0f);
+	}
+	if (Eyes.ContainsNaN())
+	{
+		Eyes = -Mid / Points.Num();
+	}
+	return Eyes;
+}
+
+void AGenesisWombScene::StartExterior()
+{
+	if (CurrentFetusStage())
+	{
+		ExteriorAge = 0.0f;
+		ExteriorSpin = Random.FRandRange(-1.0f, 1.0f);
+	}
+}
+
+void AGenesisWombScene::UpdateExterior(float DeltaSeconds, const FVector& FirstPersonLocation, const FRotator& FirstPersonRotation)
+{
+	const FGenesisFetusStage* Stage = CurrentFetusStage();
+	if (ExteriorAge < 0.0f || !Stage || !Fetus)
+	{
+		Camera->SetRelativeLocation(FirstPersonLocation);
+		Camera->SetRelativeRotation(FirstPersonRotation);
+		if (Fetus) { Fetus->SetVisibility(false); }
+		if (OwnHand) { OwnHand->SetVisibility(true); }
+		return;
+	}
+	// Von außen: die Kamera schwebt langsam um das Kind (wie eine Fetoskop-Aufnahme, nur mit dem Licht des Bauchs),
+	// dann gleitet sie zu seinem Gesicht und in seine Augen. Dort übernimmt die Ich-Sicht.
+	ExteriorAge += DeltaSeconds;
+	const float Radius = Perception.CavityRadiusCm;
+	const FVector Center = (Fetus->GetRelativeLocation() / WorldScale) + Fetus->GetRelativeRotation().RotateVector(Stage->Center * FetusScale);
+	const FVector Face = Fetus->GetRelativeLocation() / WorldScale;
+	const float Size = Stage->CrownRumpCm * FetusScale;
+	const float Orbit = FMath::Clamp(ExteriorAge / (ExteriorSeconds - 2.5f), 0.0f, 1.0f);
+	const FRotator Gaze = Fetus->GetRelativeRotation();
+	// vorn-seitlich vor dem Kind, das Gesicht im Blick; innerhalb der Höhle
+	const FVector Around = Gaze.RotateVector(FVector(1.0f, 0.0f, 0.25f)).RotateAngleAxis(-45.0f + (25.0f + 20.0f * ExteriorSpin) * Orbit, FVector::UpVector).GetSafeNormal();
+	// Wie ein 3D-Ultraschall: Der Blick geht von außen durch die Wand (sie ist nur von innen sichtbar) auf das ganze Kind,
+	// langsam näher an sein Gesicht
+	const float Distance = FMath::Lerp(1.6f, 0.9f, Orbit) * Size;
+	const FVector Look = FMath::Lerp(Center, Face, 0.35f + 0.4f * Orbit);
+	const FVector Location = Look + Around * Distance;
+	const FRotator Rotation = (Look - Location).Rotation();
+	// Hineinfahren: die letzten 2,5 s zum Gesicht und durch die Augen in die Ich-Sicht
+	const float Dive = FMath::SmoothStep(ExteriorSeconds - 2.5f, ExteriorSeconds, ExteriorAge);
+	const FVector FinalLocation = FMath::Lerp(Location * WorldScale, FirstPersonLocation, Dive);
+	const FQuat FinalRotation = FQuat::Slerp(Rotation.Quaternion(), FirstPersonRotation.Quaternion(), Dive);
+	Camera->SetRelativeLocation(FinalLocation);
+	Camera->SetRelativeRotation(FinalRotation.Rotator());
+	// Schärfe auf das Gesicht; beim Eintauchen in die Augen wird es rot und weich (die Lider)
+	FCameraFocusSettings Focus = Camera->FocusSettings;
+	Focus.ManualFocusDistance = FMath::Max(0.5f * WorldScale, FVector::Dist(FinalLocation, Face * WorldScale));
+	Camera->SetFocusSettings(Focus);
+	Camera->SetCurrentAperture(2.8f / FMath::Max(1.0f, WorldScale));
+	Fetus->SetVisibility(Dive < 0.92f);
+	if (OwnHand) { OwnHand->SetVisibility(false); }
+	if (ExteriorAge >= ExteriorSeconds)
+	{
+		ExteriorAge = -1.0f;
+		Fetus->SetVisibility(false);
+		if (OwnHand) { OwnHand->SetVisibility(true); }
+	}
 }
 
 void AGenesisWombScene::DebugAction(const FString& Action, const FVector2D& Value)
