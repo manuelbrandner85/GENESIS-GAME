@@ -276,11 +276,39 @@ def create_sperm_material(mpc):
     connect(vertex_color, "", opacity, ["VC"])
     connect(normal, "", opacity, ["N"])
     connect(camera_vector, "", opacity, ["V"])
-    mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
 
     color = custom(material, -800, 100, "Streufarbe", COLOR_CODE, ["UV", "VC"], float3)
     connect(texture_coords, "", color, ["UV"])
     connect(vertex_color, "", color, ["VC"])
+
+    # Relief-Kontrast in der Schnittansicht an der Eizelle (GENESIS-047 Teil 2b): So zeigt ein Mikroskop (Hoffman,
+    # DIC) eine fast klare Zelle in der fast klaren Zona – die eine Flanke hell, die andere dunkel, die Zelle dichter.
+    # Ohne ihn war die eigene Zelle in der Zona nicht zu finden (blass vor blass). Außerhalb der Ansicht wirkungslos.
+    section = eal.load_asset(MATERIALS + "/MPC_GEN_OocyteSection")
+    if section:
+        active = expression(material, unreal.MaterialExpressionCollectionParameter, -1200, 760)
+        active.set_editor_property("collection", section)
+        active.set_editor_property("parameter_name", "SectionActive")
+        relief = custom(material, -560, 200, "Relief-Kontrast", """
+float3 n = normalize(N);
+float3 v = normalize(V);
+// Scherrichtung fest im Bild (Bildrechts), wie der Modulator im Mikroskop
+float3 right = normalize(cross(float3(0.0, 0.0, 1.0), v) + float3(1e-4, 0.0, 0.0));
+float shear = dot(n, right);
+float a = saturate(Active);
+return float4(Color * (1.0 + a * 1.1 * shear), saturate(Opacity * (1.0 + a * 1.2)));
+""", ["N", "V", "Color", "Opacity", "Active"], unreal.CustomMaterialOutputType.CMOT_FLOAT4)
+        connect(normal, "", relief, ["N"])
+        connect(camera_vector, "", relief, ["V"])
+        connect(color, "", relief, ["Color"])
+        connect(opacity, "", relief, ["Opacity"])
+        connect(active, "", relief, ["Active"])
+        color_out = expression(material, unreal.MaterialExpressionComponentMask, -350, 160, r=True, g=True, b=True, a=False)
+        connect(relief, "", color_out, ["", "Input"])
+        opacity_out = expression(material, unreal.MaterialExpressionComponentMask, -350, 260, r=False, g=False, b=False, a=True)
+        connect(relief, "", opacity_out, ["", "Input"])
+        color, opacity = color_out, opacity_out
+    mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
     mel.connect_material_property(color, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
     # Relativer Brechungsindex ~1,04 in Flüssigkeit: kaum Spiegelung (F0 ≈ 0,0004 → Specular ≈ 0,005)

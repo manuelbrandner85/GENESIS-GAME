@@ -224,6 +224,41 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Race")
 	float RaceEggViewDistanceUm = 60.0f;
 
+	/**
+	 * Optischer Schnitt durch Corona und Cumulus (GENESIS-047 Teil 2b): Solange die eigene Zelle an der Eizelle hängt,
+	 * blenden alle Zellen vor der Schärfeebene aus – wie im Mikroskop, das nur eine dünne Ebene scharf zeigt. Ohne ihn
+	 * verdeckte der Kranz im Zeitraffer die Zelle in der Zona vollständig.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Race")
+	TObjectPtr<class UMaterialParameterCollection> SectionParameters;
+
+	/** Die Schnittebene liegt so weit vor dem Kopf der eigenen Zelle (µm). */
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "0"))
+	float SectionMarginUm = 4.0f;
+
+	/**
+	 * Dicke der gezeigten Schicht hinter dem Kopf (µm) – ein optischer Schnitt ist dünn. Mit 70 µm stand ein Wald aus
+	 * Fortsätzen der Coronazellen, die bis in die Zona reichen, rund um die eigene Zelle und verdeckte sie.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "5"))
+	float SectionThicknessUm = 10.0f;
+
+	/** Abstand der Kamera zur eigenen Zelle in der Profilansicht an der Eizelle (µm). */
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "30"))
+	float ProfileDistanceUm = 65.0f;
+
+	/**
+	 * Optik der Profilansicht. Mit der Optik der Eizell-Ansicht (Makro wie ×18) blieben aus 170 µm nur wenige Mikrometer
+	 * scharf, und die 3 µm dünne, fast klare Zelle verschwamm ganz – sie war im Bild nicht zu finden, obwohl sie an der
+	 * richtigen Stelle stand (gemessen in GENESIS-047 Teil 2b). Aus 65 µm hält ×2,5 bei f/22 rund 13 µm scharf: die Zelle ganz,
+	 * die angeschnittene Corona davor und dahinter weich.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "1", ClampMax = "40"))
+	float ProfileMacroScale = 2.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "1.2", ClampMax = "32"))
+	float ProfileAperture = 22.0f;
+
 	/** Grenze für den Schwenk auf und ab (Grad) – darüber stünde die Kamera in der Schleimhaut. */
 	UPROPERTY(EditAnywhere, Category = "Follow")
 	float MaxPlayerPitchDegrees = 35.0f;
@@ -318,6 +353,11 @@ private:
 	/** Echtzeit seit die erste Zelle gebunden hat bzw. seit der Verschmelzung (negativ = noch nicht). */
 	float SecondsSinceBinding = -1.0f;
 	float SecondsSinceFusion = -1.0f;
+	/** 0..1 – wie weit der optische Schnitt eingeblendet ist (weicher Übergang statt Schnitt). */
+	float SectionWeight = 0.0f;
+	/** Seite, von der die Profilansicht auf die eigene Zelle blickt (bleibt, solange sie im Lumen liegt). */
+	mutable FVector ProfileDirection = FVector::ZeroVector;
+	void UpdateSection(float DeltaSeconds);
 	/** Richtung (von der Eizellmitte) zur führenden Zelle, geglättet – sie wechselt, wenn eine andere Zelle vorn liegt. */
 	FVector SmoothedLeaderDirection = FVector::ZeroVector;
 	bool bInitialized = false;

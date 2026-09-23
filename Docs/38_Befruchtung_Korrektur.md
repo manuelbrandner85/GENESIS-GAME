@@ -90,3 +90,11 @@ Rennen neu gemessen: gut gelenkt 4 von 5, ohne Führung 0 von 5; je Rennen 4–8
 Offen (Teil 2b): Blick auf Zona und Spalt im Zeitraffer (optischer Schnitt durch Corona und Cumulus); die Eileiterwand liegt
 jetzt 0,9 mm entfernt und bleibt im Endoskoplicht fast dunkel – Licht und Kamera auf den weiteren Raum abstimmen; Fäden der
 Matrix im äußeren Cumulus.
+
+## Umsetzung GENESIS-047 Teil 2b: Blick in Zona und Spalt (2026-09-23)
+
+Mikroskopaufnahmen zeigen ein Spermium in der Zona als optischen Schnitt, im Profil am Rand der Eizelle, mit
+Relief-Kontrast (Hoffman/DIC). So jetzt auch das Spiel im Zeitraffer: dünne Schicht durch Corona und Cumulus,
+Profilansicht quer zur Zelle, eigene Optik, Relief-Kontrast an den Spermien. Bilder: Docs/Media/GENESIS-047_Schnitt_*.png.
+Die Fortsätze der Coronazellen (transzonale Fortsätze) sind in echt feine Fäden unter 1 µm, im Modell noch 3 µm dicke
+Kegel – der nächste Schritt für dieses Bild.

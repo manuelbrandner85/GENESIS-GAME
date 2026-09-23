@@ -331,7 +331,7 @@ def create_ooplasm_material():
     return material
 
 
-def create_zona_material():
+def create_zona_material(section=None):
     """Zona pellucida: glasige Glykoprotein-Hülle mit radialer Faserstruktur, die nach der Befruchtung verhärtet."""
     material = load_or_create_material("M_GEN_Oocyte_Zona")
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
@@ -370,6 +370,17 @@ def create_zona_material():
     fibre_amount = multiply(material, -1200, 380, fibres, constant(material, -1400, 430, 0.12))
     rim = fresnel(material, -1200, 520, 2.2, 0.04)
     rim_amount = multiply(material, -950, 540, rim, constant(material, -1150, 600, 0.35))
+    if section:
+        # In der Schnittansicht (GENESIS-047 Teil 2b) trifft der Blick die Zona am Rand der Eizelle streifend: Der
+        # Randschein überstrahlte dort die Zelle, die in ihr steckt. Ein optischer Schnitt zeigt die Zona als klares
+        # Band – der Schein geht auf ein Viertel zurück.
+        active = expression(material, unreal.MaterialExpressionCollectionParameter, -1400, 660)
+        active.set_editor_property("collection", section)
+        active.set_editor_property("parameter_name", "SectionActive")
+        damp = custom(material, -1150, 680, "Randschein im Schnitt", "return 1.0 - 0.75 * saturate(Active);",
+                      ["Active"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+        connect(active, "", damp, ["Active"])
+        rim_amount = multiply(material, -800, 560, rim_amount, damp)
     opacity = add(material, -700, 300, add(material, -850, 300, opacity_level, fibre_amount), rim_amount)
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
 
@@ -400,7 +411,64 @@ return lerp(1.0, 1.04, smoothstep(0.0, 0.12, edge));
     return material
 
 
-def create_corona_material(name="M_GEN_Oocyte_Corona", instanced=False):
+SECTION_COLLECTION = MATERIALS + "/MPC_GEN_OocyteSection"
+
+
+def create_section_collection():
+    """
+    Optischer Schnitt durch den Cumulus (GENESIS-047 Teil 2b): Die Kamera setzt je Bild die Tiefe, ab der Corona,
+    Cumuluszellen und Fäden gezeigt werden. Vorgabe weit hinter der Kamera – dann ist nichts ausgeblendet.
+    """
+    if eal.does_asset_exist(SECTION_COLLECTION):
+        mpc = eal.load_asset(SECTION_COLLECTION)
+    else:
+        mpc = asset_tools.create_asset("MPC_GEN_OocyteSection", MATERIALS, unreal.MaterialParameterCollection,
+                                       unreal.MaterialParameterCollectionFactoryNew())
+    front = unreal.CollectionScalarParameter()
+    front.set_editor_property("parameter_name", "SectionFrontUm")
+    front.set_editor_property("default_value", -1000000.0)
+    back = unreal.CollectionScalarParameter()
+    back.set_editor_property("parameter_name", "SectionBackUm")
+    back.set_editor_property("default_value", 1000000.0)
+    # 0..1: wie weit die Schnittansicht aktiv ist – schaltet Relief-Kontrast an den Spermien und dämpft den Zona-Rand
+    active = unreal.CollectionScalarParameter()
+    active.set_editor_property("parameter_name", "SectionActive")
+    active.set_editor_property("default_value", 0.0)
+    mpc.set_editor_property("scalar_parameters", [front, back, active])
+    eal.save_loaded_asset(mpc)
+    return mpc
+
+
+def section_fade(material, mpc, x, y, dither):
+    """
+    Wie weit ein Punkt hinter der Schnittebene liegt (0 davor, 1 ab 4 µm dahinter). Gerastert für maskierte Materialien
+    (Interleaved Gradient Noise, je Bild versetzt – das Zeit-Antialiasing glättet es zu einem weichen Übergang, wie
+    beim Keim in GENESIS-038), stetig für durchscheinende.
+    """
+    depth = expression(material, unreal.MaterialExpressionPixelDepth, x - 250, y)
+    front = expression(material, unreal.MaterialExpressionCollectionParameter, x - 250, y + 80)
+    front.set_editor_property("collection", mpc)
+    front.set_editor_property("parameter_name", "SectionFrontUm")
+    back = expression(material, unreal.MaterialExpressionCollectionParameter, x - 250, y + 160)
+    back.set_editor_property("collection", mpc)
+    back.set_editor_property("parameter_name", "SectionBackUm")
+    # Eine Schicht, keine Kante: vorn und hinten blendet es aus. 3 µm Übergang: Ein breiter Übergang (8 µm) legte in
+    # der dünnen Schicht grobe Rastermuster über ganze Zellen (gesehen in GENESIS-047 Teil 2b)
+    code = "float fade = min(saturate((Depth - Front) / 3.0), saturate((Back - Depth) / 3.0));\n"
+    if dither:
+        code += ("float2 p = Parameters.SvPosition.xy + 5.588238 * float(View.StateFrameIndexMod8);\n"
+                 "float noise = frac(52.9829189 * frac(dot(p, float2(0.06711056, 0.00583715))));\n"
+                 "return fade + (noise - 0.5) * 0.98;\n")
+    else:
+        code += "return fade;\n"
+    node = custom(material, x, y, "Optischer Schnitt", code, ["Depth", "Front", "Back"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    connect(depth, "", node, ["Depth"])
+    connect(front, "", node, ["Front"])
+    connect(back, "", node, ["Back"])
+    return node
+
+
+def create_corona_material(name="M_GEN_Oocyte_Corona", instanced=False, section=None):
     """Corona radiata: Kranz lebender Zellen, die die Eizelle versorgen – innen streuend, an den Rändern durchscheinend."""
     material = load_or_create_material(name)
     if instanced:
@@ -518,13 +586,20 @@ return float2(lerp(1.0, NucleusShade, nucleus) * (1.0 - EnvelopeShade * envelope
     spec = constant(material, -650, 500, 0.03)
     mel.connect_material_property(spec, "", unreal.MaterialProperty.MP_SPECULAR)
 
+    # Optischer Schnitt (GENESIS-047 Teil 2b): Was vor der Schärfeebene liegt, blendet gerastert aus – sonst verdeckt
+    # der dichte Kranz im Zeitraffer genau das, worum es geht: die Zelle in der Zona und im Spalt darunter.
+    if section:
+        material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
+        material.set_editor_property("opacity_mask_clip_value", 0.5)
+        mel.connect_material_property(section_fade(material, section, -650, 1100, True), "", unreal.MaterialProperty.MP_OPACITY_MASK)
+
     mel.recompile_material(material)
     eal.save_loaded_asset(material)
     log("Material %s gebaut" % name)
     return material
 
 
-def create_strands_material():
+def create_strands_material(section=None):
     """
     Die Fäden der Hyaluronsäure-Matrix: fast klares Gel, das an den Zellen hängt.
 
@@ -550,6 +625,9 @@ def create_strands_material():
     rim = fresnel(material, -1050, 120, 2.2, 0.06)
     rim_amount = multiply(material, -800, 140, rim, constant(material, -1000, 220, 0.16))
     opacity = add(material, -560, 140, rim_amount, constant(material, -800, 260, 0.02))
+    if section:
+        # Die Fäden vor der Schnittebene verschwinden mit den Zellen, an denen sie hängen
+        opacity = multiply(material, -400, 140, opacity, section_fade(material, section, -650, 520, False))
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
 
     roughness = constant(material, -560, 340, 0.12)
@@ -635,6 +713,9 @@ def place_oocyte(meshes, materials):
             light.set_editor_property("indirect_lighting_intensity", 1.0)
             light.set_editor_property("intensity", 150.0)
             log("Endoskoplicht auf 150 cd, Streulicht 0,35 gesetzt")
+            # Die Kamera führt den optischen Schnitt durch den Cumulus (GENESIS-047 Teil 2b)
+            actor.set_editor_property("section_parameters", eal.load_asset(SECTION_COLLECTION))
+            log("Optischer Schnitt an der Kamera gesetzt")
 
     # Der Schwarm konkurriert ab jetzt um diese Eizelle
     swarms = [a for a in actors.get_all_level_actors() if isinstance(a, unreal.GenesisSpermSwarm)]
@@ -675,12 +756,13 @@ else:
     # Die Zellen des äußeren Cumulus: vier Formvarianten zum Instanzieren (GENESIS-047 Teil 2)
     mesh_assets["cumulus"] = [import_mesh("SM_GEN_CumulusCell_%d.fbx" % i, "SM_GEN_CumulusCell_%d" % i, nanite=True) for i in range(4)]
 
+section_collection = create_section_collection()
 material_assets = {
     "ooplasm": create_ooplasm_material(),
-    "zona": create_zona_material(),
-    "corona": create_corona_material(),
-    "cumulus": create_corona_material("M_GEN_Oocyte_CumulusCell", instanced=True),
-    "strands": create_strands_material(),
+    "zona": create_zona_material(section=section_collection),
+    "corona": create_corona_material(section=section_collection),
+    "cumulus": create_corona_material("M_GEN_Oocyte_CumulusCell", instanced=True, section=section_collection),
+    "strands": create_strands_material(section=section_collection),
 }
 
 place_oocyte(mesh_assets, material_assets)

@@ -31,6 +31,17 @@ namespace
 		0,
 		TEXT("1 = die eigene Zelle lenkt und schlägt von selbst wie ein guter Spieler (Prüfhilfe)."));
 
+	FAutoConsoleCommandWithWorldAndArgs GenesisTimeLapseCommand(
+		TEXT("genesis.Conception.TimeLapse"),
+		TEXT("Zeitraffer an der Eizelle (Simulationssekunden je Echtzeitsekunde, Standard 45). Für Bildprüfungen."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			for (TActorIterator<AGenesisSpermSwarm> It(World); It && Args.Num() > 0; ++It)
+			{
+				It->TimeLapseScale = FMath::Max(1.0f, FCString::Atof(*Args[0]));
+			}
+		}));
+
 	FAutoConsoleCommandWithWorldAndArgs GenesisTimeScaleCommand(
 		TEXT("genesis.Conception.TimeScale"),
 		TEXT("Zeitraffer des Schwarms: Simulationssekunden je Echtzeitsekunde (Standard 0,25)."),
@@ -104,6 +115,10 @@ void AGenesisSpermSwarm::RebuildSwarm()
 	// Auch hier und nicht nur im Konstruktor: Ein bereits im Level abgelegter Schwarm trägt seine
 	// eigenen gespeicherten Werte und würde eine Änderung am Konstruktor nie sehen.
 	Instances->SetVisibleInRayTracing(false);
+	// Nach der Zona zeichnen (GENESIS-047 Teil 2b): Der Schwarm als Ganzes hat seinen Mittelpunkt weit weg und wurde
+	// deshalb vor der Zona sortiert – eine Zelle in der Zona lag dann unter der fast klaren, am Rand aber streifend
+	// getroffenen Hülle und war nicht zu sehen. Die Zona ist fast klar; was in ihr steckt, gehört davor.
+	Instances->SetTranslucentSortPriority(10);
 
 	Instances->SetStaticMesh(CellMesh);
 	if (CellMaterial)
@@ -239,6 +254,14 @@ void AGenesisSpermSwarm::ReportPlayerProgress()
 		}
 		UE_LOG(LogGenesis, Display, TEXT("Rennen: eigene Zelle %s nach %.1f s (Tiefe %.1f µm, Kraft %.2f)."),
 			*StaticEnum<EGenesisSpermPhase>()->GetNameStringByValue(Mine.Phase), SimulationSeconds, Mine.PenetrationDepthUm, PlayerVigor);
+		// Wo die Instanz tatsächlich steht – Kopf, Abstand zur Eizellmitte, Blickrichtung (Prüfhilfe für die Darstellung)
+		FTransform Drawn;
+		if (Instances && Instances->GetInstanceTransform(PlayerCellIndex, Drawn, true))
+		{
+			UE_LOG(LogGenesis, Display, TEXT("Rennen: gezeichnet bei %s (%.1f µm von der Eizellmitte), Achse %s, Maßstab %s"),
+				*Drawn.GetLocation().ToString(), FVector::Dist(Drawn.GetLocation(), Oocyte->GetActorLocation()),
+				*Drawn.GetUnitAxis(EAxis::X).ToString(), *Drawn.GetScale3D().ToString());
+		}
 	}
 }
 

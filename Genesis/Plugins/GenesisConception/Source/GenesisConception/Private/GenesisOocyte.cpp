@@ -136,9 +136,32 @@ void AGenesisOocyte::BeginPlay()
 	RegisterDebugPage();
 }
 
+#if !UE_BUILD_SHIPPING
+namespace
+{
+	TAutoConsoleVariable<int32> CVarHideEgg(TEXT("genesis.Conception.HideEgg"), 0,
+		TEXT("Prüfhilfe: 1 = Zellleib, Zona und Kranz ausblenden (was dahinter oder darin liegt, wird sichtbar)."));
+}
+#endif
+
 void AGenesisOocyte::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+#if !UE_BUILD_SHIPPING
+	// 1 = alles, 2 = nur Zona, 3 = nur Corona, 4 = nur Zellleib, 5 = nur Fäden
+	if (const int32 Hide = CVarHideEgg.GetValueOnGameThread(); Hide > 0)
+	{
+		const TArray<UStaticMeshComponent*> Parts = { Ooplasm.Get(), Zona.Get(), Corona.Get(), CumulusStrands.Get() };
+		const int32 Only[] = { -1, -1, 1, 2, 0, 3 };
+		for (int32 Index = 0; Index < Parts.Num(); ++Index)
+		{
+			if (Parts[Index] && (Hide == 1 || (Hide < 6 && Only[Hide] == Index)))
+			{
+				Parts[Index]->SetVisibility(false);
+			}
+		}
+	}
+#endif
 
 	// Die Cortikalreaktion ist sichtbar: Die Zona verändert sich, sobald die Eizelle befruchtet ist
 	if (ZonaMaterial)

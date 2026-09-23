@@ -9,6 +9,8 @@
 #include "Engine/World.h"
 #include "GenesisDebug.h"
 #include "GenesisFertilizationLogic.h"
+#include "Materials/MaterialParameterCollection.h"
+#include "Materials/MaterialParameterCollectionInstance.h"
 #include "GenesisOocyte.h"
 #include "GenesisSpermSwarm.h"
 #include "GenesisSpermSwimLogic.h"
@@ -94,6 +96,24 @@ namespace
 				UE_LOG(LogTemp, Display, TEXT("GENESIS Kamera: Abstand %.0f µm, Bildwinkel wie %.1f mm, Blende f/%.1f, Makro ×%.1f (echte Brennweite %.0f mm)"),
 					It->OocyteDistanceUm, It->NominalFocalLengthMm, It->Aperture, It->MacroScale,
 					It->Camera ? It->Camera->CurrentFocalLength : 0.0f);
+			}
+		}));
+
+	FAutoConsoleCommandWithWorldAndArgs GenesisProfileCommand(
+		TEXT("genesis.Conception.Profile"),
+		TEXT("Profilansicht an der Eizelle: <Abstand µm> [Schichtdicke µm]. Für Bildprüfungen."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			for (TActorIterator<AGenesisMicroscopeCameraRig> It(World); It; ++It)
+			{
+				if (Args.Num() > 0)
+				{
+					It->ProfileDistanceUm = FCString::Atof(*Args[0]);
+				}
+				if (Args.Num() > 1)
+				{
+					It->SectionThicknessUm = FCString::Atof(*Args[1]);
+				}
 			}
 		}));
 
@@ -252,12 +272,14 @@ void AGenesisMicroscopeCameraRig::ApplyOptics()
 	const bool bFollowingPlayer = Swarm && Swarm->IsRacing() && !bWatchOocyte && FollowCellIndex == Swarm->GetPlayerCellIndex();
 	// Nach der Verschmelzung zeigt die Kamera den Keim wie ein Zeitraffer-Brutschrank: der ganze Keim scharf
 	const bool bWatchingEmbryo = SecondsSinceFusion >= 0.0f && bWatchOocyte;
-	const float EffectiveAperture = bFollowingPlayer ? RaceAperture : (bWatchingEmbryo ? EmbryoAperture : Aperture);
+	// Profilansicht an der Eizelle (GENESIS-047 Teil 2b): eigene Optik, sonst verschwimmt die 3 µm dünne Zelle ganz
+	const bool bProfile = SectionWeight > 0.5f && !bWatchingEmbryo;
+	const float EffectiveAperture = bProfile ? ProfileAperture : (bFollowingPlayer ? RaceAperture : (bWatchingEmbryo ? EmbryoAperture : Aperture));
 
 	// Sensor und Brennweite gemeinsam vergrößern: gleicher Bildwinkel, aber die Schärfentiefe einer Makro-Optik
 	const bool bEgo = bFollowingPlayer && bRaceEgoView;
 	const float Scale = bEgo ? FMath::Max(0.1f, RaceEgoMacroScale)
-		: FMath::Max(1.0f, bFollowingPlayer ? RaceMacroScale : (bWatchingEmbryo ? EmbryoMacroScale : MacroScale));
+		: FMath::Max(1.0f, bProfile ? ProfileMacroScale : (bFollowingPlayer ? RaceMacroScale : (bWatchingEmbryo ? EmbryoMacroScale : MacroScale)));
 	const float Focal = (bEgo ? RaceEgoFocalLengthMm : NominalFocalLengthMm) * Scale;
 	Camera->LensSettings.MinFocalLength = FMath::Min(Camera->LensSettings.MinFocalLength, Focal - 0.1f);
 	Camera->LensSettings.MaxFocalLength = FMath::Max(Camera->LensSettings.MaxFocalLength, Focal + 1.0f);
@@ -301,7 +323,8 @@ void AGenesisMicroscopeCameraRig::UpdateLight()
 	// fällt mit dem Quadrat des Arbeitsabstands. Ohne Regelung ist jede Nahaufnahme ausgebrannt
 	// (gemessen: 40 % der Fläche reinweiß bei 95 µm Abstand mit der Einstellung für 430 µm) – und
 	// jede weite Einstellung fällt ins Dunkle (gemessen bei 1.100 µm: praktisch schwarz).
-	// Die Spanne ist deshalb weit: vom Zwanzigstel bis zum Zwanzigfachen der Bezugsstärke.
+	// Die Spanne ist deshalb weit: vom Hundertstel bis zum Zwanzigfachen der Bezugsstärke. Die Untergrenze lag bei einem
+	// Zwanzigstel – aus 65 µm (Profilansicht an der Zona, GENESIS-047 Teil 2b) war das Bild dann doppelt überbelichtet.
 	const float Reference = FMath::Max(1.0f, LightReferenceDistanceUm) * GenesisMicroScale::UnitsPerMicrometer;
 	const float Working = FMath::Max(1.0f, bEgo ? CurrentFocusDistance + RaceEgoLightBackUm * GenesisMicroScale::UnitsPerMicrometer : CurrentFocusDistance);
 	// Zwei Bereiche, weil zwei Dinge im Bild sind:
@@ -311,7 +334,7 @@ void AGenesisMicroscopeCameraRig::UpdateLight()
 	// quadratisch steigen, überstrahlten sie das Bild (gemessen bei 1.100 µm: Median 0,68).
 	const float Ratio = Working / Reference;
 	const float Exponent = Ratio < 1.0f ? LightFalloffExponentNear : LightFalloffExponentFar;
-	const float Factor = FMath::Clamp(FMath::Pow(Ratio, Exponent), 0.05f, 20.0f);
+	const float Factor = FMath::Clamp(FMath::Pow(Ratio, Exponent), 0.01f, 20.0f);
 	EndoscopeLight->SetIntensity(LightCandelasAtReference * Factor);
 }
 
@@ -381,9 +404,51 @@ bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat&
 		const FVector Surface = Center + SmoothedLeaderDirection * Egg->GetState().CoronaRadiusUm * GenesisMicroScale::UnitsPerMicrometer;
 		LookAt = FMath::Lerp(Center, Surface, 0.6f * Approach);
 	}
-	OutRotation = FRotationMatrix::MakeFromXZ(LookAt - OutLocation, Up).ToQuat();
 	const float SurfaceDistance = static_cast<float>(FVector::Dist(OutLocation, Center)) - Egg->GetState().CoronaRadiusUm * GenesisMicroScale::UnitsPerMicrometer;
 	OutFocusDistance = FMath::Lerp(static_cast<float>(FVector::Dist(OutLocation, Center)), FMath::Max(10.0f, SurfaceDistance), Approach);
+
+	// Profilansicht (GENESIS-047 Teil 2b): Hängt die eigene Zelle an der Eizelle, blickt die Kamera quer zur Radialen –
+	// die Zelle liegt dann auf dem Umriss der Eizelle, die Zona ist ein Band im Querschnitt, dahinter bleibt es dunkel.
+	// So zeigen Mikroskopaufnahmen ein Spermium in der Zona. Von vorn lag die Zelle hell vor dem hellen Zellleib
+	// und war nicht zu sehen.
+	if (SectionWeight > 0.001f && Swarm->IsRacing() && Swarm->GetCell(Swarm->GetPlayerCellIndex()))
+	{
+		const FVector Head = Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex());
+		const FVector Radial = (Head - Center).GetSafeNormal(UE_SMALL_NUMBER, Axis);
+		// Die Zelle liegt schräg bis flach an der Oberfläche. Blickte die Kamera entlang ihrer Längsachse, sähe man
+		// nur einen Punkt – genau das geschah zuerst (die Zelle war im Bild nicht zu finden). Deshalb quer zu ihr:
+		// Sie liegt dann ganz in der Bildebene, Kopf, Mittelstück und Geißel nebeneinander.
+		const FVector Heading = SwarmTransform.TransformVectorNoScale(Swarm->GetCell(Swarm->GetPlayerCellIndex())->Heading);
+		const FVector Along = (Heading - Radial * FVector::DotProduct(Heading, Radial)).GetSafeNormal(UE_SMALL_NUMBER, FVector::CrossProduct(Radial, Up));
+		const FVector A = FVector::CrossProduct(Radial, Along).GetSafeNormal(UE_SMALL_NUMBER, Side);
+		const FVector B = FVector::CrossProduct(Radial, A).GetSafeNormal();
+		const float Profile = ProfileDistanceUm * GenesisMicroScale::UnitsPerMicrometer;
+		auto Lateral = [&SwarmTransform](const FVector& World)
+		{
+			const FVector Local = SwarmTransform.InverseTransformPosition(World);
+			return FVector2D(Local.Y, Local.Z).Size();
+		};
+		// Die Seite behalten, solange die Kamera dort im Lumen bleibt – sonst die, die der Kanalmitte am nächsten ist
+		const bool bKeep = !ProfileDirection.IsNearlyZero() && FMath::Abs(FVector::DotProduct(ProfileDirection, A)) > 0.8
+			&& Lateral(Head + ProfileDirection * Profile) <= Limit;
+		if (!bKeep)
+		{
+			// Quer zur Zelle, von der Seite, die näher an der Kanalmitte liegt. Nur wenn beide nicht ins Lumen passen,
+			// entlang der Zelle (dann ist sie verkürzt zu sehen, aber die Kamera steht nicht in der Schleimhaut)
+			ProfileDirection = Lateral(Head + A * Profile) <= Lateral(Head - A * Profile) ? A : -A;
+			if (Lateral(Head + ProfileDirection * Profile) > Limit)
+			{
+				ProfileDirection = Lateral(Head + B * Profile) <= Lateral(Head - B * Profile) ? B : -B;
+			}
+		}
+		// Quer zur Radialen nachführen, wenn die Zelle weiterwandert
+		ProfileDirection = (ProfileDirection - Radial * FVector::DotProduct(ProfileDirection, Radial)).GetSafeNormal(UE_SMALL_NUMBER, A);
+		const FVector ProfileLocation = Head + ProfileDirection * Profile;
+		OutLocation = FMath::Lerp(OutLocation, ProfileLocation, SectionWeight);
+		LookAt = FMath::Lerp(LookAt, Head, SectionWeight);
+		OutFocusDistance = FMath::Lerp(OutFocusDistance, static_cast<float>(FVector::Dist(OutLocation, Head)), SectionWeight);
+	}
+	OutRotation = FRotationMatrix::MakeFromXZ(LookAt - OutLocation, Up).ToQuat();
 	// Im Rennen steckt die eigene Zelle in der Zona oder liegt im Spalt darunter – 40 µm unter dem Rand des
 	// Cumulus. Die Schärfe gehört dorthin; auf dem Cumulusrand lag sie im Leeren, und das ganze Bild war
 	// weich, solange der Zeitraffer lief (gesehen in GENESIS-047).
@@ -394,6 +459,37 @@ bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat&
 		OutFocusDistance = FMath::Lerp(OutFocusDistance, PlayerDistance, Approach);
 	}
 	return true;
+}
+
+void AGenesisMicroscopeCameraRig::UpdateSection(float DeltaSeconds)
+{
+	UWorld* World = GetWorld();
+	UMaterialParameterCollectionInstance* Instance = (World && SectionParameters) ? World->GetParameterCollectionInstance(SectionParameters) : nullptr;
+	if (!Instance)
+	{
+		return;
+	}
+	// Nur im Rennen, solange die eigene Zelle an der Eizelle hängt und noch nichts entschieden ist. Nach der
+	// Verschmelzung fährt die Kamera zurück auf den ganzen Keim – dann ist der Kranz wieder ganz zu sehen.
+	const FGenesisSpermCell* Mine = Swarm && Swarm->IsRacing() ? Swarm->GetCell(Swarm->GetPlayerCellIndex()) : nullptr;
+	const bool bWanted = bWatchOocyte && Mine && Swarm->GetRaceOutcome() == EGenesisRaceOutcome::Running
+		&& GenesisFertilizationLogic::IsAttached(*Mine);
+	SectionWeight = FMath::FInterpConstantTo(SectionWeight, bWanted ? 1.0f : 0.0f, DeltaSeconds, 1.0f / 1.5f);
+
+	float Front = -1000000.0f;
+	float Back = 1000000.0f;
+	if (SectionWeight > 0.001f && Camera)
+	{
+		// Tiefe des eigenen Kopfes entlang der Blickachse – so misst auch das Material (Pixeltiefe)
+		const FVector Head = Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex());
+		const float HeadDepth = static_cast<float>(FVector::DotProduct(Head - Camera->GetComponentLocation(), Camera->GetForwardVector()));
+		Front = SectionWeight * FMath::Max(0.0f, HeadDepth - SectionMarginUm);
+		// Hinten schließt die Schicht auch: Dahinter wird es dunkel, und die Zelle am Rand der Eizelle hebt sich ab
+		Back = HeadDepth + SectionThicknessUm + (1.0f - SectionWeight) * 100000.0f;
+	}
+	Instance->SetScalarParameterValue(TEXT("SectionFrontUm"), Front);
+	Instance->SetScalarParameterValue(TEXT("SectionBackUm"), Back);
+	Instance->SetScalarParameterValue(TEXT("SectionActive"), SectionWeight);
 }
 
 FVector AGenesisMicroscopeCameraRig::AvoidCumulus(const FVector& Subject, const FVector& Desired) const
@@ -746,6 +842,7 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 	Focus.ManualFocusDistance = CurrentFocusDistance;
 	Camera->SetFocusSettings(Focus);
 	UpdateLight();
+	UpdateSection(DeltaSeconds);
 
 	// Kein MegaLights unter dem Mikroskop: Die dünnen, durchscheinenden Spermien (Kopf und Geißel) blieben damit fast
 	// unbeleuchtet und verschwanden im dunklen Eileiter (Vergleichsbild GENESIS-039 Teil 6). Im Kreißsaal ist es an.
