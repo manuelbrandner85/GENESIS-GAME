@@ -44,6 +44,10 @@ struct GENESISBODY_API FGenesisFetalMilestones
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement") float BreathingMovements = 10.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement") float Yawn = 11.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement") float SuckAndSwallow = 12.0f;
+	/** Greifen (Greifreflex): Die Hand schließt sich um das, was sie berührt – beobachtet im 3. Trimenon, auch um die Nabelschnur (Jakobovits 2007). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement") float Grasp = 28.0f;
+	/** Ab hier wird es eng: Das Kind füllt die Höhle zunehmend aus. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement") float SpaceNarrows = 26.0f;
 	/** Die Mutter spürt die Bewegungen zum ersten Mal (Erstgebärende). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement") float QuickeningFirstPregnancy = 20.0f;
 
@@ -150,6 +154,32 @@ enum class EGenesisFetalEvent : uint8
 	Swallow,
 	HeadTurn,
 	BreathingBout
+};
+
+/**
+ * Was der Spieler als Kind tun kann (GENESIS-044 Teil 2a, Docs/37). Jede Handlung erst ab der Woche, in der der Körper
+ * sie kann (GenesisFetalLogic::CanPerform).
+ */
+UENUM(BlueprintType)
+enum class EGenesisFetalAction : uint8
+{
+	/** Sich im Ganzen bewegen, drehen. */
+	MoveBody,
+	/** Arm und Hand bewegen. */
+	MoveHand,
+	TurnHead,
+	/** Strampeln, treten. */
+	Kick,
+	Stretch,
+	Yawn,
+	/** Hand zum Mund, am Daumen saugen. */
+	HandToMouth,
+	/** Fruchtwasser schlucken – und schmecken. */
+	Swallow,
+	/** Die Hand schließen, etwa um die Nabelschnur. */
+	Grasp,
+	/** Die Augen öffnen und schließen. */
+	OpenEyes
 };
 
 /** Laufender Verhaltenszustand des Kindes (wird mitgespeichert). */

@@ -189,7 +189,9 @@ bool FGenesisEveryActionHasAGamepadKeyTest::RunTest(const FString& Parameters)
 	const TArray<FName> Actions = {
 		TEXT("GenesisCry"), TEXT("GenesisRoot"),
 		TEXT("GenesisMenu"), TEXT("GenesisAccept"), TEXT("GenesisBack"),
-		TEXT("GenesisMenuUp"), TEXT("GenesisMenuDown"), TEXT("GenesisMenuLeft"), TEXT("GenesisMenuRight")
+		TEXT("GenesisMenuUp"), TEXT("GenesisMenuDown"), TEXT("GenesisMenuLeft"), TEXT("GenesisMenuRight"),
+		// Im Mutterleib (GENESIS-044 Teil 2a)
+		TEXT("GenesisWombHand"), TEXT("GenesisKick"), TEXT("GenesisMouth"), TEXT("GenesisStretch"), TEXT("GenesisGrasp"), TEXT("GenesisEyes")
 	};
 
 	for (const FName& Action : Actions)

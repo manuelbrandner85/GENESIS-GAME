@@ -300,4 +300,52 @@ namespace GenesisFetalLogic
 		}
 		return Events;
 	}
+
+	float ActionOnsetWeeks(EGenesisFetalAction Action, const FGenesisFetalMilestones& M)
+	{
+		// de Vries, Visser & Prechtl 1982; Augen Doc 34; Greifen Jakobovits 2007 (Docs/37)
+		switch (Action)
+		{
+		case EGenesisFetalAction::MoveBody:    return M.GeneralMovement;
+		case EGenesisFetalAction::MoveHand:    return M.IsolatedLimbs;
+		case EGenesisFetalAction::TurnHead:    return M.HeadRotation;
+		case EGenesisFetalAction::Kick:        return M.IsolatedLimbs;
+		case EGenesisFetalAction::Stretch:     return M.GeneralMovement;
+		case EGenesisFetalAction::Yawn:        return M.Yawn;
+		case EGenesisFetalAction::HandToMouth: return M.HandFaceContact;
+		case EGenesisFetalAction::Swallow:     return M.SuckAndSwallow;
+		case EGenesisFetalAction::Grasp:       return M.Grasp;
+		case EGenesisFetalAction::OpenEyes:    return M.EyesBeginToOpen;
+		default:                               return 99.0f;
+		}
+	}
+
+	bool CanPerform(EGenesisFetalAction Action, float Weeks, const FGenesisFetalMilestones& M)
+	{
+		return Weeks >= ActionOnsetWeeks(Action, M);
+	}
+
+	float RoomToMove(float Weeks, const FGenesisFetalMilestones& M)
+	{
+		// Bis zum letzten Drittel schwebt das Kind; am Termin füllt es die Höhle aus (etwa ein Drittel Spielraum bleibt)
+		return 1.0f - 0.7f * Smooth(M.SpaceNarrows, 40.0f, Weeks);
+	}
+
+	FString GetActionName(EGenesisFetalAction Action)
+	{
+		switch (Action)
+		{
+		case EGenesisFetalAction::MoveBody:    return TEXT("bewegen");
+		case EGenesisFetalAction::MoveHand:    return TEXT("Hand bewegen");
+		case EGenesisFetalAction::TurnHead:    return TEXT("Kopf drehen");
+		case EGenesisFetalAction::Kick:        return TEXT("strampeln");
+		case EGenesisFetalAction::Stretch:     return TEXT("strecken");
+		case EGenesisFetalAction::Yawn:        return TEXT("gähnen");
+		case EGenesisFetalAction::HandToMouth: return TEXT("Daumen zum Mund");
+		case EGenesisFetalAction::Swallow:     return TEXT("schlucken");
+		case EGenesisFetalAction::Grasp:       return TEXT("greifen");
+		case EGenesisFetalAction::OpenEyes:    return TEXT("Augen öffnen");
+		default:                               return TEXT("?");
+		}
+	}
 }

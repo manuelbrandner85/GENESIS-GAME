@@ -81,4 +81,39 @@ bool FGenesisMotherDayTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/** Geschmack im Fruchtwasser (Docs/37): erst ~45 min nach dem Essen deutlich (Mennella 1995), dann abklingend. */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisMotherFlavorTest, "Genesis.People.MotherFlavor",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FGenesisMotherFlavorTest::RunTest(const FString& Parameters)
+{
+	using namespace GenesisMotherDay;
+	const FGenesisMotherDayTuning Tuning;
+	int32 Flavored = 0;
+	int32 AtMeal = 0;
+	int32 LongAfter = 0;
+	TSet<EGenesisFlavor> Kinds;
+	for (int32 Day = 0; Day < 60; ++Day)
+	{
+		const double Lunch = Tuning.MealHours[1];
+		const FGenesisMotherMoment Now = Evaluate(Tuning, Lunch + 0.1, Day, 30.0f, 7);
+		const FGenesisMotherMoment Later = Evaluate(Tuning, Lunch + 1.5, Day, 30.0f, 7);
+		const FGenesisMotherMoment Long = Evaluate(Tuning, Lunch + 6.0 - 0.01, Day, 30.0f, 7);
+		AtMeal += Now.FlavorStrength > 0.1f && Now.Flavor != EGenesisFlavor::None ? 1 : 0;
+		if (Later.FlavorStrength > 0.5f)
+		{
+			++Flavored;
+			Kinds.Add(Later.Flavor);
+		}
+		LongAfter += Long.FlavorStrength > Later.FlavorStrength ? 1 : 0;
+	}
+	AddInfo(FString::Printf(TEXT("Nach dem Mittagessen an %d von 60 Tagen ein deutlicher Geschmack, %d Sorten"), Flavored, Kinds.Num()));
+	TestTrue(TEXT("Nicht jede Mahlzeit schmeckt nach etwas, aber viele"), Flavored > 20 && Flavored < 55);
+	TestTrue(TEXT("Süß, Knoblauch und Karotte kommen vor"), Kinds.Num() == 3);
+	TestTrue(TEXT("Beim Essen selbst noch nichts im Fruchtwasser – außer vom Frühstück"), AtMeal < 60);
+	TestEqual(TEXT("Nach Stunden klingt es ab"), LongAfter, 0);
+	TestEqual(TEXT("Namen für die Anzeige"), GetFlavorName(EGenesisFlavor::Garlic).Contains(TEXT("Knoblauch")), true);
+	return true;
+}
+
 #endif

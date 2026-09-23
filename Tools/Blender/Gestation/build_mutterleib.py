@@ -196,40 +196,76 @@ def build_cord(coll):
                 k = ring                                     # Naht: v läuft bis 1 statt auf 0 zurück
             uv.data[loop_index].uv = (i / (len(P) - 1), k / ring)
 
-    # zwei Arterien und eine Vene, spiralig (GEFAESS_WINDUNGEN), in der Sulze – tief genug, dass keine in einer engen
-    # Schlinge durch die Oberfläche sticht
-    vverts, vfaces = [], []
-    for phase, rad in ((0.0, 0.13), (2.1, 0.13), (4.2, 0.19)):
-        pts = [P[i] + (math.cos(phase + t[i] * 2 * GEFAESS_WINDUNGEN * math.pi) * sides[i]
-                       + math.sin(phase + t[i] * 2 * GEFAESS_WINDUNGEN * math.pi) * ups[i]) * (radius[i] * 0.45)
-               for i in range(len(P))]
-        Q, qs, qu = frames(np.array(pts))
-        vb = len(vverts)
-        vr = 10
-        for i in range(len(Q)):
-            for k in range(vr):
-                ang = 2 * math.pi * k / vr
-                vverts.append(Q[i] + (math.cos(ang) * qs[i] + math.sin(ang) * qu[i]) * rad)
-        for i in range(len(Q) - 1):
-            for k in range(vr):
-                q = vb + i * vr + k
-                w = vb + i * vr + (k + 1) % vr
-                vfaces.append((q, q + vr, w + vr, w))
-    vessels = mesh_object(coll, "CordVessels", np.array(vverts) * CM, vfaces)
-    return cord, vessels
+    # Die Gefäße zeigt das Material als Spiralschatten im Durchlicht (UV); eigene Röhren lägen unsichtbar in der Sulze.
+    # Skelett: eine Knochenkette entlang der Mittellinie – die Schnur wird im Spiel weich simuliert (GENESIS-044 Teil 2a):
+    # Sie lässt sich ziehen, schieben und unter den Fingern eindrücken.
+    arm = cord_armature(coll, P)
+    bpy.ops.object.select_all(action="DESELECT")
+    cord.select_set(True)
+    arm.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.parent_set(type="ARMATURE_NAME")
+    chain_weights(cord, arm)
+    return cord, arm
+
+
+CORD_BONE_STEP = 6                                       # alle 6 Abtastpunkte ein Knochen (~0,8 cm)
+
+
+def cord_armature(coll, P):
+    data = bpy.data.armatures.new("CordArmature")
+    arm = bpy.data.objects.new("Armature", data)
+    coll.objects.link(arm)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    marks = list(range(0, len(P) - 1, CORD_BONE_STEP)) + [len(P) - 1]
+    parent = None
+    for n in range(len(marks) - 1):
+        b = data.edit_bones.new("Cord%02d" % n)
+        b.head = tuple(P[marks[n]] * CM)
+        b.tail = tuple(P[marks[n + 1]] * CM)
+        b.roll = 0.0
+        if parent is not None:
+            b.parent = parent
+            b.use_connect = True
+        parent = b
+    bpy.ops.object.mode_set(mode="OBJECT")
+    return arm
+
+
+def chain_weights(mesh_obj, arm, sharpness=0.35):
+    """Gewichte nach Abstand zu den Knochenstücken, weich übergeblendet (automatische Gewichte scheitern bei cm-Größe)."""
+    co = np.array([v.co[:] for v in mesh_obj.data.vertices]) / CM
+    names, dists = [], []
+    for bone in arm.data.bones:
+        a = np.array(bone.head_local[:]) / CM
+        b = np.array(bone.tail_local[:]) / CM
+        d = b - a
+        t = np.clip(((co - a) @ d) / (d @ d), 0.0, 1.0)
+        dists.append(np.linalg.norm(co - (a + t[:, None] * d), axis=1))
+        names.append(bone.name)
+    dists = np.array(dists)
+    weights = np.exp(-((dists - dists.min(axis=0)) / sharpness) ** 2)
+    weights[weights < 0.01] = 0.0
+    weights /= weights.sum(axis=0, keepdims=True)
+    for k, name in enumerate(names):
+        group = mesh_obj.vertex_groups.get(name) or mesh_obj.vertex_groups.new(name=name)
+        for i in np.nonzero(weights[k] > 0.0)[0]:
+            group.add([int(i)], float(weights[k, i]), "REPLACE")
+    print("GENESIS: Nabelschnur", len(names), "Knochen")
 
 
 def build():
     coll = new_collection()
     parts = build_wall_and_placenta(coll)
     parts["PlacentaVessels"] = placenta_vessels(coll)
-    parts["Cord"], parts["CordVessels"] = build_cord(coll)
+    parts["Cord"], cord_arm = build_cord(coll)
     print("GENESIS: Mutterleib gebaut", {k: len(v.data.polygons) for k, v in parts.items()})
     return parts
 
 
 EXPORTS = {"Wall": "SM_GEN_Womb_Wall", "Placenta": "SM_GEN_Womb_Placenta", "PlacentaVessels": "SM_GEN_Womb_PlacentaVessels",
-           "Cord": "SM_GEN_Womb_Cord", "CordVessels": "SM_GEN_Womb_CordVessels"}
+           "Cord": "SK_GEN_Womb_Cord"}
 
 
 def export_all(out_dir=OUT_DIR):
@@ -240,8 +276,14 @@ def export_all(out_dir=OUT_DIR):
         bpy.ops.object.select_all(action="DESELECT")
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
+        skinned = obj.parent is not None and obj.parent.type == "ARMATURE"
+        if skinned:
+            obj.parent.select_set(True)
+            bpy.context.view_layer.objects.active = obj.parent
         path = os.path.join(out_dir, asset + ".fbx")
         bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_unit_scale=True,
-                                 apply_scale_options="FBX_SCALE_UNITS", object_types={"MESH"},
-                                 use_mesh_modifiers=True, mesh_smooth_type="FACE", use_tspace=False, add_leaf_bones=False)
+                                 apply_scale_options="FBX_SCALE_UNITS",
+                                 object_types={"MESH", "ARMATURE"} if skinned else {"MESH"},
+                                 use_mesh_modifiers=True, mesh_smooth_type="FACE", use_tspace=False, add_leaf_bones=False,
+                                 use_armature_deform_only=True, bake_anim=False)
         print("GENESIS: exportiert", asset, round(os.path.getsize(path) / 1e6, 1), "MB")

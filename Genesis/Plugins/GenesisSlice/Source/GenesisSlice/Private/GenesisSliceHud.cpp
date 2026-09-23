@@ -19,6 +19,7 @@
 #include "GenesisEmbryoLogic.h"
 #include "GenesisEmbryogenesisLogic.h"
 #include "GenesisFetalLogic.h"
+#include "GenesisWombScene.h"
 #include "GenesisSliceLogic.h"
 #include "CanvasItem.h"
 #include "Engine/Font.h"
@@ -727,6 +728,37 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 	return true;
 }
 
+void AGenesisSliceHud::DrawWomb(float Scale, const FGenesisGestationPlanPoint& Plan, const TArray<FGenesisGestationMoment>& Moments, bool bInRun)
+{
+	// Was das Kind gerade spürt, schmeckt, erlebt – und was der Spieler in dieser Woche tun kann (Docs/37)
+	for (TActorIterator<AGenesisWombScene> It(GetWorld()); It; ++It)
+	{
+		float CaptionAlpha = 0.0f;
+		const FString Line = It->GetCaption(CaptionAlpha);
+		DrawCentered(Line, 0.70f * Canvas->SizeY, Scale * 1.0f, 0.85f * CaptionAlpha, false);
+		if (Moments.IsValidIndex(Plan.MomentIndex) || !bInRun)
+		{
+			UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+			float Y = 0.30f * Canvas->SizeY;
+			for (const FGenesisWombHint& Hint : It->GetHints())
+			{
+				// Was schon getan wurde, tritt zurück – der Hinweis soll nicht stören, sobald man es kann
+				const float Alpha = Hint.bUsed ? 0.18f : 0.6f;
+				if (Font)
+				{
+					FCanvasTextItem Shadow(FVector2D(41.0f * Scale, Y + 1.0f), FText::FromString(Hint.Verb), Font, FLinearColor(0.0f, 0.0f, 0.0f, 0.5f * Alpha));
+					Shadow.Scale = FVector2D(Scale * 0.8f, Scale * 0.8f);
+					Canvas->DrawItem(Shadow);
+					FCanvasTextItem Item(FVector2D(40.0f * Scale, Y), FText::FromString(Hint.Verb), Font, FLinearColor(1.0f, 0.93f, 0.86f, Alpha));
+					Item.Scale = FVector2D(Scale * 0.8f, Scale * 0.8f);
+					Canvas->DrawItem(Item);
+				}
+				Y += 20.0f * Scale;
+			}
+		}
+	}
+}
+
 void AGenesisSliceHud::DrawHUD()
 {
 	Super::DrawHUD();
@@ -792,8 +824,19 @@ void AGenesisSliceHud::DrawHUD()
 		return;
 	}
 
-	// Die Schwangerschaft (GENESIS-044): Kapitelzeile beim Moment, darunter nüchtern Woche, Länge, Gewicht
-	if (Director && Director->GetState().Phase == EGenesisSlicePhase::Gestation)
+	// Die Schwangerschaft (GENESIS-044): Kapitelzeile beim Moment, darunter nüchtern Woche, Länge, Gewicht.
+	// Ohne Durchlauf (Prüfansicht L_GEN_Mutterleib) nur Sinneszeile und Handlungen.
+	const bool bInRun = Director && Director->GetState().Phase == EGenesisSlicePhase::Gestation;
+	if (!bInRun && TActorIterator<AGenesisWombScene>(GetWorld()))
+	{
+		const UGenesisFrontendSubsystem* Frontend = GameInstance->GetSubsystem<UGenesisFrontendSubsystem>();
+		const float Scale = (Canvas->SizeY / 900.0f) * (Frontend ? Frontend->GetSettings().TextScalePercent / 100.0f : 1.0f);
+		const FGenesisGestationPlanPoint Plan;
+		const TArray<FGenesisGestationMoment> Moments;
+		DrawWomb(Scale, Plan, Moments, bInRun);
+		return;
+	}
+	if (bInRun)
 	{
 		const UGenesisFrontendSubsystem* Frontend = GameInstance->GetSubsystem<UGenesisFrontendSubsystem>();
 		const float Scale = (Canvas->SizeY / 900.0f) * (Frontend ? Frontend->GetSettings().TextScalePercent / 100.0f : 1.0f);
@@ -813,6 +856,8 @@ void AGenesisSliceHud::DrawHUD()
 			: FString::Printf(TEXT("%.0f g"), Fetal.WeightGrams);
 		DrawCentered(FString::Printf(TEXT("SSW %d · %.0f cm · %s · Herz %.0f/min"), FMath::FloorToInt32(Weeks), Fetal.CrownHeelCm, *Weight,
 			Fetal.HeartRateBpm), Canvas->SizeY - 88.0f * Scale, Scale * 0.95f, 0.55f, false);
+
+		DrawWomb(Scale, Plan, Moments, bInRun);
 		return;
 	}
 

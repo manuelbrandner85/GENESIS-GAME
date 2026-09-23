@@ -75,3 +75,92 @@ Spiel – ohne Klamauk, als warmes Körpergefühl, wie alles andere.
 - Jakobovits A 2007, *Grasping activity is a part of fetal ethology*, Orv Hetil 148:1673–1675
   ([DOI](https://doi.org/10.1556/OH.2007.28089)).
 - de Vries JIP, Visser GHA, Prechtl HFR 1982, *The emergence of fetal behaviour I* (Doc 34).
+
+## Teil 2a – die Handlungen (umgesetzt)
+
+**Was der Spieler tun kann** – jede Handlung erst ab der Woche, in der der Körper sie kann
+(`GenesisFetalLogic::CanPerform`, Meilensteine nach de Vries 1982, Augen Doc 34, Greifen 3. Trimenon):
+
+| Taste (Tastatur / Controller) | Handlung | ab SSW |
+|---|---|---|
+| WASD / linker Stick | sich bewegen (spät im letzten Drittel wird es eng: `RoomToMove`) | 8,5 |
+| Maus / rechter Stick | den Kopf drehen (kehrt von selbst langsam zurück) | 10 |
+| Umschalt / LT halten + bewegen | die eigene Hand bewegen | 9,5 |
+| Leertaste / A | strampeln | 9,5 |
+| Q / X | strecken; halten: gähnen (die Lider schließen sich dabei) | 8,5 / 11 |
+| E / B | halten: Daumen zum Mund; tippen: schlucken – und schmecken | 10 / 12 |
+| F / RT | greifen – um die Nabelschnur, wenn die Hand dort ist | 28 |
+| R / Y | Augen auf und zu | 26 |
+
+**Was davon in den Sinnen ankommt**
+- **Sehen:** die eigene Hand vor dem Gesicht, im Gegenlicht rot durchscheinend (`SK_GEN_FetalHand`, Blender
+  `build_fetal_hand.py`, Skelett mit 17 Knochen; Größe nach Woche: 0,83 × Fußlänge, Näherung). Lider zu: nur rotes Leuchten.
+- **Tasten:** Vibration am Controller, nur so stark, wie das Kind schon tastet (`FetalView.Touch`), und nur mit
+  eingeschalteter Vibration: Tritt, Strecken, Daumen an den Lippen, Schlucken, ihre Hand; ihr Puls als feines Klopfen;
+  die Nabelschnur in der Hand pulsiert im Takt des eigenen Herzens.
+- **Schmecken:** Nach ihren Mahlzeiten schmeckt das Fruchtwasser anders – deutlich ab ~45 min (Mennella 1995), süßlich,
+  Knoblauch oder Karotte (`GenesisMotherDay`, Test `People.MotherFlavor`). Ohne Aroma: „warm, ein wenig salzig“.
+- **Gleichgewicht:** Wiegen, wenn sie geht; Strecken und Drehen bewegen den Blick.
+- **Die Mutter antwortet:** Ein Tritt, den sie spürt (ab SSW ~20), und sie legt nach 1,5–4 s die Hand auf den Bauch –
+  ein weicher Schatten im roten Licht, das Kind wird ein wenig weggedrückt, oft spricht sie.
+- **Wasserlassen:** etwa alle 20–40 Minuten (Näherung), als Körpergefühl – „Warm. Das Kind lässt Wasser.“
+
+Eine Zeile unten im Bild sagt, was das Kind gerade spürt oder schmeckt; links stehen die Handlungen dieser Woche, schon
+benutzte treten zurück. Entwickler: `genesis.Womb.Do kick|stretch|yawn|thumb|swallow|grasp|eyes|touch|hand <x> <y>`.
+
+**Geprüft** im gebauten Spiel (`L_GEN_Mutterleib`, SSW 31): Hand im Bild, Tritt → ihre Hand und ihr Satz
+(„Mutterleib: Sie spürt den Tritt und legt die Hand auf den Bauch, spricht VO_G_M_Bauch_01“), Schlucken → Knoblauch,
+Daumen → Hand zum Mund, Greifen an der Nabelschnur („Das Kind greift die Nabelschnur“). GPU 4,1 ms. Tests
+`Body.Fetal.Actions`, `People.MotherFlavor`; 158 von 158.
+
+**Unterwegs gefunden:** Die erste Hand (eine Röhre je Knochen) wirkte wie ein Handschuh, die zweite war ein Paddel
+(Metaball-Größe doppelt gerechnet); jetzt weich verschmolzene Körper in cm gebaut. In Unreal fehlte zuerst das Skelett
+(Absturz beim Laden), dann lag die Hand grau im Standardmaterial (drei Materialplätze nach dem Neuimport).
+
+## Teil 2a, Nachtrag – Hand und Nabelschnur nach Recherche
+
+Game Director: „Die Hand des Babys ist zu unorganisch, auch die Physik stimmt nicht, viel zu steif, und kann durch die
+Nabelschnur hindurch statt sie zu greifen. Recherchiere … alles sehr realistisch.“
+
+**Recherchiert** (PubMed, Belege je Zahl):
+- Handlänge am Termin 64 ± 3 mm (Halder 1999, PMID 10320927; Honoré 2016, DOI 10.1016/j.dib.2016.03.089); Fußlänge
+  FL = −14,02 + 2,361 × SSW mm (Hebbar 2013, DOI 10.4038/sljog.v35i2.6169) → Hand ≈ 0,8 × Fuß: SSW 28 ≈ 4,2 cm.
+- Beugefurchen fertig ab SSW ~13 (Kimura 1991), Nägel an der Kuppe erst ~SSW 34; Fett ab SSW 28 (Haut vorher dünn und
+  durchscheinend), Käseschmiere im letzten Drittel (Nishijima 2019, DOI 10.1111/jog.14103).
+- Am Termin liegt bei 62,5 % der Daumen eingeschlagen in der Faust (Jaffe 2000, DOI 10.1542/peds.105.3.e41);
+  dauerhaft geballte Fäuste mit überkreuzten Fingern sind ein Krankheitszeichen – also vermeiden.
+- Bewegung: flüssig, an- und abschwellend, mit Drehung um die Gliedmaßenachse (Einspieler & Prechtl 2005,
+  DOI 10.1002/mrdd.20051); Hand zum Mund 1,6–2 s, gut zwei Drittel davon Abbremsen (Zoia 2013,
+  DOI 10.1371/journal.pone.0080876). Die Langsamkeit kommt aus dem Nervensystem, nicht aus dem Fruchtwasser (Viskosität
+  ≈ 1,0–1,2 cP, fast wie Wasser; Rosati 1991).
+- Greifen der Nabelschnur: beobachtet ab SSW 32, als kurzes Greifen normal, anhaltendes Festhalten mit gestörtem
+  Blutfluss (Habek 2002, DOI 10.1007/s00404-002-0375-7; Jakobovits 2007; Heyl & Rath 1996).
+- Nabelschnur: ~1–1,5 cm dick, 0,17–0,21 Windungen/cm (Strong 1994; de Laat 2005), in Längsrichtung kaum dehnbar
+  (Pennati 2001, > 10 MPa bei starker Dehnung), unter Druck wie ein nasser Schwamm, federt über Sekunden zurück
+  (Gervaso 2014, DOI 10.1016/j.jmbbm.2014.03.016).
+
+**Umgesetzt:**
+- **Die Hand war starr:** Blenders automatische Gewichtung hatte bei der kleinen Hand still versagt (kein Punkt hing an
+  einem Knochen). Jetzt eigene Gewichte nach Abstand zu den Knochen – die Finger beugen sich wirklich.
+- **Form:** Beugefalten als weiche Rinnen mit Hautwulst, Fünffinger- und Daumenfurche, Knöchelgrübchen, Speckfalte am
+  Handgelenk, flache Fingerbeeren, Nägel mit Nagelwall; Haut nach Woche (dünn und rötlich → Fett → Käseschmiere in den
+  Falten ab SSW 36); Größe nach Hebbar.
+- **Greifen wie eine echte Hand:** Jedes Fingerglied ist eine Kapsel; jedes Gelenk beugt sich nur, bis sein Glied die
+  Schnur berührt, dann beugen sich die äußeren weiter – die Finger legen sich um die Schnur, nie hindurch.
+- **Die Nabelschnur ist weich:** Skelettnetz mit 37 Knochen, eigener Löser (Länge und Biegung bleiben, Fruchtwasser
+  bremst, Enden fest, kehrt über Sekunden in die Form zurück). Hand und Finger schieben sie weg; wo sie drücken, gibt
+  die Sulze nach (Delle im Material, klingt über Sekunden ab). Hält die Hand sie, zieht sie das Stück mit.
+- **Bewegung:** Hand als Körper im Wasser (gedämpfte Feder), Drehung um den Unterarm, Eigenbewegung nach
+  Schlaf- und Wachzustand, Hand zum Mund mit langem Abbremsen, Finger außen weicher als innen, Daumen am Termin öfter
+  eingeschlagen. Nach 3–7 s Greifen lässt die Hand von selbst los.
+- Geprüft im gebauten Spiel (GPU 4,2 ms): Greifen mit 4 Fingern an der Schnur, Loslassen nach einigen Sekunden.
+
+![Die Hand greift die Nabelschnur](Media/GENESIS-044_2a_Greifen.png)
+![Die Hand aus Blender: Falten, Nägel, Grübchen](Media/GENESIS-044_2a_Hand_Blender.png)
+
+**Offen (Teil 2b):** Die Fingerkuppen wirken noch knopfartig; Nägel, Hautfalten und Lanugo fehlen – kommt mit dem
+vollständigen Fetusmodell. Die Mutter reagiert noch nicht auf das Daumenlutschen oder Schlucken (Nagy 2021: Berührung
+der Mutter → das Kind saugt mehr).
+
+![Die eigene Hand, SSW 31 – das Fruchtwasser schmeckt nach Knoblauch](Media/GENESIS-044_2a_Hand_Geschmack.png)
+![Ihre Hand auf dem Bauch – ein Schatten im Licht](Media/GENESIS-044_2a_IhreHand.png)

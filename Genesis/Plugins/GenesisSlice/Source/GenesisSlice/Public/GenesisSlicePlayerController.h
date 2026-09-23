@@ -92,6 +92,28 @@ private:
 	void ReleaseRoot() { bRootHeld = false; }
 	void LookRight(float Value) { LookInput.X = Value; }
 	void LookUp(float Value) { LookInput.Y = Value; }
+	/** Im Mutterleib (GENESIS-044 Teil 2a, Docs/37): Hand halten, treten, Mund, strecken, greifen, Augen. */
+	void PressWombHand() { bWombHand = true; }
+	void ReleaseWombHand() { bWombHand = false; }
+	void PressKick() { ++KickPresses; }
+	void PressMouth() { bMouthHeld = true; MouthHeldSeconds = 0.0f; }
+	void ReleaseMouth() { bMouthHeld = false; if (MouthHeldSeconds < 0.25f) { ++MouthTaps; } }
+	void PressStretch() { bStretchHeld = true; StretchHeldSeconds = 0.0f; }
+	void ReleaseStretch() { bStretchHeld = false; if (StretchHeldSeconds < 0.5f) { ++StretchTaps; } }
+	void PressGrasp() { bGraspHeld = true; }
+	void ReleaseGrasp() { bGraspHeld = false; }
+	void PressEyes() { ++EyeToggles; }
+	bool bWombHand = false;
+	bool bMouthHeld = false;
+	bool bStretchHeld = false;
+	bool bGraspHeld = false;
+	float MouthHeldSeconds = 0.0f;
+	float StretchHeldSeconds = 0.0f;
+	int32 KickPresses = 0;
+	int32 MouthTaps = 0;
+	int32 StretchTaps = 0;
+	int32 EyeToggles = 0;
+
 	/** Im Rennen: halbe Ich-Perspektive ↔ Verfolgeransicht. */
 	void ToggleView();
 

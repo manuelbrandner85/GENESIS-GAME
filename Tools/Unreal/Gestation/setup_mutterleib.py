@@ -43,13 +43,29 @@ for (int Index = 0; Index < 3; ++Index)
 return Mask;
 """
 
+DENT_CODE = """
+// Bis zu vier Dellen: D = Kontaktpunkt auf der Oberfläche (Welt), T = Tiefe (Welt). Weicher Abfall, flacher Wulst ringsum.
+float3 Dents[4] = { D0, D1, D2, D3 };
+float Depths[4] = { T0, T1, T2, T3 };
+float3 Offset = 0;
+for (int Index = 0; Index < 4; ++Index)
+{
+    float Depth = Depths[Index];
+    if (Depth <= 0) continue;
+    float Distance = length(WorldPos - Dents[Index]);
+    float Inner = saturate(1.0 - Distance / Radius);
+    Inner = Inner * Inner * (3.0 - 2.0 * Inner);
+    float Ring = saturate(1.0 - abs(Distance - 1.35 * Radius) / (0.5 * Radius));
+    Offset += Normal * Depth * (0.2 * Ring - Inner);
+}
+return Offset;
+"""
+
 PARTS = {
     # Bauteil: (Nanite, Komponente)
     "SM_GEN_Womb_Wall": (True, "wall"),
     "SM_GEN_Womb_Placenta": (True, "placenta"),
     "SM_GEN_Womb_PlacentaVessels": (True, "placenta_vessels"),
-    "SM_GEN_Womb_Cord": (True, "cord"),
-    "SM_GEN_Womb_CordVessels": (True, "cord_vessels"),
 }
 
 # Instanzen des Gewebematerials (Farbe, Durchschein, Rauheit, Streuung, Durchlass für das Rotlicht von hinten,
@@ -61,8 +77,9 @@ LOOKS = {
     "MI_GEN_Womb_PlacentaVessels": ((0.07, 0.03, 0.07), (0.20, 0.05, 0.10), 0.25, 0.9, 0.01, 0.0),
     # Nabelschnur: weißlich-bläulich, die Wharton-Sulze gallertig durchscheinend, die Gefäße als dunkle Spirale darin
     "MI_GEN_Womb_Cord": ((0.42, 0.42, 0.48), (0.55, 0.45, 0.50), 0.22, 0.95, 0.45, 0.5),
-    # Nabelgefäße darin: dunkler Schatten in der Sulze
-    "MI_GEN_Womb_CordVessels": ((0.14, 0.05, 0.09), (0.30, 0.08, 0.12), 0.3, 0.9, 0.08, 0.0),
+    # Haut des Kindes (die eigene Hand, Teil 2a): dünn, rosig über dem Blut darunter – im Gegenlicht leuchten die
+    # Finger rot durch wie eine Hand vor einer Taschenlampe
+    "MI_GEN_Womb_Skin": ((0.55, 0.33, 0.30), (0.85, 0.25, 0.18), 0.35, 0.95, 0.6, 0.0),
 }
 
 
@@ -85,6 +102,7 @@ def create_looks(parent):
         mel.set_material_instance_scalar_parameter_value(mi, "Streuung", scatter)
         mel.set_material_instance_scalar_parameter_value(mi, "Durchlass", transmit)
         mel.set_material_instance_scalar_parameter_value(mi, "Gefaessmuster", vessels)
+        mel.set_material_instance_scalar_parameter_value(mi, "Anatomie", 1.0 if name == "MI_GEN_Womb_Skin" else 0.0)
         eal.save_loaded_asset(mi)
         looks[name] = mi
     return looks
@@ -126,8 +144,47 @@ def create_tissue_material():
     material = lib.asset_tools.create_asset("M_GEN_WombTissue", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
     material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_SUBSURFACE)
     material.set_editor_property("used_with_nanite", True)
-    mel.connect_material_property(lib.vector_param(material, "Farbe", -900, -200, (0.4, 0.3, 0.3)), "", unreal.MaterialProperty.MP_BASE_COLOR)
-    mel.connect_material_property(lib.scalar_param(material, "Rauheit", -900, -100, 0.3), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    material.set_editor_property("used_with_skeletal_mesh", True)
+    # Haut des Kindes: Nägel und Falten aus Blender (UV-Kanal 2: x = Nagel, y = Falte, build_fetal_hand.py) –
+    # Nägel heller und glatter, Falten dunkler. Nur wo „Anatomie“ = 1 (die Hand); die übrigen Netze haben den Kanal nicht.
+    data = lib.expression(material, unreal.MaterialExpressionTextureCoordinate, -1700, -500)
+    data.set_editor_property("coordinate_index", 1)
+    nail_mask = lib.expression(material, unreal.MaterialExpressionComponentMask, -1550, -560, r=True, g=False, b=False, a=False)
+    lib.link(data, nail_mask, "")
+    crease_mask = lib.expression(material, unreal.MaterialExpressionComponentMask, -1550, -440, r=False, g=True, b=False, a=False)
+    lib.link(data, crease_mask, "")
+    anatomy = lib.scalar_param(material, "Anatomie", -1550, -320, 0.0)
+    nail = lib.expression(material, unreal.MaterialExpressionMultiply, -1400, -560)
+    lib.link(nail_mask, nail, "A")
+    lib.link(anatomy, nail, "B")
+    crease = lib.expression(material, unreal.MaterialExpressionMultiply, -1400, -440)
+    lib.link(crease_mask, crease, "A")
+    lib.link(anatomy, crease, "B")
+    darken = lib.expression(material, unreal.MaterialExpressionLinearInterpolate, -1250, -440)
+    lib.link(lib.expression(material, unreal.MaterialExpressionConstant, -1400, -380, r=1.0), darken, "A")
+    lib.link(lib.expression(material, unreal.MaterialExpressionConstant, -1400, -340, r=0.62), darken, "B")
+    lib.link(crease, darken, "Alpha")
+    skin = lib.expression(material, unreal.MaterialExpressionMultiply, -1100, -300)
+    lib.link(lib.vector_param(material, "Farbe", -1250, -300, (0.4, 0.3, 0.3)), skin, "A")
+    lib.link(darken, skin, "B")
+    colour = lib.expression(material, unreal.MaterialExpressionLinearInterpolate, -950, -250)
+    lib.link(skin, colour, "A")
+    lib.link(lib.vector_param(material, "Nagelfarbe", -1100, -180, (0.78, 0.62, 0.60)), colour, "B")
+    lib.link(nail, colour, "Alpha")
+    # Käseschmiere (Vernix caseosa, ab SSW ~36): weißlich-wachsig, vor allem in den Falten (Nishijima 2019)
+    vernix_amount = lib.expression(material, unreal.MaterialExpressionMultiply, -950, -380)
+    lib.link(crease, vernix_amount, "A")
+    lib.link(lib.scalar_param(material, "Kaeseschmiere", -1100, -420, 0.0), vernix_amount, "B")
+    with_vernix = lib.expression(material, unreal.MaterialExpressionLinearInterpolate, -800, -250)
+    lib.link(colour, with_vernix, "A")
+    lib.link(lib.vector_param(material, "Vernixfarbe", -950, -330, (0.86, 0.82, 0.74)), with_vernix, "B")
+    lib.link(vernix_amount, with_vernix, "Alpha")
+    mel.connect_material_property(with_vernix, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    rough = lib.expression(material, unreal.MaterialExpressionLinearInterpolate, -950, -120)
+    lib.link(lib.scalar_param(material, "Rauheit", -1100, -120, 0.3), rough, "A")
+    lib.link(lib.expression(material, unreal.MaterialExpressionConstant, -1100, -60, r=0.18), rough, "B")
+    lib.link(nail, rough, "Alpha")
+    mel.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
     mel.connect_material_property(lib.scalar_param(material, "Glanz", -900, 0, 0.3), "", unreal.MaterialProperty.MP_SPECULAR)
     mel.connect_material_property(lib.vector_param(material, "Durchschein", -900, 100, (0.5, 0.3, 0.3)), "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
     mel.connect_material_property(lib.scalar_param(material, "Streuung", -900, 200, 0.9), "", unreal.MaterialProperty.MP_OPACITY)
@@ -173,6 +230,27 @@ def create_tissue_material():
     lib.link(emit, shaded, "A")
     lib.link(keep, shaded, "B")
     mel.connect_material_property(shaded, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+
+    # Delle: Wo ein Finger drückt, gibt die Wharton-Sulze nach – die Oberfläche weicht weich zurück, ringsum wölbt sie sich
+    # leicht (das Volumen bleibt). Die Szene setzt bis zu vier Kontakte (Welt: Lage, Tiefe) und den Einflussradius.
+    dent = lib.expression(material, unreal.MaterialExpressionCustom, -700, 1300)
+    dent.set_editor_property("description", "Dellen")
+    dent.set_editor_property("code", DENT_CODE)
+    dent.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    inputs = []
+    for input_name in ("WorldPos", "Normal", "D0", "D1", "D2", "D3", "T0", "T1", "T2", "T3", "Radius"):
+        entry = unreal.CustomInput()
+        entry.set_editor_property("input_name", input_name)
+        inputs.append(entry)
+    dent.set_editor_property("inputs", inputs)
+    lib.link(lib.expression(material, unreal.MaterialExpressionWorldPosition, -1000, 1250), dent, "WorldPos")
+    lib.link(lib.expression(material, unreal.MaterialExpressionVertexNormalWS, -1000, 1300), dent, "Normal")
+    for k in range(4):
+        lib.link(lib.vector_param(material, "Delle%d" % k, -1000, 1350 + 60 * k, (0.0, 0.0, -1.0e6)), dent, "D%d" % k)
+        lib.link(lib.scalar_param(material, "Tiefe%d" % k, -1200, 1350 + 60 * k, 0.0), dent, "T%d" % k)
+    lib.link(lib.scalar_param(material, "DellenRadius", -1000, 1600, 1.0), dent, "Radius")
+    mel.connect_material_property(dent, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
+    material.set_editor_property("max_world_position_offset_displacement", 30.0)
     mel.recompile_material(material)
     eal.save_loaded_asset(material)
     return material
@@ -220,10 +298,78 @@ def create_wall_material():
     lit = lib.expression(material, unreal.MaterialExpressionMultiply, -700, 520)
     lib.link(light, lit, "A")
     lib.link(mottle, lit, "B")
-    mel.connect_material_property(lit, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    # Ihre Hand auf dem Bauch (GENESIS-044 Teil 2a) hält Licht ab: weicher Schatten um die Richtung, in der sie liegt.
+    # Eine Hand bedeckt von innen gesehen etwa 30–40° der vorderen Wand; der Rand ist durch das Gewebe weich.
+    hand = lib.vector_param(material, "HandDirection", -1450, 1050, (1.0, 0.0, 0.0))
+    hand_dot = lib.expression(material, unreal.MaterialExpressionDotProduct, -1250, 1000)
+    lib.link(normal, hand_dot, "A")
+    lib.link(hand, hand_dot, "B")
+    hand_code = lib.expression(material, unreal.MaterialExpressionCustom, -1050, 1000)
+    hand_code.set_editor_property("description", "Handschatten")
+    hand_code.set_editor_property("code", "return 1.0 - Press * 0.88 * smoothstep(0.74, 0.94, Cos);")
+    hand_code.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    entries = []
+    for input_name in ("Cos", "Press"):
+        entry = unreal.CustomInput()
+        entry.set_editor_property("input_name", input_name)
+        entries.append(entry)
+    hand_code.set_editor_property("inputs", entries)
+    lib.link(hand_dot, hand_code, "Cos")
+    lib.link(lib.scalar_param(material, "HandPress", -1250, 1120, 0.0), hand_code, "Press")
+    shaded = lib.expression(material, unreal.MaterialExpressionMultiply, -550, 560)
+    lib.link(lit, shaded, "A")
+    lib.link(hand_code, shaded, "B")
+    mel.connect_material_property(shaded, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     mel.recompile_material(material)
     eal.save_loaded_asset(material)
     return material
+
+
+def import_skinned(name, material):
+    """Skelettnetz mit eigenem Skelett: die Hand (build_fetal_hand.py) und die weiche Nabelschnur (build_mutterleib.py)."""
+    unreal.SystemLibrary.execute_console_command(None, "Interchange.FeatureFlags.Import.FBX false")
+    options = unreal.FbxImportUI()
+    options.set_editor_property("import_mesh", True)
+    options.set_editor_property("import_as_skeletal", True)
+    options.set_editor_property("mesh_type_to_import", unreal.FBXImportType.FBXIT_SKELETAL_MESH)
+    options.set_editor_property("import_materials", False)
+    options.set_editor_property("import_textures", False)
+    options.set_editor_property("import_animations", False)
+    options.set_editor_property("create_physics_asset", False)
+    data = options.get_editor_property("skeletal_mesh_import_data")
+    data.set_editor_property("import_morph_targets", False)
+    data.set_editor_property("convert_scene_unit", True)
+    data.set_editor_property("normal_import_method", unreal.FBXNormalImportMethod.FBXNIM_COMPUTE_NORMALS)
+    # Frisch importieren: ein Neuimport behält alte Materialplätze (dann bleibt ein Abschnitt ohne Haut)
+    for old in (MESHES + "/" + name, MESHES + "/" + name + "_Skeleton"):
+        if eal.does_asset_exist(old):
+            eal.delete_asset(old)
+    task = unreal.AssetImportTask()
+    task.set_editor_property("filename", os.path.join(SOURCE, name + ".fbx"))
+    task.set_editor_property("destination_path", MESHES)
+    task.set_editor_property("destination_name", name)
+    task.set_editor_property("replace_existing", True)
+    task.set_editor_property("automated", True)
+    task.set_editor_property("save", True)
+    task.set_editor_property("options", options)
+    lib.asset_tools.import_asset_tasks([task])
+    mesh = eal.load_asset(MESHES + "/" + name)
+    if not mesh:
+        unreal.log_error("GENESIS: Import fehlgeschlagen: " + name)
+        return None
+    # Die Einträge sind Kopien: neu aufbauen und zurückschreiben, sonst bleibt der Platz leer (graues Standardmaterial)
+    materials = [unreal.SkeletalMaterial(material_interface=material, material_slot_name=slot.get_editor_property("material_slot_name"))
+                 for slot in mesh.get_editor_property("materials")]
+    mesh.set_editor_property("materials", materials)
+    eal.save_loaded_asset(mesh)
+    lib.log("%s: %d Materialplätze" % (name, len(materials)))
+    # Das Skelett entsteht beim Import als eigenes Asset – ohne Speichern fehlt es im Spiel (Absturz beim Laden)
+    if mesh.skeleton:
+        eal.save_loaded_asset(mesh.skeleton, False)
+        lib.log("Skelett gespeichert: %s" % mesh.skeleton.get_path_name())
+    bounds = mesh.get_bounds()
+    lib.log("%s: Ausdehnung %s, %d Knochen" % (name, bounds.box_extent, len(mesh.skeleton.get_editor_property("bone_tree")) if mesh.skeleton else -1))
+    return mesh
 
 
 def build_level(meshes, wall_material, looks):
@@ -235,13 +381,17 @@ def build_level(meshes, wall_material, looks):
         "SM_GEN_Womb_Wall": wall_material,
         "SM_GEN_Womb_Placenta": looks["MI_GEN_Womb_Placenta"],
         "SM_GEN_Womb_PlacentaVessels": looks["MI_GEN_Womb_PlacentaVessels"],
-        "SM_GEN_Womb_Cord": looks["MI_GEN_Womb_Cord"],
-        "SM_GEN_Womb_CordVessels": looks["MI_GEN_Womb_CordVessels"],
     }
     for asset, (_, prop) in PARTS.items():
         component = scene.get_editor_property(prop)
         component.set_static_mesh(meshes[asset])
         component.set_material(0, materials[asset])
+    for asset, prop, look in (("SK_GEN_FetalHand", "own_hand", "MI_GEN_Womb_Skin"), ("SK_GEN_Womb_Cord", "cord", "MI_GEN_Womb_Cord")):
+        skinned = meshes.get(asset)
+        if skinned:
+            component = scene.get_editor_property(prop)
+            component.set_skinned_asset_and_update(skinned)
+            component.set_material(0, looks[look])
 
     # Ihre Stimme (Tools/Audio/speech_lines.py): an den Bauch; nach dem ersten Tritt; gegen Ende
     scene.set_editor_property("belly_lines", [eal.load_asset(SPEECH + "VO_S_M_Beruhigen"), eal.load_asset(SPEECH + "VO_Z_M_Schlaf")])
@@ -274,6 +424,13 @@ def main():
             meshes[asset] = eal.load_asset(MESHES + "/" + asset)
         else:
             meshes[asset] = lib.import_part(asset, nanite, SOURCE, MESHES)
+    for asset, look in (("SK_GEN_FetalHand", "MI_GEN_Womb_Skin"), ("SK_GEN_Womb_Cord", "MI_GEN_Womb_Cord")):
+        meshes[asset] = (eal.load_asset(MESHES + "/" + asset) if os.environ.get("GENESIS_SKIP_IMPORT") and eal.does_asset_exist(MESHES + "/" + asset)
+                         else import_skinned(asset, looks[look]))
+    # Alte starre Nabelschnur und die unsichtbaren Gefäßröhren: ersetzt, aus dem Projekt nehmen
+    for old in (MESHES + "/SM_GEN_Womb_Cord", MESHES + "/SM_GEN_Womb_CordVessels", MATERIALS + "/MI_GEN_Womb_CordVessels"):
+        if eal.does_asset_exist(old):
+            eal.delete_asset(old)
     build_level(meshes, wall, looks)
 
 

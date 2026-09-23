@@ -13,6 +13,7 @@ class UCineCameraComponent;
 class USoundBase;
 class UStaticMeshComponent;
 class UMaterialInstanceDynamic;
+class UPoseableMeshComponent;
 
 /**
  * Was das Kind in diesem Augenblick wahrnimmt (GENESIS-044 Teil 1b, Docs/34) – aus seinem Körper (Sinne) und dem
@@ -51,6 +52,39 @@ namespace GenesisWombPerception
 }
 
 /**
+ * Was der Spieler als Kind in diesem Augenblick tut (GENESIS-044 Teil 2a, Docs/37) – vom PlayerController je Bild
+ * gefüllt. Gedrückte Tasten zählen als Anzahl, gehaltene als Dauer.
+ */
+USTRUCT()
+struct GENESISSLICE_API FGenesisWombInput
+{
+	GENERATED_BODY()
+
+	/** Linker Stick / WASD: sich bewegen – mit gehaltener Hand-Taste die Hand. */
+	FVector2D Move = FVector2D::ZeroVector;
+	/** Rechter Stick / Maus: den Kopf drehen. */
+	FVector2D Look = FVector2D::ZeroVector;
+	bool bHandHeld = false;
+	bool bGraspHeld = false;
+	/** Gehalten: Hand zum Mund (Dauer s); kurz getippt: schlucken. */
+	float MouthHeldSeconds = 0.0f;
+	int32 MouthTaps = 0;
+	/** Gehalten: gähnen (Dauer s); kurz getippt: strecken. */
+	float StretchHeldSeconds = 0.0f;
+	int32 StretchTaps = 0;
+	int32 Kicks = 0;
+	int32 EyeToggles = 0;
+};
+
+/** Eine Handlung, die der Spieler in dieser Woche kann – für die Hinweise im Bild. */
+struct GENESISSLICE_API FGenesisWombHint
+{
+	FName InputAction;
+	FString Verb;
+	bool bUsed = false;
+};
+
+/**
  * Der Mutterleib aus Sicht des Kindes (GENESIS-044 Teil 1b): Die Kamera ist das Kind. Was es sieht und hört, folgt
  * seinen Sinnen (GenesisFetalLogic) und dem Tag der Mutter (GenesisMotherDay) – vor SSW 19 Stille und Dunkel, dann ihre
  * Stimme als Melodie, ab SSW 26–28 rotes Licht durch den Bauch. Seine eigenen Bewegungen spürt der Spieler als
@@ -73,9 +107,11 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> Wall;
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> Placenta;
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> PlacentaVessels;
-	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> Cord;
-	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> CordVessels;
+	/** Die Nabelschnur: Skelettnetz mit Knochenkette, weich simuliert (SimulateCord). */
+	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UPoseableMeshComponent> Cord;
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UCineCameraComponent> Camera;
+	/** Die eigene Hand des Kindes (Teil 2a): an der Kamera, mit Skelett – öffnen, schließen, zum Mund. */
+	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UPoseableMeshComponent> OwnHand;
 	/** Die Stimme der Mutter, durch ihren Körper und das Gehör des Kindes gefiltert. */
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UAudioComponent> MotherVoice;
 
@@ -110,14 +146,52 @@ public:
 	/** Prüfansicht: Licht im Mutterleib (lx) fest vorgeben, < 0 = aus dem Tag der Mutter. */
 	UPROPERTY(EditAnywhere, Category = "Preview") float PreviewWombLux = -1.0f;
 
+	/** Wie lange ihre Hand auf dem Bauch bleibt, nachdem sie einen Tritt gespürt hat (s). */
+	UPROPERTY(EditAnywhere, Category = "Mother") float MotherTouchSeconds = 9.0f;
+	/** Wie oft sie auf einen gespürten Tritt mit der Hand antwortet (0..1). */
+	UPROPERTY(EditAnywhere, Category = "Mother") float MotherTouchChance = 0.75f;
+
 	const FGenesisWombPerception& GetPerception() const { return Perception; }
 	const FGenesisMotherMoment& GetMotherMoment() const { return Mother; }
 	float GetGestationalWeeks() const { return Weeks; }
 
+	/** Eingabe des Spielers für dieses Bild (GENESIS-044 Teil 2a). */
+	void SetPlayerInput(const FGenesisWombInput& InInput) { Input = InInput; }
+	/** Was der Spieler in dieser Woche tun kann (und ob er es schon getan hat). */
+	TArray<FGenesisWombHint> GetHints() const;
+	/** Was das Kind gerade spürt, schmeckt, erlebt – eine Zeile, ein- und ausgeblendet (Alpha 0..1). */
+	FString GetCaption(float& OutAlpha) const;
+	/** Entwickler (genesis.Womb.Do): eine Handlung auslösen, als hätte der Spieler die Taste gedrückt. */
+	void DebugAction(const FString& Action, const FVector2D& Value);
+
 private:
 	void UpdateTime();
 	void UpdateSound(float DeltaSeconds);
+	/** Die Handlungen des Spielers: Körper, Hand, Mund, Augen – und was davon in den Sinnen ankommt. */
+	void UpdatePlayer(float DeltaSeconds, const FGenesisFetalView& Fetal, TArray<EGenesisFetalEvent>& Events);
+	/** Sie spürt einen Tritt und legt die Hand auf den Bauch: Schatten im Licht, Druck, ihre Stimme. */
+	void UpdateMotherTouch(float DeltaSeconds, const FGenesisFetalView& Fetal);
 	void UpdateCamera(float DeltaSeconds, const TArray<EGenesisFetalEvent>& Events);
+	void ShowCaption(const FString& Text);
+	/** Ein Stoß am Controller – nur wenn das Kind schon tastet und Vibration eingeschaltet ist. */
+	void Feel(float Intensity, float Seconds, bool bLarge = true);
+	bool Can(EGenesisFetalAction Action) const;
+	/** Die eigene Hand: Lage vor dem Gesicht oder am Mund, Finger nach Greifen und Ruhehaltung, Nabelschnur in der Hand. */
+	void UpdateOwnHand(float DeltaSeconds);
+	/** Handlänge (cm) in dieser Woche – Näherung: 0,83 × Fußlänge (Neugeborene: Hand ~6,2, Fuß ~7,5 cm). */
+	float HandLengthCm() const;
+	/** Knochen im Komponentenraum bei gegebener Beugung je Fingergelenk (Reihenfolge wie CurlBones). */
+	TArray<FTransform> HandComponentPose(const TArray<float>& Curl) const;
+	/** Berührt dieses Fingerglied (als Kapsel) die Nabelschnur? */
+	bool PhalanxTouchesCord(const TArray<FTransform>& Component, int32 CurlIndex, float Radius) const;
+	/** Ein Fingerglied als Segment in Weltkoordinaten. */
+	void PhalanxSegment(const TArray<FTransform>& Component, int32 CurlIndex, FVector& OutStart, FVector& OutEnd) const;
+	/** Kürzester Abstand eines Segments zur Mittellinie der Schnur (Welt). */
+	float DistanceToCord(const FVector& A, const FVector& B, FVector& OutOnSegment, FVector& OutOnCord) const;
+	float CordRadiusWorld() const;
+	/** Die weiche Nabelschnur: Ruhelage lesen, dann je Bild mit den Gliedern der Hand als Hindernis lösen. */
+	void InitCord();
+	void SimulateCord(float DeltaSeconds, const TArray<FVector>& FingerA, const TArray<FVector>& FingerB, float FingerRadius);
 
 	/** Materialien, die das Licht durch den Bauch zeigen (Wand leuchtend, Gewebe durchscheinend). */
 	UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> LitMaterials;
@@ -139,4 +213,93 @@ private:
 	bool bKickLineSaid = false;
 	bool bLateLineSaid = false;
 	int32 LastMomentIndex = -2;
+
+	// Der Spieler (Teil 2a)
+	FGenesisWombInput Input;
+	FGenesisWombInput DebugInput;
+	FString DebugHold;
+	float DebugHoldSeconds = 0.0f;
+	float DebugHeld = 0.0f;
+	FGenesisFetalView FetalNow;
+	/** Lage des Körpers in der Höhle (Anteil vom Radius) und Drehung des Kopfes (Grad). */
+	FVector2D BodyOffset = FVector2D::ZeroVector;
+	FVector2D HeadLook = FVector2D::ZeroVector;
+	/** Hand im Blickfeld (-1..1), zum Mund (0..1), geschlossen (0..1). */
+	FVector2D HandPosition = FVector2D(0.3f, -0.9f);
+	float HandToMouth = 0.0f;
+	float HandClosed = 0.0f;
+	/** Beugen der Finger: Knochen, Achse im Knochenraum, Winkel bei voller Faust (Grad), Ruhelage. */
+	TArray<int32> CurlBones;
+	TArray<FVector> CurlAxes;
+	TArray<float> CurlDegrees;
+	TArray<bool> CurlIsThumb;
+	TArray<FTransform> HandRefPose;
+	TArray<int32> CurlFinger;
+	TArray<int32> CurlSegment;
+	/** Beugung je Gelenk (0 gestreckt … 1 Faust) – jedes Gelenk bleibt stehen, sobald sein Glied die Schnur berührt. */
+	TArray<float> JointCurl;
+	/** Wie viele Finger anliegen (geglättet) – für das Halten mit Hysterese. */
+	float HeldFingers = 0.0f;
+	TArray<int32> HandParents;
+	TArray<FTransform> HandRefComponent;
+	int32 FingerTip[5] = { INDEX_NONE, INDEX_NONE, INDEX_NONE, INDEX_NONE, INDEX_NONE };
+	float FingerTipLength[5] = { 0.5f, 0.5f, 0.5f, 0.5f, 0.5f };
+	/** Die Hand als Körper im Wasser (Kamera-Raum, cm): Lage und Geschwindigkeit. */
+	FVector HandPos = FVector::ZeroVector;
+	FVector HandVelocity = FVector::ZeroVector;
+	bool bHandPlaced = false;
+	bool bCordBumped = false;
+	FVector GraspAnchor = FVector::ZeroVector;
+	/** Greifen: will das Kind greifen, wie weit hat es sich der Schnur zugewandt (0..1), wo liegt sie (Kamera-Raum, cm). */
+	bool bGraspIntent = false;
+	float ReachAlpha = 0.0f;
+	FVector CordContact = FVector::ZeroVector;
+	FVector CordSide = FVector::ForwardVector;
+	/** Die Nabelschnur gibt nach, wenn das Kind an ihr zieht (Welt-Raum). */
+	/** Nabelschnur-Simulation (Raum des Netzes): Teilchen, vorige Lage, Ruhelage, Abstände. */
+	TArray<FVector> CordX;
+	TArray<FVector> CordPrev;
+	TArray<FVector> CordRest;
+	TArray<float> CordRestLength;
+	TArray<FTransform> CordRefLocal;
+	TArray<FTransform> CordRefComponent;
+	TArray<int32> CordParents;
+	/** Radius der Schnur im Raum des Netzes (gebaut: 0,65 cm bei 10 cm Höhle). */
+	float CordRadius = 0.65f;
+	int32 GraspParticle = INDEX_NONE;
+	FVector GraspOffset = FVector::ZeroVector;
+	FVector GraspPointWorld = FVector::ZeroVector;
+	/** Dellen unter den Fingern (Welt: Lage, Tiefe) – ans Material. */
+	TArray<FVector4> CordDents;
+	/** Sichtbare Dellen mit Gedächtnis (klingen über Sekunden ab). */
+	TArray<FVector4> ShownDents;
+	UPROPERTY() TArray<TObjectPtr<UMaterialInstanceDynamic>> HandMaterials;
+	/** Hand zum Mund: Fortschritt der Bewegung (0..1), daraus die gebremste Kurve HandToMouth. */
+	float MouthProgress = 0.0f;
+	/** Greifen: wie lange schon gehalten, wann die Hand von selbst loslässt, müde bis zum neuen Ansetzen. */
+	float HoldSeconds = 0.0f;
+	float HoldLimit = 5.0f;
+	bool bGripTired = false;
+	/** Eigenbewegung nach Verhaltenszustand (0 still … 1 aktiv). */
+	float Activity = 0.5f;
+	UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> CordMaterial;
+	bool bHoldingCord = false;
+	float CordPulsePhase = 0.0f;
+	bool bThumbFelt = false;
+	bool bCordFelt = false;
+	/** Strecken und Gähnen laufen als kurze Bewegung ab (s seit Beginn, < 0 = nicht). */
+	float StretchAge = -1.0f;
+	float YawnAge = -1.0f;
+	bool bLidsClosedByPlayer = false;
+	TSet<EGenesisFetalAction> UsedActions;
+	/** Ihre Hand auf dem Bauch: Countdown bis sie kommt, Alter, Richtung (in der Höhle). */
+	float MotherTouchIn = -1.0f;
+	float MotherTouchAge = -1.0f;
+	FVector MotherTouchDirection = FVector(1.0, 0.0, 0.0);
+	/** Wasserlassen: simulierte Minuten bis zum nächsten Mal. */
+	float MinutesToUrinate = 25.0f;
+	float HeartbeatPhase = 0.0f;
+	FString Caption;
+	float CaptionAge = 100.0f;
+	TSet<FString> CaptionsShown;
 };

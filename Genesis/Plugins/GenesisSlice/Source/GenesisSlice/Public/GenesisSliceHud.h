@@ -55,6 +55,8 @@ private:
 	 * (Docs/31_Bildsprache.md). Liefert die Breite des Schriftzugs zurück – die feine Linie darunter richtet sich danach.
 	 */
 	float DrawCoverTitle(const FString& Text, float Y, float Scale, const FLinearColor& Colour, float Tracking, float Glow);
+	/** Im Mutterleib: was das Kind spürt (Sinneszeile) und was der Spieler in dieser Woche tun kann (Docs/37). */
+	void DrawWomb(float Scale, const struct FGenesisGestationPlanPoint& Plan, const TArray<struct FGenesisGestationMoment>& Moments, bool bInRun);
 
 	/** Die Titelschrift (Cinzel, SIL OFL) als Laufzeitschrift – das Font-Asset entsteht erst hier. */
 	UFont* GetTitleFont();

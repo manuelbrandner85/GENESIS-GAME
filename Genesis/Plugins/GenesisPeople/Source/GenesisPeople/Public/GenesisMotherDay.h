@@ -26,6 +26,20 @@ enum class EGenesisMotherActivity : uint8
 	Eating
 };
 
+/**
+ * Was von ihrem Essen im Fruchtwasser ankommt (Docs/37): Aromen gehen ins Fruchtwasser über – Knoblauch ist dort
+ * 45 Minuten nach dem Essen deutlich zu riechen (Mennella et al. 1995), Karotte aus der Schwangerschaft prägt die
+ * spätere Vorliebe (Mennella et al. 2001). Süßlich: nach Obst und Süßem steigt der Zucker im Blut und im Fruchtwasser.
+ */
+UENUM(BlueprintType)
+enum class EGenesisFlavor : uint8
+{
+	None,
+	Sweet,
+	Garlic,
+	Carrot
+};
+
 USTRUCT(BlueprintType)
 struct GENESISPEOPLE_API FGenesisMotherDayTuning
 {
@@ -78,6 +92,9 @@ struct GENESISPEOPLE_API FGenesisMotherMoment
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Mother") float Digestion = 0.0f;
 	/** Wiegen durch Gehen (0..1). */
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Mother") float Rocking = 0.0f;
+	/** Wonach das Fruchtwasser gerade schmeckt – und wie deutlich (0..1): ab ~45 min nach dem Essen, dann abklingend. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Mother") EGenesisFlavor Flavor = EGenesisFlavor::None;
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Mother") float FlavorStrength = 0.0f;
 };
 
 namespace GenesisMotherDay
@@ -96,4 +113,7 @@ namespace GenesisMotherDay
 	GENESISPEOPLE_API float DaylightLux(const FGenesisMotherDayTuning& Tuning, double HourOfDay);
 
 	GENESISPEOPLE_API FString GetActivityName(EGenesisMotherActivity Activity);
+
+	/** Wie das Kind den Geschmack erlebt, in Worten (für die Anzeige). */
+	GENESISPEOPLE_API FString GetFlavorName(EGenesisFlavor Flavor);
 }

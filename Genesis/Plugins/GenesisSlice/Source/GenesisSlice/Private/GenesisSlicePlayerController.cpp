@@ -11,6 +11,7 @@
 #include "GenesisBootFlow.h"
 #include "GenesisMicroscopeCameraRig.h"
 #include "GenesisSpermSwarm.h"
+#include "GenesisWombScene.h"
 #include "EngineUtils.h"
 #include "GameFramework/InputSettings.h"
 #include "GenesisLog.h"
@@ -51,6 +52,17 @@ void AGenesisSlicePlayerController::SetupInputComponent()
 	InputComponent->BindAxis(TEXT("GenesisSteerRight"), this, &AGenesisSlicePlayerController::SteerRight);
 	InputComponent->BindAxis(TEXT("GenesisSteerUp"), this, &AGenesisSlicePlayerController::SteerUp);
 	InputComponent->BindAction(TEXT("GenesisToggleView"), IE_Pressed, this, &AGenesisSlicePlayerController::ToggleView);
+	// Im Mutterleib (GENESIS-044 Teil 2a)
+	InputComponent->BindAction(TEXT("GenesisWombHand"), IE_Pressed, this, &AGenesisSlicePlayerController::PressWombHand);
+	InputComponent->BindAction(TEXT("GenesisWombHand"), IE_Released, this, &AGenesisSlicePlayerController::ReleaseWombHand);
+	InputComponent->BindAction(TEXT("GenesisKick"), IE_Pressed, this, &AGenesisSlicePlayerController::PressKick);
+	InputComponent->BindAction(TEXT("GenesisMouth"), IE_Pressed, this, &AGenesisSlicePlayerController::PressMouth);
+	InputComponent->BindAction(TEXT("GenesisMouth"), IE_Released, this, &AGenesisSlicePlayerController::ReleaseMouth);
+	InputComponent->BindAction(TEXT("GenesisStretch"), IE_Pressed, this, &AGenesisSlicePlayerController::PressStretch);
+	InputComponent->BindAction(TEXT("GenesisStretch"), IE_Released, this, &AGenesisSlicePlayerController::ReleaseStretch);
+	InputComponent->BindAction(TEXT("GenesisGrasp"), IE_Pressed, this, &AGenesisSlicePlayerController::PressGrasp);
+	InputComponent->BindAction(TEXT("GenesisGrasp"), IE_Released, this, &AGenesisSlicePlayerController::ReleaseGrasp);
+	InputComponent->BindAction(TEXT("GenesisEyes"), IE_Pressed, this, &AGenesisSlicePlayerController::PressEyes);
 
 	// Das Menü muss auch dann reagieren, wenn die Welt steht – sonst kommt man aus der Pause
 	// nicht mehr heraus. `bExecuteWhenPaused` ist genau dafür da.
@@ -119,7 +131,10 @@ FString AGenesisSlicePlayerController::DescribeAction(FName Action)
 		{ TEXT("Gamepad_FaceButton_Top"), TEXT("Y") },
 		{ TEXT("Gamepad_Special_Right"), TEXT("Start") },
 		{ TEXT("Gamepad_Special_Left"), TEXT("Zurück") },
-		{ TEXT("Gamepad_RightThumbstick"), TEXT("rechter Stick drücken") }
+		{ TEXT("Gamepad_RightThumbstick"), TEXT("rechter Stick drücken") },
+		{ TEXT("LeftShift"), TEXT("Umschalt") },
+		{ TEXT("Gamepad_LeftTrigger"), TEXT("LT") },
+		{ TEXT("Gamepad_RightTrigger"), TEXT("RT") }
 	};
 	auto Pretty = [](const FKey& Key)
 	{
@@ -295,6 +310,31 @@ void AGenesisSlicePlayerController::PlayerTick(float DeltaTime)
 			}
 		}
 	}
+
+	// Im Mutterleib: Der Spieler ist das Kind – Körper, Hand, Mund, Augen gehen an die Szene (Docs/37)
+	if (IsMenuOpen())
+	{
+		bWombHand = bMouthHeld = bStretchHeld = bGraspHeld = false;
+		KickPresses = MouthTaps = StretchTaps = EyeToggles = 0;
+	}
+	MouthHeldSeconds = bMouthHeld ? MouthHeldSeconds + DeltaTime : MouthHeldSeconds;
+	StretchHeldSeconds = bStretchHeld ? StretchHeldSeconds + DeltaTime : StretchHeldSeconds;
+	for (TActorIterator<AGenesisWombScene> It(GetWorld()); It; ++It)
+	{
+		FGenesisWombInput Womb;
+		Womb.Move = SteerInput;
+		Womb.Look = LookInput;
+		Womb.bHandHeld = bWombHand;
+		Womb.bGraspHeld = bGraspHeld;
+		Womb.MouthHeldSeconds = bMouthHeld ? MouthHeldSeconds : 0.0f;
+		Womb.StretchHeldSeconds = bStretchHeld ? StretchHeldSeconds : 0.0f;
+		Womb.MouthTaps = MouthTaps;
+		Womb.StretchTaps = StretchTaps;
+		Womb.Kicks = KickPresses;
+		Womb.EyeToggles = EyeToggles;
+		It->SetPlayerInput(Womb);
+	}
+	KickPresses = MouthTaps = StretchTaps = EyeToggles = 0;
 
 	// Der Kopf dreht sich langsam und kommt von selbst wieder zur Ruhe: Die Nackenmuskeln
 	// eines Neugeborenen halten den Kopf noch nicht.

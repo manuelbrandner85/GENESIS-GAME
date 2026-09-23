@@ -166,4 +166,24 @@ bool FGenesisFetalBehaviourTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/** Der Spieler kann nur, was der Körper in dieser Woche kann (GENESIS-044 Teil 2a, Docs/37). */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisFetalActionsTest, "Genesis.Body.Fetal.Actions", GenesisFetalTests::Flags)
+bool FGenesisFetalActionsTest::RunTest(const FString& Parameters)
+{
+	const FGenesisFetalMilestones& M = GenesisFetalLogic::GetReference().Milestones;
+	using EA = EGenesisFetalAction;
+	TestFalse(TEXT("SSW 8: noch keine Hand bewegen"), GenesisFetalLogic::CanPerform(EA::MoveHand, 8.0f, M));
+	TestTrue(TEXT("SSW 9: der ganze Körper bewegt sich"), GenesisFetalLogic::CanPerform(EA::MoveBody, 9.0f, M));
+	TestTrue(TEXT("SSW 10,5: Hand zum Gesicht (de Vries)"), GenesisFetalLogic::CanPerform(EA::HandToMouth, 10.5f, M));
+	TestFalse(TEXT("SSW 11: noch kein Schlucken"), GenesisFetalLogic::CanPerform(EA::Swallow, 11.0f, M));
+	TestTrue(TEXT("SSW 19: strampeln, schlucken, gähnen"), GenesisFetalLogic::CanPerform(EA::Kick, 19.0f, M)
+		&& GenesisFetalLogic::CanPerform(EA::Swallow, 19.0f, M) && GenesisFetalLogic::CanPerform(EA::Yawn, 19.0f, M));
+	TestFalse(TEXT("SSW 24: Lider noch verwachsen"), GenesisFetalLogic::CanPerform(EA::OpenEyes, 24.0f, M));
+	TestTrue(TEXT("SSW 28: Augen auf, greifen"), GenesisFetalLogic::CanPerform(EA::OpenEyes, 28.0f, M) && GenesisFetalLogic::CanPerform(EA::Grasp, 28.0f, M));
+	TestEqual(TEXT("Bis SSW 26 schwebt das Kind frei"), GenesisFetalLogic::RoomToMove(20.0f, M), 1.0f);
+	TestTrue(TEXT("Am Termin ist es eng, aber nicht starr"), GenesisFetalLogic::RoomToMove(40.0f, M) < 0.4f && GenesisFetalLogic::RoomToMove(40.0f, M) > 0.2f);
+	TestTrue(TEXT("Der Platz nimmt stetig ab"), GenesisFetalLogic::RoomToMove(32.0f, M) < GenesisFetalLogic::RoomToMove(28.0f, M));
+	return true;
+}
+
 #endif

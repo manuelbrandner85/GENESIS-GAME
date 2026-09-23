@@ -124,7 +124,37 @@ namespace GenesisMotherDay
 		}
 		Moment.bMusic = !bAsleep && bMusicToday && FMath::Abs(Hour - Tuning.MusicHour) < 0.5;
 		Moment.Rocking = bWalking ? 0.8f : 0.0f;
+
+		// Geschmack im Fruchtwasser: jede Mahlzeit mit ihrem Aroma, deutlich ab ~45 min danach, über einige Stunden
+		// abklingend (Mennella 1995). Eigener Zufallsstrom, damit der übrige Tag gleich bleibt.
+		for (int32 Meal = 0; Meal < Tuning.MealHours.Num(); ++Meal)
+		{
+			const double Since = FMath::Fmod(Hour - Tuning.MealHours[Meal] + 24.0, 24.0);
+			const float Rise = FMath::SmoothStep(0.5f, 1.25f, static_cast<float>(Since));
+			const float Strength = Since < 6.0 ? Rise * FMath::Exp(-FMath::Max(0.0f, static_cast<float>(Since) - 1.25f) / 2.0f) : 0.0f;
+			const int32 MealDay = Since > Hour ? DayIndex - 1 : DayIndex;
+			FRandomStream Menu(HashCombine(GetTypeHash(Seed), HashCombine(GetTypeHash(MealDay), GetTypeHash(Meal + 77))));
+			const float Pick = Menu.FRand();
+			const EGenesisFlavor Flavor = Pick < 0.3f ? EGenesisFlavor::Sweet : Pick < 0.5f ? EGenesisFlavor::Garlic
+				: Pick < 0.7f ? EGenesisFlavor::Carrot : EGenesisFlavor::None;
+			if (Flavor != EGenesisFlavor::None && Strength > Moment.FlavorStrength)
+			{
+				Moment.Flavor = Flavor;
+				Moment.FlavorStrength = Strength;
+			}
+		}
 		return Moment;
+	}
+
+	FString GetFlavorName(EGenesisFlavor Flavor)
+	{
+		switch (Flavor)
+		{
+		case EGenesisFlavor::Sweet:  return TEXT("süßlich");
+		case EGenesisFlavor::Garlic: return TEXT("scharf-würzig – Knoblauch");
+		case EGenesisFlavor::Carrot: return TEXT("mild-süß – Karotte");
+		default:                     return TEXT("neutral");
+		}
 	}
 
 	FString GetActivityName(EGenesisMotherActivity Activity)

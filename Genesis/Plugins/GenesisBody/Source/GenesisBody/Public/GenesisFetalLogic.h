@@ -30,6 +30,21 @@ namespace GenesisFetalLogic
 	GENESISBODY_API TArray<EGenesisFetalEvent> AdvanceBehaviour(FGenesisFetalBehaviour& Behaviour, const FGenesisFetalView& View,
 		const FGenesisFetalMilestones& Milestones, float DeltaSeconds, float MaternalMovement, FRandomStream& Random);
 
+	/** Ab welcher SSW der Körper eine Handlung kann (Docs/37). */
+	GENESISBODY_API float ActionOnsetWeeks(EGenesisFetalAction Action, const FGenesisFetalMilestones& Milestones);
+
+	/** Kann das Kind das in dieser SSW? */
+	GENESISBODY_API bool CanPerform(EGenesisFetalAction Action, float GestationalWeeks, const FGenesisFetalMilestones& Milestones);
+
+	/**
+	 * Platz zum Bewegen (0..1): bis zum letzten Drittel schwebt das Kind frei, dann füllt es die Höhle aus – am Termin
+	 * bleiben kleine Bewegungen, Strecken und Drehen werden schwer.
+	 */
+	GENESISBODY_API float RoomToMove(float GestationalWeeks, const FGenesisFetalMilestones& Milestones);
+
+	/** Name einer Handlung für Anzeige und Protokoll. */
+	GENESISBODY_API FString GetActionName(EGenesisFetalAction Action);
+
 	/** Name eines Zustands für Anzeige und Protokoll. */
 	GENESISBODY_API FString GetStateName(EGenesisFetalState State, float GestationalWeeks, const FGenesisFetalMilestones& Milestones);
 }
