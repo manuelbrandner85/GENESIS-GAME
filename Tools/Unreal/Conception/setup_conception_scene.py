@@ -182,6 +182,17 @@ float h = frac(sin(dot(ObjPos, float3(0.1371, 0.2713, 0.4191))) * 43758.5453);
 return frac(T * BeatHz + h);
 """
 
+ZONES_CODE = """
+// Zonen der Zelle wie in build_sperm_cell.py (zone): R Akrosom, G Mittelstück, B Kopf, A Lage (0 Spitze … 1 Ende).
+// Blender schreibt sie als Vertexfarben, die aber in Unreal 5.8 nicht ankommen – das Material sah überall Weiß:
+// die Geißel so dicht wie der Kopf und durchgehend gelblich wie das Mittelstück (gemessen, GENESIS-047).
+float s = (1.0 - UV.y) * 60.6;               // µm ab Kopfspitze (V ist im Mesh gespiegelt)
+float acrosome = 1.0 - smoothstep(2.2, 2.7, s);
+float midpiece = smoothstep(5.4, 5.8, s) * (1.0 - smoothstep(10.4, 10.7, s));
+float head = 1.0 - smoothstep(4.0, 4.8, s);
+return float4(acrosome, midpiece, head, s / 60.6);
+"""
+
 OPACITY_CODE = """
 // Optische Dichte entlang der Zelle (Referenz: Blender-Volumenmaterial). Kern und postakrosomale Region am dichtesten,
 // Mittelstück (Mitochondrien) mittel, Geißel fast durchsichtig. Dünnere Weglänge am Rand (Blickwinkel).
@@ -232,8 +243,10 @@ def create_sperm_material(mpc):
     float3 = unreal.CustomMaterialOutputType.CMOT_FLOAT3
 
     local_pos = expression(material, unreal.MaterialExpressionLocalPosition, -1600, 0)
-    vertex_color = expression(material, unreal.MaterialExpressionVertexColor, -1600, 300)
     texture_coords = expression(material, unreal.MaterialExpressionTextureCoordinate, -1600, 450)
+    # Zonen statt Vertexfarben (die kommen aus Blender nicht an)
+    vertex_color = custom(material, -1400, 300, "Zonen der Zelle", ZONES_CODE, ["UV"], unreal.CustomMaterialOutputType.CMOT_FLOAT4)
+    connect(texture_coords, "", vertex_color, ["UV"])
 
     # Zeitquelle: Echtzeit oder Sequencer-Zeit (MPC) für bildgenaue Renders
     time = expression(material, unreal.MaterialExpressionTime, -2000, -600)
@@ -376,6 +389,16 @@ Vessels = vessels;
 return base;
 """
 
+MUCOSA_PLACE_CODE = """
+// Lage in der Wand aus dem Abstand zur Kanalachse (Welt-X, alle Wandstücke liegen auf ihr): Die Vertexfarben aus
+// Blender kommen in Unreal 5.8 nicht an – das Material sah überall Weiß, also überall die tiefste Spalte (GENESIS-047).
+// Faltenspitzen bei 900 µm, Wandbasis bei 2.000 µm (build_oviduct_wall.py: CHANNEL_RADIUS, WALL_RADIUS).
+float r = length(WorldPos.yz);
+float height = saturate((2000.0 - r) / 1100.0);
+float cavity = saturate(1.0 - height * 1.8);
+return float3(cavity, height, Variation);
+"""
+
 MUCOSA_NORMAL_CODE = """
 // Relief aus den Höhenwerten dreier versetzter Abtastungen (Zellmosaik + grobe Unebenheit) als Weltnormale
 float3 gradient = float3(Hx - H0, Hy - H0, Hz - H0) / max(Delta, 0.0001);
@@ -431,6 +454,12 @@ def create_mucosa_material():
     cells = noise(11.0, -1500, voronoi, levels=1)
     cells_coarse = noise(16.0, -1600, voronoi, levels=1)
     patches = noise(190.0, -1700, gradient, levels=2)
+
+    # Ersatz für die fehlenden Vertexfarben: Lage in der Falte aus der Weltposition, Streuung aus grobem Rauschen
+    place = custom(material, -1400, 400, "Lage in der Wand", MUCOSA_PLACE_CODE, ["WorldPos", "Variation"], float3)
+    connect(world_position, "", place, ["WorldPos"])
+    connect(patches, "", place, ["Variation"])
+    vertex_color = place
 
     surface = custom(material, -1100, 0, "Schleimhaut", MUCOSA_SURFACE_CODE, ["VC", "Vessel1", "Vessel2", "Break", "Cells", "Cells2", "Patch"], float3)
     outputs = [unreal.CustomOutput(), unreal.CustomOutput()]

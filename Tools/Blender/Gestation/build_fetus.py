@@ -198,17 +198,21 @@ def pose(rig, week):
     bpy.context.view_layer.objects.active = rig
     bpy.ops.object.mode_set(mode="POSE")
     X, Y, Z = Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1))
+    # Zum Termin wird es eng: Das Kind liegt als „Fruchtwalze“ – Rücken stärker gerundet, Oberschenkel bis an den Bauch,
+    # Knie ganz gebeugt, Beine näher beieinander (Williams Obstetrics, Haltung = Flexion). Vorher blieb die Haltung
+    # von SSW 28 bis 40 fast gleich, und am Termin ragten die Füße durch die Wand (fetus_fit.py: 6 % zu groß).
+    term = smooth(32.0, 40.0, week)
     for name, deg in (("spine05", 8), ("spine04", 10), ("spine03", 10), ("spine02", 8), ("spine01", 6)):
-        rotate_world(rig, name, X, deg * (1.0 + 0.6 * early + 0.3 * late))
+        rotate_world(rig, name, X, deg * (1.0 + 0.6 * early + 0.3 * late + 0.35 * term))
     for name, deg in (("neck01", 10), ("neck02", 10), ("neck03", 8), ("head", 8)):
-        rotate_world(rig, name, X, deg * (1.0 + 0.4 * early + 0.3 * late))
+        rotate_world(rig, name, X, deg * (1.0 + 0.4 * early + 0.3 * late + 0.2 * term))
     for side, sx in ((".L", 1.0), (".R", -1.0)):
         # Fetale Haltung (Williams Obstetrics): Oberschenkel über den Bauch gebeugt, Knie ganz gebeugt, Unterschenkel
         # gekreuzt, Füße an Gesäß und Gegenseite – so kompakt, dass das Kind in die Fruchtblase passt
         # Oberschenkel seitlich am Bauch vorbei (gespreizt, nicht in ihn hinein), Knie ganz gebeugt, Füße gekreuzt
-        rotate_world(rig, "upperleg01" + side, X, -(95.0 + 10.0 * late))
-        rotate_world(rig, "upperleg01" + side, Y, 42.0 * sx)                  # weit gespreizt, Knie neben dem Bauch
-        rotate_world(rig, "lowerleg01" + side, X, 122.0 + 6.0 * late)
+        rotate_world(rig, "upperleg01" + side, X, -(95.0 + 10.0 * late + 12.0 * term))
+        rotate_world(rig, "upperleg01" + side, Y, (42.0 - 10.0 * term) * sx)  # gespreizt, Knie neben dem Bauch
+        rotate_world(rig, "lowerleg01" + side, X, 122.0 + 6.0 * late + 10.0 * term)
         rotate_world(rig, "lowerleg01" + side, Z, 45.0 * sx)                  # Unterschenkel zur Mitte, Füße kreuzen
         rotate_world(rig, "foot" + side, X, -35.0)
     # Arme per IK: das Handgelenk vor Kinn bzw. Wange, Ellbogen nach unten-außen. Richtungen aus dem Kopf-Rahmen
@@ -273,12 +277,14 @@ def smooth_folds(obj, rig):
     """Kniekehle, Leiste, Ellenbeuge: dort, wo sich die Haut beim Beugen staucht, gezielt glätten (Laplace)."""
     import bmesh
     joints = []
-    for name in ("lowerleg01", "upperleg01", "lowerarm01"):
+    # Am Knie nur ein enger Bereich: Mit dem Radius der Leiste (0,9 × Oberschenkel) wurde die Kniescheibe mitgeglättet –
+    # von vorn sahen die Knie flach aus. Die Kniekehle liegt hinten, dicht am Gelenk.
+    for name, share in (("lowerleg01", 0.35), ("upperleg01", 0.9), ("lowerarm01", 0.9)):
         for side in SIDES:
             pb = rig.pose.bones.get(name + side)
             if pb is not None:
                 parent = pb.parent
-                radius = 0.9 * (parent.length if parent is not None else pb.length)
+                radius = share * (parent.length if parent is not None else pb.length)
                 joints.append((np.array((rig.matrix_world @ pb.head)[:]), radius))
     bm = bmesh.new()
     bm.from_mesh(obj.data)

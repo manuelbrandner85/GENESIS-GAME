@@ -650,7 +650,10 @@ void AGenesisWombScene::UpdateOwnHand(float DeltaSeconds)
 		const float Fat = FMath::SmoothStep(28.0f, 40.0f, Weeks);
 		Skin->SetScalarParameterValue(TEXT("Durchlass"), FMath::Lerp(0.8f, 0.45f, Fat));
 		Skin->SetVectorParameterValue(TEXT("Farbe"), FMath::Lerp(FLinearColor(0.58f, 0.27f, 0.25f), FLinearColor(0.60f, 0.38f, 0.34f), Fat));
-		Skin->SetScalarParameterValue(TEXT("Kaeseschmiere"), FMath::SmoothStep(35.0f, 38.0f, Weeks));
+		// Käseschmiere: entsteht im letzten Drittel (Nishijima 2019), zum Termin löst sich ein Teil ins Fruchtwasser
+		// (Lamberti 1978) – es bleiben Flecken und die Falten. Lanugo ab SSW ~20, zum Termin größtenteils abgestoßen.
+		Skin->SetScalarParameterValue(TEXT("Kaeseschmiere"), FMath::SmoothStep(24.0f, 34.0f, Weeks) * (1.0f - 0.45f * FMath::SmoothStep(37.0f, 40.0f, Weeks)));
+		Skin->SetScalarParameterValue(TEXT("Lanugo"), FMath::SmoothStep(19.0f, 22.0f, Weeks) * (1.0f - 0.8f * FMath::SmoothStep(32.0f, 38.0f, Weeks)));
 	}
 
 	// Finger: in Ruhe gestaffelt gebeugt (Zeigefinger am gestrecktesten, kleiner Finger am stärksten) mit langsamem

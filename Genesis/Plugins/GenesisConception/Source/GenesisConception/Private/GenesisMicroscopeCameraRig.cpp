@@ -140,6 +140,18 @@ namespace
 			}
 		}));
 
+	FAutoConsoleCommandWithWorldAndArgs GenesisFillCommand(
+		TEXT("genesis.Conception.Fill"),
+		TEXT("Streulicht der Umgebung in Candela setzen. Für Belichtungsmessreihen."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+		{
+			for (TActorIterator<AGenesisMicroscopeCameraRig> It(World); It && Args.Num() > 0; ++It)
+			{
+				It->FillCandelas = FCString::Atof(*Args[0]);
+				UE_LOG(LogTemp, Display, TEXT("GENESIS Streulicht: %.0f cd"), It->FillCandelas);
+			}
+		}));
+
 	FAutoConsoleCommandWithWorldAndArgs GenesisLightCommand(
 		TEXT("genesis.Conception.Light"),
 		TEXT("Endoskoplicht beim Bezugsabstand in Candela setzen. Für Belichtungsmessreihen."),

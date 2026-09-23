@@ -632,16 +632,19 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 		// Kreis sprang. Dort markiert der Kreis die Zellmitte, und eine Bahn gibt es nicht – die Zelle steckt ja fest.
 		const FGenesisSpermCell* Mine = Swarm->GetCell(Swarm->GetPlayerCellIndex());
 		const bool bTimeLapse = Swarm->IsTimeLapse() && Mine;
-		const FVector Head = bTimeLapse ? Swarm->GetActorTransform().TransformPosition(Mine->Position * GenesisMicroScale::UnitsPerMicrometer)
+		const FVector Body = Mine ? Swarm->GetActorTransform().TransformPosition(Mine->Position * GenesisMicroScale::UnitsPerMicrometer)
 			: Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex());
+		const FVector Head = bTimeLapse ? Body : Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex());
 		if (bTimeLapse)
 		{
 			PlayerTrack.Reset();
 		}
 		else if (TrackSampleSeconds <= Now)
 		{
+			// Die Bahn ist die Durchschnittsbahn (VAP), nicht die Kopfbahn: Alle 0,1 s abgetastet, traf die Probe den
+			// schlagenden Kopf (6 Schläge je Sekunde im Bild) an zufälligen Stellen – ein Zickzack ohne Bedeutung.
 			TrackSampleSeconds = Now + 0.1f;
-			PlayerTrack.Add(Head);
+			PlayerTrack.Add(Body);
 			if (PlayerTrack.Num() > 20)
 			{
 				PlayerTrack.RemoveAt(0);

@@ -47,6 +47,28 @@ for (int Index = 0; Index < 3; ++Index)
 return Mask;
 """
 
+BODY_SKIN_CODE = """
+// Haut des Kindes von außen (nur Koerper = 1): Käseschmiere und Lanugo nach der Woche.
+// Käseschmiere (Vernix caseosa) entsteht im letzten Drittel, von Kopf zu Fuß und vom Rücken zum Bauch (Nishijima 2019,
+// DOI 10.1111/jog.14103); zum Termin löst sie sich teils ins Fruchtwasser (Lamberti 1978). Sie liegt in Flecken, wachsig.
+// Lanugo: feine Härchen ab SSW ~20, zum Termin größtenteils abgestoßen – im Gegenlicht ein weicher Saum am Umriss.
+Roughness = Rough;
+Emission = Emit;
+if (Body < 0.5) return Base;
+float3 n = normalize(NLocal);                        // Netz: +X Blickrichtung (Gesicht), +Z Scheitel
+float dorsal = saturate(0.35 - 0.8 * n.x);           // Rücken zuerst
+float cranial = saturate(0.5 + 0.5 * n.z);           // Kopf zuerst
+float threshold = 1.0 - Vernix * (0.45 + 0.35 * dorsal + 0.2 * cranial);
+float cover = Vernix > 0.001 ? smoothstep(threshold - 0.15, threshold + 0.15, Patch) : 0.0;
+float3 color = lerp(Base, float3(0.86, 0.82, 0.74), 0.9 * cover);
+Roughness = lerp(Rough, 0.68, cover);
+float3 V = normalize(Camera);
+float rim = pow(1.0 - saturate(abs(dot(normalize(NWorld), V))), 3.0);
+Emission = Emit * (1.0 - 0.3 * cover) + Light * rim * Lanugo * 0.45;   // dünne Schicht: nimmt wenig Durchlicht
+color = lerp(color, float3(0.78, 0.72, 0.66), Lanugo * rim * 0.2);
+return color;
+"""
+
 DENT_CODE = """
 // Bis zu vier Dellen: D = Kontaktpunkt auf der Oberfläche (Welt), T = Tiefe (Welt). Weicher Abfall, flacher Wulst ringsum.
 float3 Dents[4] = { D0, D1, D2, D3 };
@@ -111,6 +133,8 @@ def create_looks(parent):
         mel.set_material_instance_scalar_parameter_value(mi, "Durchlass", transmit)
         mel.set_material_instance_scalar_parameter_value(mi, "Gefaessmuster", vessels)
         mel.set_material_instance_scalar_parameter_value(mi, "Anatomie", 1.0 if name == "MI_GEN_Womb_Skin" else 0.0)
+        # Käseschmiere in Flecken und Lanugo-Saum nur am Körper des Kindes (die eigene Hand hat die Faltenmaske)
+        mel.set_material_instance_scalar_parameter_value(mi, "Koerper", 1.0 if name == "MI_GEN_Womb_FetusSkin" else 0.0)
         eal.save_loaded_asset(mi)
         looks[name] = mi
     return looks
@@ -242,6 +266,49 @@ def create_tissue_material():
     lib.link(emit, shaded, "A")
     lib.link(keep, shaded, "B")
     mel.connect_material_property(shaded, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+
+    # Körper des Kindes (Koerper = 1): Käseschmiere in Flecken (Rauschen in der Lage im Netz, cm), Lanugo als Saum
+    body = lib.expression(material, unreal.MaterialExpressionCustom, -250, -100)
+    body.set_editor_property("description", "Haut des Kindes")
+    body.set_editor_property("code", BODY_SKIN_CODE)
+    body.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    entries = []
+    for input_name in ("Base", "Rough", "Emit", "NLocal", "NWorld", "Camera", "Light", "Patch", "Body", "Vernix", "Lanugo"):
+        entry = unreal.CustomInput()
+        entry.set_editor_property("input_name", input_name)
+        entries.append(entry)
+    body.set_editor_property("inputs", entries)
+    extra = []
+    for output_name, output_type in (("Roughness", unreal.CustomMaterialOutputType.CMOT_FLOAT1), ("Emission", unreal.CustomMaterialOutputType.CMOT_FLOAT3)):
+        output = unreal.CustomOutput()
+        output.set_editor_property("output_name", output_name)
+        output.set_editor_property("output_type", output_type)
+        extra.append(output)
+    body.set_editor_property("additional_outputs", extra)
+    normal_ws = lib.expression(material, unreal.MaterialExpressionVertexNormalWS, -700, -40)
+    normal_local = lib.expression(material, unreal.MaterialExpressionTransform, -550, -40)
+    normal_local.set_editor_property("transform_source_type", unreal.MaterialVectorCoordTransformSource.TRANSFORMSOURCE_WORLD)
+    normal_local.set_editor_property("transform_type", unreal.MaterialVectorCoordTransform.TRANSFORM_LOCAL)
+    lib.link(normal_ws, normal_local, "")
+    patch = lib.expression(material, unreal.MaterialExpressionNoise, -550, 60)
+    # Simplex statt Gradient: Das Gradient-Rauschen zeigte an der Schwelle feine gerade Streifen (Gitterartefakte)
+    patch.set_editor_property("noise_function", unreal.NoiseFunction.NOISEFUNCTION_SIMPLEX_TEX)
+    # Flecken von 1–2 cm (Lage im Netz in cm), eine Oktave: Mit drei Oktaven zerfiel die Schmiere an der Schwelle in
+    # ein feines Krakelee (gesehen bei SSW 34)
+    patch.set_editor_property("scale", 0.55)
+    patch.set_editor_property("levels", 1)
+    patch.set_editor_property("output_min", 0.0)
+    patch.set_editor_property("output_max", 1.0)
+    lib.link(lib.expression(material, unreal.MaterialExpressionLocalPosition, -700, 60), patch, "Position")
+    for node, pin in ((with_vernix, "Base"), (rough, "Rough"), (shaded, "Emit"), (normal_local, "NLocal"), (normal_ws, "NWorld"),
+                      (camera, "Camera"), (light, "Light"), (patch, "Patch"),
+                      (lib.scalar_param(material, "Koerper", -550, 160, 0.0), "Body"),
+                      (lib.scalar_param(material, "Kaeseschmiere", -550, 220, 0.0), "Vernix"),
+                      (lib.scalar_param(material, "Lanugo", -550, 280, 0.0), "Lanugo")):
+        lib.link(node, body, pin)
+    mel.connect_material_property(body, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    mel.connect_material_property(body, "Roughness", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(body, "Emission", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
 
     # Delle: Wo ein Finger drückt, gibt die Wharton-Sulze nach – die Oberfläche weicht weich zurück, ringsum wölbt sie sich
     # leicht (das Volumen bleibt). Die Szene setzt bis zu vier Kontakte (Welt: Lage, Tiefe) und den Einflussradius.
@@ -388,9 +455,11 @@ def import_fetuses():
     """Das Kind je Woche (Tools/Blender/Gestation/build_fetus.py): Nanite-Netze und die Tabelle mit Mitte und Nabel."""
     table = json.load(open(os.path.join(SOURCE, "fetus_weeks.json"), encoding="utf-8"))
     stages = []
+    reimport = set(filter(None, (os.environ.get("GENESIS_REIMPORT") or "").split(",")))
     for week in FETUS_WEEKS:
         name = "SM_GEN_Fetus_W%02d" % week
-        if os.environ.get("GENESIS_SKIP_IMPORT") and eal.does_asset_exist(MESHES + "/" + name):
+        fresh = name in reimport or "SM_GEN_Fetus" in reimport
+        if os.environ.get("GENESIS_SKIP_IMPORT") and not fresh and eal.does_asset_exist(MESHES + "/" + name):
             mesh = eal.load_asset(MESHES + "/" + name)
         else:
             mesh = lib.import_part(name, True, SOURCE, MESHES)

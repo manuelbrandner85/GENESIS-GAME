@@ -122,3 +122,19 @@ Dazu drei Glättungen, alle gemessen mit `genesis.Conception.TraceMotion`:
 - Kopfdrehung und Seitenversatz gehören nur dem Kopf; die Geißel nimmt sie über 12 bzw. 25 µm wieder heraus.
 - Richtungswechsel als geglättete Drehgeschwindigkeit (Ornstein-Uhlenbeck, Gedächtnis 0,15 s) bei gleicher
   Rotationsdiffusion – Bahnen streuen wie zuvor, ohne Knicke von Schritt zu Schritt.
+
+## GENESIS-047 Teil 2e: Wand, Zonen, Gallerte (2026-09-24)
+
+- **Eileiterwand:** Die Vertexfarben aus Blender (Spalte, Faltenhöhe, Streuung) kommen in Unreal 5.8 nicht an (gemessen:
+  `has_vertex_colors` = False). Das Material sah überall Weiß = überall die tiefste Spalte: die ganze Wand 45 % dunkler und
+  ohne Unterschied zwischen Faltenrücken und Tal. Jetzt kommt die Faltenhöhe aus dem Abstand zur Kanalachse
+  (Spitzen 900 µm, Basis 2.000 µm). Dass die ferne Wand dunkel bleibt, ist dagegen richtig: Im Bild liegt sie 2–4 mm
+  voraus, das Licht sitzt an der Optik (Abstandsquadrat) – der dunkle Tunnel eines Endoskops. Messreihe Streulicht
+  18/72/250 cd: praktisch kein Unterschied in der Wand, nur das nahe Spermium wird heller; unverändert gelassen.
+- **Spermium:** Auch hier fehlten die Vertexfarben (Zonen Akrosom, Mittelstück, Kopf). Die Geißel war dadurch so dicht
+  wie der Kopf und durchgehend gelblich wie das Mittelstück. Die Zonen kommen jetzt aus der Lage entlang der Zelle.
+- **Fäden im äußeren Cumulus – bewusst nicht gebaut.** Die Matrix zwischen den Cumuluszellen besteht aus Hyaluronsäure-
+  Filamenten mit Proteinkörnchen, sichtbar nur im Elektronenmikroskop nach Rutheniumrot-Fixierung (Mensch: Dandekar 1992,
+  DOI 10.1093/oxfordjournals.humrep.a137656; Hamster: Talbot 1984, DOI 10.1002/jez.1402290216). Im Lichtmikroskop ist
+  die expandierte Gallerte klar; die Zellen liegen außen ~45 µm auseinander. Sichtbare Fäden dort wären erfunden.
+  Die Fäden zwischen den dicht liegenden Coronazellen bleiben (dort ziehen sich beim Auseinanderdriften Stränge).
