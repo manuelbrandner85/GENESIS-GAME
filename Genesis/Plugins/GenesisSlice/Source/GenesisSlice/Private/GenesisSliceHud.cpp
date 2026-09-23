@@ -18,6 +18,7 @@
 #include "GenesisEmbryoSubsystem.h"
 #include "GenesisEmbryoLogic.h"
 #include "GenesisEmbryogenesisLogic.h"
+#include "GenesisFetalLogic.h"
 #include "GenesisSliceLogic.h"
 #include "CanvasItem.h"
 #include "Engine/Font.h"
@@ -788,6 +789,30 @@ void AGenesisSliceHud::DrawHUD()
 				: (bSecondWeek ? GenesisEmbryoLogic::DescribeImplantation(Nid.Phase) : GenesisSliceLogic::DescribeEmbryoStage(Keim.Stage));
 			DrawCentered(Line, Canvas->SizeY - 88.0f * Scale, Scale * 0.95f, 0.7f, false);
 		}
+		return;
+	}
+
+	// Die Schwangerschaft (GENESIS-044): Kapitelzeile beim Moment, darunter nüchtern Woche, Länge, Gewicht
+	if (Director && Director->GetState().Phase == EGenesisSlicePhase::Gestation)
+	{
+		const UGenesisFrontendSubsystem* Frontend = GameInstance->GetSubsystem<UGenesisFrontendSubsystem>();
+		const float Scale = (Canvas->SizeY / 900.0f) * (Frontend ? Frontend->GetSettings().TextScalePercent / 100.0f : 1.0f);
+		const FGenesisGestationPlanPoint Plan = Director->GetGestationPlanPoint();
+		const TArray<FGenesisGestationMoment>& Moments = Director->Tuning.GestationMoments;
+		if (Moments.IsValidIndex(Plan.MomentIndex))
+		{
+			const FGenesisGestationMoment& Moment = Moments[Plan.MomentIndex];
+			const float Seconds = Plan.Alpha * Moment.Seconds;
+			const float Alpha = FMath::Clamp(Seconds / 1.5f, 0.0f, 1.0f) * FMath::Clamp((9.0f - Seconds) / 2.0f, 0.0f, 1.0f);
+			DrawCoverTitle(Moment.Title.ToUpper(), 0.40f * Canvas->SizeY, Scale * 1.6f, FLinearColor(0.82f, 0.60f, 0.28f, 0.9f * Alpha), 12.0f, 0.03f * Alpha);
+			DrawCentered(Moment.Subtitle, 0.40f * Canvas->SizeY + 44.0f * Scale, Scale * 1.0f, 0.8f * Alpha, false);
+		}
+		const float Weeks = static_cast<float>(Plan.HoursAfterConception / (7.0 * 24.0)) + GenesisFetalLogic::WeeksFromConceptionToGestational;
+		const FGenesisFetalView Fetal = GenesisFetalLogic::Evaluate(GenesisFetalLogic::GetReference(), Weeks);
+		const FString Weight = Fetal.WeightGrams >= 1000.0f ? FString::Printf(TEXT("%.2f kg"), Fetal.WeightGrams / 1000.0f)
+			: FString::Printf(TEXT("%.0f g"), Fetal.WeightGrams);
+		DrawCentered(FString::Printf(TEXT("SSW %d · %.0f cm · %s · Herz %.0f/min"), FMath::FloorToInt32(Weeks), Fetal.CrownHeelCm, *Weight,
+			Fetal.HeartRateBpm), Canvas->SizeY - 88.0f * Scale, Scale * 0.95f, 0.55f, false);
 		return;
 	}
 

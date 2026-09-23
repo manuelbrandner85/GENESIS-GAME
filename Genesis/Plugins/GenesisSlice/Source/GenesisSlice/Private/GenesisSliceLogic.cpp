@@ -2,6 +2,11 @@
 
 #include "GenesisSliceLogic.h"
 
+FGenesisSliceTuning::FGenesisSliceTuning()
+	: GestationMoments(GenesisSliceLogic::DefaultGestationMoments())
+{
+}
+
 namespace GenesisSliceLogic
 {
 	EGenesisSlicePhase NextPhase(EGenesisSlicePhase Current, const FGenesisSliceSignals& Signals,
@@ -167,5 +172,128 @@ namespace GenesisSliceLogic
 		default:
 			return FString();
 		}
+	}
+
+	TArray<FGenesisGestationMoment> DefaultGestationMoments()
+	{
+		// SSW, Uhrzeit, Echtzeit (s), Kapitelzeile. Nach der Wochentafel in Docs/34 – jeder Moment zeigt, was sich in
+		// dieser Woche für das Kind verändert: der erste Ton (Signature Moment 4), die Mutter spürt das Kind, bewusstes
+		// Erleben, Licht durch den Bauch (Signature Moment 5), Mittag, Stimmen, Enge. Aus Sicht des Kindes beginnt es mit
+		// SSW 19: Davor nimmt es weder Ton noch Licht wahr – SSW 8 und 12 gehören zur Ansicht von außen (Teil 2).
+		auto Moment = [](float Weeks, float Hour, float Seconds, const TCHAR* Title, const TCHAR* Subtitle,
+			EGenesisGestationSituation Situation = EGenesisGestationSituation::AtHour)
+		{
+			FGenesisGestationMoment Entry;
+			Entry.Situation = Situation;
+			Entry.GestationalWeeks = Weeks;
+			Entry.HourOfDay = Hour;
+			Entry.Seconds = Seconds;
+			Entry.Title = Title;
+			Entry.Subtitle = Subtitle;
+			return Entry;
+		};
+		return {
+			Moment(19.0f, 21.0f, 40.0f, TEXT("Woche 19"), TEXT("Das Hören beginnt"), EGenesisGestationSituation::BellyTalk),
+			Moment(20.5f, 21.0f, 35.0f, TEXT("Woche 20"), TEXT("Sie spürt die ersten Bewegungen"), EGenesisGestationSituation::BellyTalk),
+			Moment(24.0f, 3.0f, 30.0f, TEXT("Woche 24"), TEXT("Nachts: ihr Herz, ihr Atem")),
+			Moment(28.0f, 17.0f, 40.0f, TEXT("Woche 28"), TEXT("Die Lider öffnen sich"), EGenesisGestationSituation::Walk),
+			Moment(31.0f, 17.0f, 30.0f, TEXT("Woche 31"), TEXT("Licht durch den Bauch"), EGenesisGestationSituation::Walk),
+			Moment(34.0f, 20.0f, 35.0f, TEXT("Woche 34"), TEXT("Das Hören wird feiner")),
+			Moment(37.0f, 21.0f, 30.0f, TEXT("Woche 37"), TEXT("Es wird eng"), EGenesisGestationSituation::BellyTalk),
+		};
+	}
+
+	namespace
+	{
+
+		double Ease(double T)
+		{
+			T = FMath::Clamp(T, 0.0, 1.0);
+			return T * T * (3.0 - 2.0 * T);
+		}
+	}
+
+	double MomentStartHours(const FGenesisGestationMoment& Moment, int32 Seed)
+	{
+		// Tag der SSW (Zählweise Docs/34: SSW − 2), dann die Uhrzeit
+		const double FirstDay = FMath::FloorToDouble((static_cast<double>(Moment.GestationalWeeks) - 2.0) * 7.0);
+		if (Moment.Situation == EGenesisGestationSituation::AtHour)
+		{
+			return FirstDay * 24.0 + static_cast<double>(Moment.HourOfDay);
+		}
+		// Im Tag der Mutter suchen: an diesem und den folgenden Tagen, in Schritten von drei Minuten
+		const FGenesisMotherDayTuning MotherTuning;
+		for (int32 Day = 0; Day < 7; ++Day)
+		{
+			const int32 DayIndex = static_cast<int32>(FirstDay) + Day;
+			for (double Hour = 6.0; Hour < 24.0; Hour += 0.05)
+			{
+				const FGenesisMotherMoment Mother = GenesisMotherDay::Evaluate(MotherTuning, Hour, DayIndex,
+					Moment.GestationalWeeks + Day / 7.0f, Seed);
+				const bool bMatch = Moment.Situation == EGenesisGestationSituation::Walk
+					? Mother.Activity == EGenesisMotherActivity::Walking : Mother.bTalkingToBelly;
+				if (bMatch)
+				{
+					// kurz nach Beginn der Situation einsteigen
+					return static_cast<double>(DayIndex) * 24.0 + Hour + 0.05;
+				}
+			}
+		}
+		return FirstDay * 24.0 + static_cast<double>(Moment.HourOfDay);
+	}
+
+	TArray<double> ResolveGestationMoments(const FGenesisSliceTuning& Tuning, int32 MotherSeed)
+	{
+		TArray<double> Starts;
+		for (const FGenesisGestationMoment& Moment : Tuning.GestationMoments)
+		{
+			Starts.Add(MomentStartHours(Moment, MotherSeed));
+		}
+		return Starts;
+	}
+
+	float GestationPlanSeconds(const FGenesisSliceTuning& Tuning)
+	{
+		float Total = Tuning.GestationTravelSeconds;           // der letzte Zeitraffer zur Geburt
+		for (const FGenesisGestationMoment& Moment : Tuning.GestationMoments)
+		{
+			Total += Tuning.GestationTravelSeconds + Moment.Seconds;
+		}
+		return Total;
+	}
+
+	FGenesisGestationPlanPoint EvaluateGestationPlan(const FGenesisSliceTuning& Tuning, const TArray<double>& MomentStarts, double StartHours,
+		float ElapsedSeconds)
+	{
+		FGenesisGestationPlanPoint Point;
+		double From = StartHours;
+		float Clock = FMath::Max(0.0f, ElapsedSeconds);
+		const float Travel = FMath::Max(0.1f, Tuning.GestationTravelSeconds);
+		for (int32 Index = 0; Index < Tuning.GestationMoments.Num(); ++Index)
+		{
+			const FGenesisGestationMoment& Moment = Tuning.GestationMoments[Index];
+			const double Target = FMath::Max(From, MomentStarts.IsValidIndex(Index) ? MomentStarts[Index] : From);
+			if (Clock < Travel)
+			{
+				Point.Alpha = Clock / Travel;
+				Point.HoursAfterConception = FMath::Lerp(From, Target, Ease(Point.Alpha));
+				return Point;
+			}
+			Clock -= Travel;
+			if (Clock < Moment.Seconds)
+			{
+				Point.MomentIndex = Index;
+				Point.Alpha = Clock / FMath::Max(0.1f, Moment.Seconds);
+				Point.HoursAfterConception = Target + Clock * Tuning.GestationMomentTimeScale / 3600.0;
+				return Point;
+			}
+			Clock -= Moment.Seconds;
+			From = Target + Moment.Seconds * Tuning.GestationMomentTimeScale / 3600.0;
+		}
+		const double Birth = FMath::Max(From, static_cast<double>(Tuning.BirthAtWeeks) * 7.0 * 24.0);
+		Point.Alpha = FMath::Min(1.0f, Clock / Travel);
+		Point.HoursAfterConception = FMath::Lerp(From, Birth, Ease(Point.Alpha));
+		Point.bFinished = Clock >= Travel;
+		return Point;
 	}
 }

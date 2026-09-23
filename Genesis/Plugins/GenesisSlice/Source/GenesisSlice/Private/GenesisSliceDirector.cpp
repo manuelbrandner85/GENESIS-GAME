@@ -346,18 +346,27 @@ void UGenesisSliceDirector::DrivePhase(float DeltaSeconds)
 
 	case EGenesisSlicePhase::Gestation:
 	{
-		// Neun Monate, in denen es für das Kind nichts zu sehen gibt: Die Regie springt in Wochen
-		// vorwärts, damit die Körpersimulation jeden Tag tatsächlich rechnet.
-		GestationStepTimer += DeltaSeconds;
-		if (GestationStepTimer < Tuning.GestationStepSeconds)
+		// Die Schwangerschaft in Momenten (GENESIS-044 Teil 1b): Die Regie folgt dem Plan – Zeitraffer zwischen den
+		// Momenten, im Moment fast Echtzeit – und stellt die Weltuhr auf die Zielzeit. Die Körpersimulation rechnet dabei
+		// jeden übersprungenen Tag (SkipTime), die Uhr selbst steht (siehe EnterPhase).
+		GestationPlanPoint = GenesisSliceLogic::EvaluateGestationPlan(Tuning, GestationMomentStarts, GestationStartHours, State.PhaseRealSeconds);
+		UGenesisWorldClockSubsystem* Clock = GameInstance->GetSubsystem<UGenesisWorldClockSubsystem>();
+		const UGenesisBodySubsystem* Body = GameInstance->GetSubsystem<UGenesisBodySubsystem>();
+		const FGenesisBodyState* BodyState = Body && State.EntityId.IsValid() ? Body->FindBody(State.EntityId) : nullptr;
+		if (Clock && BodyState)
 		{
-			break;
-		}
-		GestationStepTimer = 0.0f;
-
-		if (UGenesisWorldClockSubsystem* Clock = GameInstance->GetSubsystem<UGenesisWorldClockSubsystem>())
-		{
-			Clock->SkipTime(static_cast<int64>(Tuning.GestationSkipDays) * 24 * 60 * 60);
+			const double NowHours = static_cast<double>(Clock->GetNow() - BodyState->ConceptionTime) / FGenesisTimestamp::SecondsPerHour;
+			GestationStepTimer += static_cast<float>((GestationPlanPoint.HoursAfterConception - NowHours) * FGenesisTimestamp::SecondsPerHour);
+			const int64 Whole = static_cast<int64>(GestationStepTimer);
+			if (Whole > 0)
+			{
+				GestationStepTimer -= static_cast<float>(Whole);
+				Clock->SkipTime(Whole);
+			}
+			else if (Whole < 0)
+			{
+				GestationStepTimer = 0.0f;
+			}
 		}
 		break;
 	}
@@ -441,13 +450,29 @@ void UGenesisSliceDirector::EnterPhase(EGenesisSlicePhase NewPhase, EGenesisSlic
 	{
 		const bool bScene = NewPhase == EGenesisSlicePhase::Birth || NewPhase == EGenesisSlicePhase::FirstHour
 			|| NewPhase == EGenesisSlicePhase::Conception;
-		Clock->SetTimeScale(bScene ? Tuning.SceneClockTimeScale : Tuning.DefaultClockTimeScale);
+		// In der Schwangerschaft führt allein der Plan die Zeit (DrivePhase) – die Uhr läuft nicht zusätzlich
+		Clock->SetTimeScale(NewPhase == EGenesisSlicePhase::Gestation ? 0.0f
+			: (bScene ? Tuning.SceneClockTimeScale : Tuning.DefaultClockTimeScale));
+		GestationPlanPoint = FGenesisGestationPlanPoint();
+		if (NewPhase == EGenesisSlicePhase::Gestation)
+		{
+			const UGenesisBodySubsystem* Body = GameInstance->GetSubsystem<UGenesisBodySubsystem>();
+			const FGenesisBodyState* BodyState = Body && State.EntityId.IsValid() ? Body->FindBody(State.EntityId) : nullptr;
+			GestationStartHours = BodyState ? static_cast<double>(Clock->GetNow() - BodyState->ConceptionTime) / FGenesisTimestamp::SecondsPerHour : 0.0;
+			GestationMomentStarts = GenesisSliceLogic::ResolveGestationMoments(Tuning, static_cast<int32>(State.RunSeed & 0x7fffffff));
+		}
 	}
 
 	switch (NewPhase)
 	{
 	case EGenesisSlicePhase::Conception:
 		TravelTo(Tuning.ConceptionMap);
+		break;
+
+	case EGenesisSlicePhase::Gestation:
+		// Aus der Fruchthöhle in den Mutterleib aus Sicht des Kindes (GENESIS-044 Teil 1b)
+		FadeOut(0.6f);
+		TravelTo(Tuning.GestationMap);
 		break;
 
 	case EGenesisSlicePhase::Birth:

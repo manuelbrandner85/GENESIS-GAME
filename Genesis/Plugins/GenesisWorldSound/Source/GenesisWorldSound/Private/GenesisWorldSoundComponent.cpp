@@ -3,6 +3,7 @@
 #include "GenesisWorldSoundComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "GenesisAudioCoreLogic.h"
 #include "GenesisAudioSubsystem.h"
 #include "GenesisAudioTypes.h"
 
@@ -50,7 +51,13 @@ void UGenesisWorldSoundComponent::TickComponent(float DeltaTime, ELevelTick Tick
 	const float MixGain = bFollowMix ? Audio->GetBusGainLinear(EGenesisAudioBus::Ambient) : 1.0f;
 
 	FScopeLock ScopeLock(&Lock);
-	if (bHeardFromOutside)
+	if (bHeardByUnborn)
+	{
+		Hearing.CutoffHz = Perception.LowPassCutoffHz;
+		Hearing.HighPassHz = Perception.HighPassCutoffHz;
+		Hearing.Gain = GenesisAudioCoreLogic::UnbornPresentationGain(Perception.BodyAudibility) * MixGain;
+	}
+	else if (bHeardFromOutside)
 	{
 		Hearing.CutoffHz = Perception.LowPassCutoffHz;
 		Hearing.HighPassHz = Perception.HighPassCutoffHz;

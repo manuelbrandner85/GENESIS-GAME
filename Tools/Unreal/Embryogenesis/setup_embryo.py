@@ -273,7 +273,10 @@ return acc / max(wsum, 1.0) + Keep * 0.0;
 # Import
 # ------------------------------------------------------------------------------------------------
 
-def import_part(asset, nanite):
+def import_part(asset, nanite, source=None, destination=None):
+    """Importiert eine FBX aus source (Standard: Embryogenesis) nach destination (Standard: Embryo-Meshes)."""
+    source = source or SOURCE
+    destination = destination or MESHES
     unreal.SystemLibrary.execute_console_command(None, "Interchange.FeatureFlags.Import.FBX false")
     options = unreal.FbxImportUI()
     options.set_editor_property("import_mesh", True)
@@ -291,15 +294,15 @@ def import_part(asset, nanite):
     data.set_editor_property("convert_scene_unit", True)
     data.set_editor_property("compute_weighted_normals", True)
     task = unreal.AssetImportTask()
-    task.set_editor_property("filename", os.path.join(SOURCE, asset + ".fbx"))
-    task.set_editor_property("destination_path", MESHES)
+    task.set_editor_property("filename", os.path.join(source, asset + ".fbx"))
+    task.set_editor_property("destination_path", destination)
     task.set_editor_property("destination_name", asset)
     task.set_editor_property("replace_existing", True)
     task.set_editor_property("automated", True)
     task.set_editor_property("save", True)
     task.set_editor_property("options", options)
     asset_tools.import_asset_tasks([task])
-    mesh = eal.load_asset(MESHES + "/" + asset)
+    mesh = eal.load_asset(destination + "/" + asset)
     if not mesh:
         unreal.log_error("GENESIS: Import fehlgeschlagen: " + asset)
         return None

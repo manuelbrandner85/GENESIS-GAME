@@ -223,4 +223,9 @@ namespace GenesisAudioCoreLogic
 	{
 		return FMath::Pow(10.0f, Db / 20.0f);
 	}
+
+	float UnbornPresentationGain(float Audibility)
+	{
+		return Audibility <= 0.001f ? 0.0f : 0.25f + 0.75f * FMath::Clamp(Audibility, 0.0f, 1.0f);
+	}
 }

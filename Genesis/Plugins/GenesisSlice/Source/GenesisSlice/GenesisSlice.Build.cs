@@ -27,6 +27,7 @@ public class GenesisSlice : ModuleRules
 			"GenesisSound",
 			"GenesisVoice",
 			"GenesisWorldSound",
+			"GenesisAudioCore",
 			"GenesisGenetics",
 			"AudioMixer",
 			"CinematicCamera"

@@ -17,7 +17,7 @@ ob das Kind zur Ruhe kommt – das entscheiden die Systeme, nicht die Regie.
 |---|---|---|
 | Befruchtung | Der Schwarm im Eileiter, eine Eizelle, ein Treffer | Echtzeit |
 | Erste Woche | Furchung, Morula, Blastozyste, Schlüpfen, Einnistung | 6 Stunden je Schritt |
-| Schwangerschaft | Der Körper wächst | 7 Tage je Schritt |
+| Schwangerschaft | Aus Sicht des Kindes im Mutterleib (`L_GEN_Mutterleib`, Doc 34 Teil 1b): sieben Momente von SSW 19 bis 37 | Zeitraffer zwischen den Momenten (16 s), im Moment 8-mal Echtzeit; zusammen gut 6 Minuten |
 | Geburt | Wehen, Enge, Drehung, Licht, erster Atemzug | 90 Simulationsminuten je Sekunde |
 | Erste Stunde | Wärme, eine vertraute Stimme, das erste Anlegen | 2 Simulationsminuten je Sekunde |
 
@@ -90,6 +90,6 @@ kein Bild gegeben.
 - **Keine Eingabe.** Der Durchlauf läuft von selbst; der Spieler kann noch nichts entscheiden.
   Das ist der nächste große Schritt: aus einem Ablauf wird ein Spiel.
 - Der Ortswechsel ist ein harter Ladevorgang mit Schwarzblende, kein weicher Übergang.
-- Zwischen Einnistung und Geburt gibt es nichts zu sehen – neun Monate sind ein Zeitsprung,
-  keine Szene.
+- ~~Zwischen Einnistung und Geburt gibt es nichts zu sehen~~ – seit GENESIS-044 Teil 1b erlebt man die
+  Schwangerschaft aus Sicht des Kindes (Doc 34). Noch offen: der Fetus selbst von außen (Teil 2).
 - Kreißsaal, Mutter und Gestalt bleiben Platzhalter.

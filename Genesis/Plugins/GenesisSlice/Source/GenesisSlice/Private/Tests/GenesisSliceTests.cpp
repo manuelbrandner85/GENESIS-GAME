@@ -3,6 +3,8 @@
 #include "GenesisSliceLogic.h"
 #include "GenesisEmbryoLogic.h"
 #include "GenesisEmbryogenesisLogic.h"
+#include "GenesisFetalLogic.h"
+#include "GenesisWombScene.h"
 #include "Engine/FontFace.h"
 #include "Misc/AutomationTest.h"
 
@@ -333,6 +335,99 @@ bool FGenesisSliceEmbryoSceneMapTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Ein Keim im Stillstand bleibt, wo er ist"), MapForEmbryo(EGenesisEmbryoStage::Arrested, 27.0f, Tuning), Tuning.ConceptionMap);
 	Tuning.EmbryoMap = NAME_None;
 	TestEqual(TEXT("Ohne Fruchthöhle bleibt es bei der Gebärmutter"), MapForEmbryo(EGenesisEmbryoStage::Implanted, 27.0f, Tuning), Tuning.ImplantationMap);
+	return true;
+}
+
+/**
+ * Die Schwangerschaft in Momenten (GENESIS-044 Teil 1b): Der Plan läuft vom Ende der vierten Woche über die Momente
+ * der Wochentafel bis zum Termin, die Zeit dazwischen stetig vorwärts. Momente mit einer Situation treffen den
+ * wirklichen Tag der Mutter: Sie geht dann tatsächlich spazieren oder spricht mit dem Bauch – bei jedem Keim.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSliceGestationPlanTest, "Genesis.Slice.GestationPlan",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FGenesisSliceGestationPlanTest::RunTest(const FString& Parameters)
+{
+	const FGenesisSliceTuning Tuning;
+	const double Start = 28.3 * 24.0;       // Ende der vierten Woche (Tag 28), wie im Durchlauf gemessen
+	const float Total = GenesisSliceLogic::GestationPlanSeconds(Tuning);
+	AddInfo(FString::Printf(TEXT("%d Momente, %.0f s (%.1f min)"), Tuning.GestationMoments.Num(), Total, Total / 60.0f));
+	TestTrue(TEXT("Rund 6–9 Minuten"), Total >= 360.0f && Total <= 540.0f);
+
+	for (const int32 Seed : { 1, 77, 4242 })
+	{
+		const TArray<double> Starts = GenesisSliceLogic::ResolveGestationMoments(Tuning, Seed);
+		double Previous = Start;
+		bool bMonotonic = true;
+		TArray<int32> Seen;
+		for (float Seconds = 0.0f; Seconds <= Total + 1.0f; Seconds += 0.25f)
+		{
+			const FGenesisGestationPlanPoint Point = GenesisSliceLogic::EvaluateGestationPlan(Tuning, Starts, Start, Seconds);
+			bMonotonic &= Point.HoursAfterConception >= Previous - 1.0e-6;
+			Previous = Point.HoursAfterConception;
+			if (Point.MomentIndex < 0 || Seen.Contains(Point.MomentIndex))
+			{
+				continue;
+			}
+			Seen.Add(Point.MomentIndex);
+			const FGenesisGestationMoment& Moment = Tuning.GestationMoments[Point.MomentIndex];
+			const double Weeks = Point.HoursAfterConception / (7.0 * 24.0) + 2.0;
+			const double Hour = FMath::Fmod(Point.HoursAfterConception, 24.0);
+			const int32 Day = FMath::FloorToInt32(Point.HoursAfterConception / 24.0);
+			const FGenesisMotherMoment Mother = GenesisMotherDay::Evaluate(FGenesisMotherDayTuning(), Hour, Day, static_cast<float>(Weeks), Seed);
+			bool bRight = FMath::Abs(Weeks - Moment.GestationalWeeks) < 1.2;
+			if (Moment.Situation == EGenesisGestationSituation::Walk) { bRight &= Mother.Activity == EGenesisMotherActivity::Walking && Mother.bOutdoors; }
+			else if (Moment.Situation == EGenesisGestationSituation::BellyTalk) { bRight &= Mother.bTalkingToBelly; }
+			else { bRight &= FMath::Abs(Hour - Moment.HourOfDay) < 0.05; }
+			if (Seed == 1)
+			{
+				AddInfo(FString::Printf(TEXT("%s: SSW %.1f, %.1f Uhr – Mutter %s, %.1f lx im Mutterleib%s"), *Moment.Title, Weeks, Hour,
+					*GenesisMotherDay::GetActivityName(Mother.Activity), Mother.WombLux, Mother.bTalkingToBelly ? TEXT(", spricht mit dem Bauch") : TEXT("")));
+			}
+			TestTrue(FString::Printf(TEXT("Keim %d, %s: Woche und Situation stimmen"), Seed, *Moment.Title), bRight);
+		}
+		TestTrue(TEXT("Die Zeit läuft nur vorwärts"), bMonotonic);
+		TestEqual(TEXT("Alle Momente kommen vor"), Seen.Num(), Tuning.GestationMoments.Num());
+		const FGenesisGestationPlanPoint End = GenesisSliceLogic::EvaluateGestationPlan(Tuning, Starts, Start, Total + 1.0f);
+		TestTrue(TEXT("Am Ende: Termin erreicht"), End.bFinished && FMath::IsNearlyEqual(End.HoursAfterConception, Tuning.BirthAtWeeks * 7.0 * 24.0, 0.01));
+	}
+
+	// Signature Moment 4 und 5: der erste Ton (SSW 19) und das Licht bei einem Spaziergang mit offenen Augen (ab SSW 28)
+	TestTrue(TEXT("Der erste Ton in SSW 19"), Tuning.GestationMoments.ContainsByPredicate([](const FGenesisGestationMoment& M)
+		{ return FMath::IsNearlyEqual(M.GestationalWeeks, 19.0f); }));
+	TestTrue(TEXT("Licht beim Spaziergang ab SSW 28"), Tuning.GestationMoments.ContainsByPredicate([](const FGenesisGestationMoment& M)
+		{ return M.GestationalWeeks >= 28.0f && M.Situation == EGenesisGestationSituation::Walk; }));
+	for (const FGenesisGestationMoment& Moment : Tuning.GestationMoments)
+	{
+		TestFalse(TEXT("Jeder Moment sagt, was sich ändert"), Moment.Subtitle.IsEmpty());
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisSliceWombPerceptionTest, "Genesis.Slice.WombPerception", GenesisSliceTests::SliceFlags)
+bool FGenesisSliceWombPerceptionTest::RunTest(const FString& Parameters)
+{
+	// Was das Kind sieht (Docs/34): vor offenen Lidern und Pupillenreaktion kein Licht, dann rotes Licht durch den Bauch
+	const FGenesisFetalReference& Reference = GenesisFetalLogic::GetReference();
+	const FGenesisWombPerception Early = GenesisWombPerception::Compute(GenesisFetalLogic::Evaluate(Reference, 19.0f), 11.0f);
+	TestTrue(TEXT("SSW 19: Lider zu, kein Licht"), Early.Brightness < 0.05f && Early.EyesOpen < 0.05f);
+	TestTrue(TEXT("SSW 19: kaum bewusstes Erleben"), Early.Presence < 0.2f);
+	const FGenesisWombPerception Walk = GenesisWombPerception::Compute(GenesisFetalLogic::Evaluate(Reference, 31.0f), 11.0f);
+	TestTrue(TEXT("SSW 31, draußen: deutlich Licht"), Walk.Brightness > 0.5f && Walk.EyesOpen > 0.9f);
+	TestTrue(TEXT("Offene Augen sehen schärfer, aber nie scharf"), Walk.Blur < Early.Blur && Walk.Blur >= 0.5f);
+	const FGenesisWombPerception Night = GenesisWombPerception::Compute(GenesisFetalLogic::Evaluate(Reference, 31.0f), 0.0f);
+	TestEqual(TEXT("Nachts: dunkel"), Night.Brightness, 0.0f);
+	const FGenesisWombPerception Indoor = GenesisWombPerception::Compute(GenesisFetalLogic::Evaluate(Reference, 31.0f), 0.4f);
+	TestTrue(TEXT("Im Zimmer dunkler als draußen"), Indoor.Brightness > 0.0f && Indoor.Brightness < Walk.Brightness);
+	float Last = 0.0f;
+	bool bGrows = true;
+	for (float Weeks = 8.0f; Weeks <= 40.0f; Weeks += 1.0f)
+	{
+		const float Radius = GenesisWombPerception::CavityRadiusCm(Weeks);
+		bGrows &= Radius > Last;
+		Last = Radius;
+	}
+	TestTrue(TEXT("Die Höhle wächst mit jeder Woche"), bGrows);
+	TestTrue(TEXT("Am Termin 13–16 cm Innenradius"), Last >= 13.0f && Last <= 16.0f);
 	return true;
 }
 

@@ -76,6 +76,28 @@ Fruchtblase (drsuparna, CC BY-SA 2.0; frisch)*
 Amnion mit Faltengeometrie und klarer Deckschicht, Embryo-Haut rosiger und durchscheinender, Nabelgefäße als
 Stränge in gallertigem Gewebe; kühler, tiefer Hintergrund jenseits des Lichtkegels als Gegenpol zum warmen Leben.
 
+## Der Mutterleib von innen (Szene 5b, Schwangerschaft aus Sicht des Kindes) – Board B
+
+<img src="https://commons.wikimedia.org/wiki/Special:FilePath/Human_placenta_baby_side.jpg?width=640" width="360"> <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Umbilical_cord_(01).jpg?width=640" width="300"> <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Cross_section_of_human_umbilical_cord_immediately_after_cutting.jpg?width=500" width="240">
+
+*Plazenta, Kindseite, Minuten nach der Geburt (gemeinfrei) · Aufbau der Nabelschnur (Priyanka Mishra, CC BY 4.0) ·
+Nabelschnur im Querschnitt, 1,5 h nach der Geburt (Grendelkhan, CC BY-SA 4.0)*
+
+**Warum wirkt das echt?**
+- **Plazenta, Kindseite:** glatt und **glänzend** (die Eihäute liegen darüber), bläulich-violett durchscheinend über
+  dunkelrotem Gewebe. Die großen Gefäße laufen **erhaben** vom Ansatz der Nabelschnur aus und teilen sich ungleich –
+  kein Stern, kein Baum aus dem Lehrbuch.
+- **Nabelschnur:** weißlich-bläulich, nass glänzend, **gewunden**; im Schnitt zwei Arterien und eine Vene in klarer,
+  gallertiger Wharton-Sulze. Gegen Licht scheint die Sulze durch, die Gefäße bleiben dunkle Stränge.
+- **Das Licht im Mutterleib:** Fotos aus Sicht des Kindes gibt es nicht – Fetoskopie-Aufnahmen sind von der Lampe des
+  Endoskops beleuchtet und zeigen deshalb Farben, die das Kind nie sieht. Die Referenz ist hier die Physik: durch
+  Haut, Fett und Muskel kommt fast nur Rot (Doc 34), diffus, von der Bauchseite, **ohne Schatten** und ohne Formen –
+  wie eine Hand vor einer Taschenlampe. Was davor steht, erscheint im Gegenlicht, dünne Stellen leuchten durch.
+
+**Für GENESIS:** umgesetzt in `L_GEN_Mutterleib` (Doc 34, Teil 1b): Wand als leuchtende, fleckige Fläche statt
+beleuchteter Wand; Nabelschnur mit Durchlicht am Rand; Plazenta hinten oben, fast ohne Durchlass (2–3 cm dick). Offen
+für Teil 2: der Fetus selbst (Hände, Gesicht) im selben Licht, Board B „Fetus Woche 8–40“.
+
 ## Geburt und Neugeborenes (Szenen 6–7) – Board A und G
 
 <img src="https://commons.wikimedia.org/wiki/Special:FilePath/First_Breath.jpg?width=700" width="440"> <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Newborn_on_mother_chest.jpg?width=420" width="240"> <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Newborn_minutes_after_delivery.jpg?width=600" width="320">
@@ -102,7 +124,7 @@ Rötungsdetail (Mikro-Normalen, Rauheitsvariation). Neugeborenes gegen diese Ref
 | Board | Wann | Inhalt | Quellen |
 |---|---|---|---|
 | B – Fetus Woche 8–40 | GENESIS-044 Teil 2 | Körperproportionen je Woche, Haut (Lanugo, Käseschmiere), Gesicht, Hände, Nabelschnur, Plazenta, Fruchtwasser | Carnegie- und Kyoto-Sammlung, Ultraschall 3D/4D, Fetoskopie, Doc 34 |
-| B – Plazenta, Nabelschnur | GENESIS-044 Teil 2 | Oberfläche, Gefäße, Wharton-Sulze | Pathologie-Atlanten, Commons |
+| B – Plazenta, Nabelschnur | erledigt (Teil 1b, oben) | Oberfläche, Gefäße, Wharton-Sulze | Commons (Lizenzen oben) |
 | A – Neugeborenes bis Kleinkind | Frühe Kindheit | Haut, Augen, Hände, Proportionen, Mimik | dokumentarische Fotografie, Kinderheilkunde |
 | A – Mutter, Hebamme | Kreißsaal-Überarbeitung | Haut unter Anstrengung, Schweiß, Haare, Kleidung | Geburtsfotografie |
 | G – Geburt und Nähe | Kreißsaal | Kamera, Brennweite, Licht, Blocking | Dokumentarfilm, Geburtsfotografie |

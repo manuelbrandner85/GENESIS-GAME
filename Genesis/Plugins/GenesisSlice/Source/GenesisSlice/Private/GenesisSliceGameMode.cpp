@@ -20,6 +20,7 @@
 #include "GenesisMidwifeRig.h"
 #include "GenesisImplantationSite.h"
 #include "GenesisEmbryoScene.h"
+#include "GenesisWombScene.h"
 #include "GenesisPeopleRendering.h"
 #include "CineCameraComponent.h"
 #include "Engine/Engine.h"
@@ -175,7 +176,8 @@ void AGenesisSliceGameMode::EnsureSceneSound()
 	const bool bOviduct = Has(AGenesisSpermSwarm::StaticClass());
 	const bool bBirth = Has(AGenesisBirthCameraRig::StaticClass());
 	// Gebärmutter und Fruchthöhle: drinnen im Mutterleib. Die Gebärmutter war bis GENESIS-041 stumm.
-	const bool bInsideWomb = Has(AGenesisImplantationSite::StaticClass()) || Has(AGenesisEmbryoScene::StaticClass());
+	const bool bInsideWomb = Has(AGenesisImplantationSite::StaticClass()) || Has(AGenesisEmbryoScene::StaticClass())
+		|| Has(AGenesisWombScene::StaticClass());
 
 	if (bOviduct)
 	{
@@ -184,8 +186,9 @@ void AGenesisSliceGameMode::EnsureSceneSound()
 	}
 	if (bInsideWomb)
 	{
-		// Das Rauschen der mütterlichen Gefäße, Darmgeräusche, die Welt draußen nur als Dröhnen. Leiser als bei der
-		// Geburt: Der Embryo hört noch nichts (Hören erst ab Woche 24) – das hier ist für den, der zusieht.
+		// Das Rauschen der mütterlichen Gefäße, Darmgeräusche, die Welt draußen nur als Dröhnen. In Gebärmutter und
+		// Fruchthöhle ist das der Klang für den, der zusieht – der Embryo hört noch nichts (erst ab SSW 19, Docs/34). In der
+		// Schwangerschaft schaltet AGenesisWombScene auf das Gehör des Kindes um.
 		Place(TEXT("WombTone"), EGenesisPlace::Womb, 0.6f, 0.2f, 0.5f, false, FVector::ZeroVector);
 	}
 	if (bBirth)

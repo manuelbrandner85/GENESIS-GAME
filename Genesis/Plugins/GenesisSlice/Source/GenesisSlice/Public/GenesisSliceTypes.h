@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GenesisTypes.h"
+#include "GenesisMotherDay.h"
 #include "GenesisSliceTypes.generated.h"
 
 /**
@@ -110,11 +111,65 @@ struct GENESISSLICE_API FGenesisSliceState
 	bool IsRunning() const { return Phase != EGenesisSlicePhase::Idle && Phase != EGenesisSlicePhase::Complete && Phase != EGenesisSlicePhase::Ended; }
 };
 
+/** Was die Mutter in einem Moment tut – der Ablauf sucht dafür die Uhrzeit in ihrem wirklichen Tag. */
+UENUM(BlueprintType)
+enum class EGenesisGestationSituation : uint8
+{
+	/** Genau zur angegebenen Uhrzeit, was immer sie dann tut. */
+	AtHour,
+	/** Wenn sie draußen spazieren geht (Licht durch den Bauch). */
+	Walk,
+	/** Wenn sie abends mit dem Bauch spricht. */
+	BellyTalk
+};
+
+/**
+ * Ein Moment der Schwangerschaft (GENESIS-044 Teil 1b, Docs/34): eine Woche, eine Uhrzeit, eine Dauer. Zwischen den
+ * Momenten läuft die Zeit im Zeitraffer; im Moment selbst fast in Echtzeit – subjektive Zeit (Masterprompt, Punkt 10).
+ * Die Uhrzeit zählt, weil der Tag der Mutter sie bestimmt: abends spricht sie, nachts ist es still und dunkel.
+ */
+USTRUCT(BlueprintType)
+struct GENESISSLICE_API FGenesisGestationMoment
+{
+	GENERATED_BODY()
+
+	/** SSW (ab der letzten Regel, wie in den Quellen). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Slice") float GestationalWeeks = 20.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Slice") float HourOfDay = 12.0f;
+	/**
+	 * Statt einer festen Uhrzeit eine Situation in ihrem Tag: Der Ablauf sucht in dieser Woche den Tag und die Stunde,
+	 * zu der sie wirklich spazieren geht oder mit dem Bauch spricht. Die Welt wartet nicht auf den Spieler – der Moment
+	 * findet die Wirklichkeit.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Slice") EGenesisGestationSituation Situation = EGenesisGestationSituation::AtHour;
+	/** Echtzeit im Moment (s). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Slice") float Seconds = 30.0f;
+	/** Kapitelzeile, sparsam eingeblendet. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Slice") FString Title;
+	/** Darunter: was sich in dieser Woche für das Kind ändert (Docs/34). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Slice") FString Subtitle;
+};
+
+/** Wo der Ablauf der Schwangerschaft nach einer Echtzeit steht. */
+struct GENESISSLICE_API FGenesisGestationPlanPoint
+{
+	/** Zielzeit: Stunden seit der Befruchtung. */
+	double HoursAfterConception = 0.0;
+	/** Index des laufenden Moments, -1 im Zeitraffer dazwischen. */
+	int32 MomentIndex = -1;
+	/** Fortschritt im Moment bzw. im Zeitraffer (0..1). */
+	float Alpha = 0.0f;
+	/** Der Ablauf ist durch: Die Zielzeit steht auf der Geburt. */
+	bool bFinished = false;
+};
+
 /** Stellschrauben der Regie. */
 USTRUCT(BlueprintType)
 struct GENESISSLICE_API FGenesisSliceTuning
 {
 	GENERATED_BODY()
+
+	FGenesisSliceTuning();
 
 	/**
 	 * Ab dieser Woche nach der Befruchtung beginnt die Geburt: 38 = SSW 40, der errechnete Termin. (Bis GENESIS-044
@@ -134,18 +189,6 @@ struct GENESISSLICE_API FGenesisSliceTuning
 
 	/** Dritte und vierte Woche (Keimblätter bis Herzschlag): 12 h je Sekunde, gut eine halbe Minute für 15 Tage. */
 	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0.1")) float BodyPlanHoursPerSecond = 12.0f;
-
-	/** Wie viele Stunden die Regie je Schritt überspringt, solange die erste Woche läuft (alt, nicht mehr benutzt). */
-	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "1", ClampMax = "24")) int32 EmbryoSkipHours = 6;
-
-	/** Echtzeit zwischen zwei Schritten der ersten Woche (s). */
-	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0", ClampMax = "5")) float EmbryoStepSeconds = 0.25f;
-
-	/** Wie viele Tage die Regie je Schritt überspringt, solange die Schwangerschaft läuft. */
-	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "1", ClampMax = "60")) int32 GestationSkipDays = 7;
-
-	/** Echtzeit zwischen zwei Sprüngen (s) – so bleibt die Schwangerschaft ein Verlauf und kein Schnitt. */
-	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0", ClampMax = "5")) float GestationStepSeconds = 0.35f;
 
 	/**
 	 * Simulationssekunden je Sekunde im Eileiter.
@@ -232,4 +275,13 @@ struct GENESISSLICE_API FGenesisSliceTuning
 	 * weiterläuft. Der eine Moment, in dem die Zeit stillsteht.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Slice", meta = (ClampMin = "0", ClampMax = "60")) float BodyPlanHoldSeconds = 8.0f;
+
+	/** Die Schwangerschaft in Momenten (Standard in GenesisSliceLogic::DefaultGestationMoments, Docs/34). */
+	UPROPERTY(EditAnywhere, Category = "Gestation") TArray<FGenesisGestationMoment> GestationMoments;
+	/** Echtzeit des Zeitraffers zwischen zwei Momenten (s). */
+	UPROPERTY(EditAnywhere, Category = "Gestation", meta = (ClampMin = "1", ClampMax = "60")) float GestationTravelSeconds = 16.0f;
+	/** Der Mutterleib aus Sicht des Kindes (GENESIS-044 Teil 1b). */
+	UPROPERTY(EditAnywhere, Category = "Gestation") FName GestationMap = TEXT("L_GEN_Mutterleib");
+	/** Weltsekunden je Echtzeitsekunde im Moment: fast Echtzeit, ein Abend in einer halben Minute wäre zu schnell. */
+	UPROPERTY(EditAnywhere, Category = "Gestation", meta = (ClampMin = "1", ClampMax = "600")) float GestationMomentTimeScale = 8.0f;
 };

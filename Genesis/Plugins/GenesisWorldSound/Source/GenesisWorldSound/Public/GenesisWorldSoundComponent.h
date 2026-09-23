@@ -40,6 +40,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Genesis|WorldSound")
 	bool bHeardFromOutside = true;
 
+	/**
+	 * true: Der Mutterleib, wie das Ungeborene ihn hört (GENESIS-044): durch sein reifendes Gehör – vor SSW 19 Stille,
+	 * dann ein schmales Band, das sich weitet (Docs/34). Die Laute der Mutter kommen mit der Stärke ihres eigenen
+	 * Körpers an (BodyAudibility), nicht gedämpft wie etwas von draußen. Geht vor bHeardFromOutside.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Genesis|WorldSound")
+	bool bHeardByUnborn = false;
+
 	/** true: Der Mix darf diesen Ort zurücktreten lassen, wenn jemand spricht. */
 	UPROPERTY(EditAnywhere, Category = "Genesis|WorldSound")
 	bool bFollowMix = true;

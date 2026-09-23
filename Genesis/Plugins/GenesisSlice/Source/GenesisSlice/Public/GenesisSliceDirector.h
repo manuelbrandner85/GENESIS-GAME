@@ -56,6 +56,9 @@ public:
 
 	FGenesisOnSlicePhase OnPhaseChanged;
 
+	/** Wo der Ablauf der Schwangerschaft gerade steht (für Anzeige und Szene); außerhalb der Phase leer. */
+	FGenesisGestationPlanPoint GetGestationPlanPoint() const { return GestationPlanPoint; }
+
 private:
 	bool Tick(float DeltaSeconds);
 	void EnterPhase(EGenesisSlicePhase NewPhase, EGenesisSliceEnding Ending);
@@ -84,6 +87,10 @@ private:
 	 * einmal versucht: Fehlt eine Karte, würde sonst jedes Bild einen Ladeversuch starten.
 	 */
 	FName EmbryoTravelTried;
+	/** Schwangerschaft in Momenten: Stunden seit der Befruchtung beim Eintritt, der aktuelle Stand des Plans. */
+	double GestationStartHours = 0.0;
+	TArray<double> GestationMomentStarts;
+	FGenesisGestationPlanPoint GestationPlanPoint;
 	/** Wie lange der fertige Bauplan schon steht – so lange hält der Zeitraffer an (Tuning.BodyPlanHoldSeconds). */
 	float BodyPlanHeldSeconds = 0.0f;
 	/** Wie lange der Durchlauf schon zu Ende ist – der Abspann kommt nicht im selben Augenblick. */

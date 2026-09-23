@@ -38,4 +38,24 @@ namespace GenesisSliceLogic
 
 	/** Wie MapForEmbryoStage – ab Tag EmbryoSceneFromDay aber die Fruchthöhle, in der der Embryo selbst zu sehen ist. */
 	GENESISSLICE_API FName MapForEmbryo(EGenesisEmbryoStage Stage, float DayPostFertilization, const FGenesisSliceTuning& Tuning);
+
+	/** Die Momente der Schwangerschaft nach der Wochentafel (Docs/34). */
+	GENESISSLICE_API TArray<FGenesisGestationMoment> DefaultGestationMoments();
+
+	/**
+	 * Wo der Ablauf der Schwangerschaft nach ElapsedSeconds Echtzeit steht: Zeitraffer zum nächsten Moment (weich
+	 * beschleunigt und abgebremst), im Moment die Weltzeit mit GestationMomentTimeScale, am Ende zur Geburt.
+	 * StartHours: Stunden seit der Befruchtung beim Eintritt in die Phase.
+	 */
+	GENESISSLICE_API FGenesisGestationPlanPoint EvaluateGestationPlan(const FGenesisSliceTuning& Tuning, const TArray<double>& MomentStarts,
+		double StartHours, float ElapsedSeconds);
+
+	/** Die Startzeiten aller Momente (Stunden seit der Befruchtung) – einmal je Durchlauf berechnen, die Suche ist teuer. */
+	GENESISSLICE_API TArray<double> ResolveGestationMoments(const FGenesisSliceTuning& Tuning, int32 MotherSeed);
+
+	/** Stunden seit der Befruchtung, zu denen ein Moment beginnt – bei einer Situation im wirklichen Tag der Mutter gesucht. */
+	GENESISSLICE_API double MomentStartHours(const FGenesisGestationMoment& Moment, int32 MotherSeed);
+
+	/** Gesamtdauer des Ablaufs in Echtzeit (s). */
+	GENESISSLICE_API float GestationPlanSeconds(const FGenesisSliceTuning& Tuning);
 }

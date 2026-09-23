@@ -130,3 +130,87 @@ Prostaglandin D2) halten das Kind überwiegend in einem schlafähnlichen Zustand
 - Gemessen im Test: Herz am schnellsten 170/min in SSW 9, zum Termin 135/min; SSW 28 Ruhe 59 % / Aktivität 41 %;
   SSW 38 ruhiger Schlaf 24 %, aktiver Schlaf 65 %, wach 11 %. Ein alter Test verlangte volles Hören schon in SSW 28 –
   nach Hepper & Shahidullah falsch (1000 Hz erst ab SSW 33) und angepasst.
+
+## Teil 1b – der Mutterleib aus Sicht des Kindes (umgesetzt)
+
+Die Schwangerschaft ist kein schwarzer Zeitraffer mehr, sondern eine eigene Karte `L_GEN_Mutterleib`: Die Kamera
+**ist** das Kind. Was man sieht und hört, rechnet sich aus seinen Sinnen (Teil 1a) und dem Tag der Mutter.
+
+**Der Tag der Mutter** (`GenesisMotherDay`, Plugin GenesisPeople): Aufstehen ~7 Uhr, Mahlzeiten, Arbeit sitzend,
+ein Spaziergang am Nachmittag (an 7 von 10 Tagen), abends spricht sie mit dem Bauch (ab SSW 16), manchmal Musik,
+Schlaf ab ~23 Uhr. Jeder Tag etwas anders, aber reproduzierbar. Daraus: Tätigkeit, Puls, Stimme, Verdauung, Wiegen –
+und das Licht auf dem Bauch (draußen Tageslicht, drinnen Fenster oder Lampe, nachts nichts).
+
+**Licht im Mutterleib:** Bauchlicht × Kleidung (15 %, Annahme) × Durchlass der Bauchdecke. Den Durchlass gibt es
+gemessen nur beim **Schaf** (Parraguez et al. 1998): 0,2 % zur Mitte der Tragzeit, gut 5 % kurz vor dem Termin, mit
+dem Tagesgang des Sonnenlichts. Für den Menschen fehlt eine direkte Messung; Reid et al. 2017 kommen mit rotem Licht
+auf eine ähnliche Größenordnung. Das Spiel nimmt die Schafwerte logarithmisch zwischen SSW 20 und 40 und sagt das hier
+offen. Ergebnis: draußen am Nachmittag in SSW 31 rund 10 lx, im Zimmer unter 1 lx, nachts 0.
+
+**Puls der Mutter:** in der Schwangerschaft bis +15/min über dem Ruhepuls (Sanghavi & Rutherford 2014), dazu Schlaf
+und Bewegung. Das Kind hört ihn als Herzschlag im Klang des Ortes.
+
+**Die Momente** (Regie, `GenesisSliceLogic::DefaultGestationMoments`): Zwischen den Momenten läuft die Zeit im
+Zeitraffer (16 s), im Moment 8-mal schneller als Echtzeit. Ein Moment sucht sich in seiner Woche den Tag und die Stunde,
+zu der die Situation wirklich eintritt (Spaziergang, Bauchgespräch) – die Welt wartet nicht auf den Spieler.
+
+| SSW | Situation | Kapitelzeile | Was das Kind erlebt |
+|---|---|---|---|
+| 19 | Bauchgespräch | Das Hören beginnt | Dunkel; ihre Stimme als schmales, dumpfes Band um 500 Hz |
+| 20,5 | Bauchgespräch | Sie spürt die ersten Bewegungen | Der erste Tritt, den sie spürt – sie antwortet |
+| 24 | 3 Uhr | Nachts: ihr Herz, ihr Atem | Stille außer ihrem Körper; Eigengrau |
+| 28 | Spaziergang | Die Lider öffnen sich | Erstes rotes Licht, Wiegen im Schritt |
+| 31 | Spaziergang | Licht durch den Bauch | Pupillen reagieren; Nabelschnur im Gegenlicht |
+| 34 | 20 Uhr | Das Hören wird feiner | 1000 Hz hörbar, Stimmen klarer |
+| 37 | Bauchgespräch | Es wird eng | „Nicht mehr lange, dann sehen wir uns.“ |
+
+Zusammen rund 6 Minuten (eine Stellschraube: `GestationMoments[].Seconds`, `GestationTravelSeconds`).
+
+**Was man sieht** (`AGenesisWombScene`):
+- Die Höhle nach den Referenzen (Doc 36): Fruchtblase an der Gebärmutterwand, Plazenta hinten oben mit erhabenen
+  Gefäßen, die Nabelschnur in Schlingen zum Nabel, drei Gefäße spiralig in der Wharton-Sulze. Sie wächst mit der Woche
+  (Innenradius 1,5 cm in SSW 8 bis 14,5 cm am Termin).
+- Das Licht kommt nicht von einer Lampe, sondern durch die Bauchwand: Die vordere Wand leuchtet tiefrot, fleckig
+  (die Bauchdecke ist nicht überall gleich dick), hinten fast nichts. Gewebe davor scheint im Gegenlicht durch.
+- Wahrnehmung statt Kamera: Das dunkeladaptierte Auge gleicht die Lichtmenge aus; wie hell es wirkt, folgt dem Licht
+  (logarithmisch), den Lidern und der Pupille. Vor SSW 26 nur diffuses Leuchten hinter den Lidern, danach das Grobe
+  wenige Zentimeter vor dem Gesicht, nie scharf. Ohne Licht kein Schwarz, sondern **Eigengrau** – das schwache,
+  rauschende Dunkel, das man auch mit geschlossenen Augen sieht. Vor dem bewussten Erleben (SSW 23–26) ist alles
+  gedämpfter.
+- Eigene Bewegungen als Ruck der Kamera (Schreck, Tritt, Strecken, Schluckauf), ihr Gehen als Wiegen, ihr Atem.
+
+**Was man hört:** ihr Herz, ihr Blut, ihr Darm nach dem Essen – durch den Hörfilter des Kindes (Band und
+Empfindlichkeit nach Woche). Ihre Stimme ab SSW 16, wenn sie spricht; nach dem ersten gespürten Tritt ihr
+„Hallo, du da drin“, ab SSW 36 „Nicht mehr lange“.
+
+**Unterwegs gefunden und behoben:**
+- Die Nabelschnur stand rein schwarz im Bild. Ursache: Lumen gibt Teilen unter ~10 Einheiten keine Oberflächenkarten,
+  bei 1 cm = 1 Einheit war die Schnur 4–5 Einheiten groß. Die Szene rechnet jetzt 10 Einheiten je cm; Fokus und Blende
+  sind mitskaliert, damit die Unschärfe gleich bleibt.
+- Auch danach blieb die Schnur schwarz – physikalisch halb richtig (ihre sichtbare Seite zeigt zur dunklen Rückwand),
+  aber es fehlte das Licht, das durch die Sulze dringt. Unreal rechnet Durchlicht nur für Lampen, nicht für eine
+  leuchtende Wand; das Gewebematerial gibt es jetzt nach Blickrichtung und Randdicke selbst aus.
+- Die Belichtung war physikalisch richtig, aber die Momente im Zimmer waren fast schwarz: 0,4 lx sind 25-mal weniger als
+  10 lx, und nur die halbe Anpassung war eingerechnet. Jetzt gleicht das Auge ganz aus, die Wahrnehmung setzt die
+  Helligkeit.
+
+Quellen zusätzlich zu oben: Parraguez VH et al. 1998, *Diurnal changes in light intensity inside the pregnant uterus
+in sheep*, Anim Reprod Sci 52:123–130 ([DOI](https://doi.org/10.1016/s0378-4320(98)00094-3)); Sanghavi M,
+Rutherford JD 2014, *Cardiovascular physiology of pregnancy*, Circulation 130:1003–1008
+([DOI](https://doi.org/10.1161/CIRCULATIONAHA.114.009029)).
+
+**Geprüft im gebauten Spiel** (Autopilot, ein Rennen verloren und neu gestartet): Schwangerschaft von 206,7 s bis
+574,7 s (368 s), alle sieben Momente, danach die Geburt. Aus dem Log: SSW 19,1 um 21:09 – sie ruht und spricht, Hörband
+362–561 Hz; SSW 20,2 spürt sie den ersten Tritt und antwortet; SSW 24 um 3 Uhr schläft sie (0 lx); SSW 28,4 um 17:30 geht
+sie spazieren (6,6 lx im Mutterleib), SSW 31,1 um 16:48 ebenso (15,5 lx); SSW 37,1 „Nicht mehr lange“. Leistung in
+`L_GEN_Mutterleib` (1280×720): Frame 5,2 ms, GPU 3,9 ms, 58 Draws.
+
+Danach noch korrigiert: Ihre Stimme kam in SSW 19 mit Lautstärke 0,07 – am Lautsprecher praktisch Stille, der
+Signature Moment wäre verloren. Wie das Auge an die Lichtmenge passt sich jetzt das Ohr an seine Schwelle an
+(`GenesisAudioCoreLogic::UnbornPresentationGain`: was gehört wird, mindestens 0,25, Abstufung bleibt). Ein schwarzer
+Strich auf der Nabelschnur war ein Nabelgefäß, das in einer engen Schlinge durch die Oberfläche stach; die Gefäße
+liegen jetzt tiefer und zeigen sich stattdessen als weiche Spiralschatten im Durchlicht (~0,2 Windungen je cm wie im
+Mittel echter Nabelschnüre).
+
+![SSW 28: Die Lider öffnen sich](Media/GENESIS-044_Mutterleib_SSW28.png)
+![SSW 37: Es wird eng](Media/GENESIS-044_Mutterleib_SSW37.png)
