@@ -123,6 +123,9 @@ struct GENESISCONCEPTION_API FGenesisSpermCell
 	 */
 	float Vigor = -1.0f;
 
+	/** Momentane Drehung der Schwimmrichtung (rad/s, Achse × Betrag) – ändert sich nur allmählich. */
+	FVector TurnRate = FVector::ZeroVector;
+
 	/** Eigener Zufallsstrom – Zellen bleiben unabhängig von Reihenfolge und Anzahl. */
 	FGenesisRandomStream Random;
 };
@@ -179,6 +182,13 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	 * hohen Wert taumelt der ganze Schwarm, und aus gerichtetem Schwimmen wird ein Gewimmel.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Progressive") float ProgressiveRotationalDiffusion = 0.035f;
+
+	/**
+	 * Gedächtnis der Drehung (s): So lange hält eine Zelle eine begonnene Kurve, bevor sie zufällig eine andere
+	 * einschlägt. Ein Spermium wendet über mehrere Schläge (bei ~20 Hz ist 0,15 s rund drei Schläge), nicht von
+	 * einem Schritt zum nächsten.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Steering", meta = (ClampMin = "0.01")) float TurnMemorySeconds = 0.15f;
 
 	/**
 	 * Höchste Drehrate beim Lenken (rad/s). Spermien lenken, indem sie den Geißelschlag asymmetrisch

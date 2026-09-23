@@ -163,12 +163,20 @@ namespace GenesisSpermSwimLogic
 		// 2. Rotationsdiffusion
 		const float RotationalDiffusion = bHyper ? Tuning.HyperRotationalDiffusion
 			: (Cell.Motility == EGenesisSpermMotility::Sluggish ? 2.0f * Tuning.ProgressiveRotationalDiffusion : Tuning.ProgressiveRotationalDiffusion);
-		const float Angle = Rng.Gaussian(0.0f, FMath::Sqrt(2.0f * RotationalDiffusion * Dt));
-		if (Angle != 0.0f)
+		// Die Zelle dreht mit einer Winkelgeschwindigkeit, die sich nur allmählich ändert (Ornstein-Uhlenbeck), statt in
+		// jedem Schritt einen neuen, unabhängigen Stoß zu bekommen. In zäher Flüssigkeit gibt es keine sprunghaften
+		// Richtungswechsel: Vorher zitterte die Schwimmrichtung Schritt für Schritt (hyperaktiviert bis ~6° je Bild),
+		// und die Zelle wirkte zuckend statt schwimmend (Game Director, GENESIS-047). Auf lange Sicht bleibt die
+		// Streuung der Richtung dieselbe: stationäre Varianz D/τ je Achse ergibt die Rotationsdiffusion D.
+		const float Memory = FMath::Max(0.01f, Tuning.TurnMemorySeconds);
+		const float Kick = FMath::Sqrt(2.0f * RotationalDiffusion * Dt) / Memory;
+		const FVector Noise(Rng.Gaussian(0.0f, 1.0f), Rng.Gaussian(0.0f, 1.0f), Rng.Gaussian(0.0f, 1.0f));
+		Cell.TurnRate += -Cell.TurnRate * FMath::Min(1.0f, Dt / Memory) + Noise * Kick;
+		Cell.TurnRate -= Cell.Heading * FVector::DotProduct(Cell.TurnRate, Cell.Heading);
+		const double TurnSpeed = Cell.TurnRate.Size();
+		if (TurnSpeed > UE_KINDA_SMALL_NUMBER)
 		{
-			const FVector RandomVector(Rng.FRandRange(-1.0f, 1.0f), Rng.FRandRange(-1.0f, 1.0f), Rng.FRandRange(-1.0f, 1.0f));
-			const FVector Axis = SafeNormal(FVector::CrossProduct(Cell.Heading, RandomVector), FVector::UpVector);
-			Cell.Heading = FQuat(Axis, Angle).RotateVector(Cell.Heading);
+			Cell.Heading = FQuat(Cell.TurnRate / TurnSpeed, TurnSpeed * Dt).RotateVector(Cell.Heading);
 		}
 
 		// 3. Rheotaxis: an der Wand gegen den Strom drehen
@@ -281,8 +289,8 @@ namespace GenesisSpermSwimLogic
 		// Der Kopf dreht sich nur als Gegenbewegung zur Geißel – er pendelt nicht selbst. Gemessen: progressiv
 		// ±3–6°, hyperaktiviert ±25–40° (Docs/26). Früher drehte sich hier die ganze Zelle um bis zu 55° im
 		// Schlagtakt; die Geißel schwang dadurch als starrer Stab mit, und genau das sah nach Wackeln aus.
-		const double YawAmplitude = HeadYawAmplitude(Cell);
-		const double Yaw = YawAmplitude * FMath::Cos(2.0 * UE_DOUBLE_PI * Cell.BeatPhase) + 0.1 * Cell.Asymmetry;
+
+		const double Yaw = HeadYaw(Cell);
 		const FQuat YawRotation(Normal, Yaw);
 		const FVector Forward = YawRotation.RotateVector(Cell.Heading);
 		const FVector YawedSide = YawRotation.RotateVector(Side);
@@ -296,6 +304,37 @@ namespace GenesisSpermSwimLogic
 		return Cell.HeadAmplitudeUm * (0.019 + 0.03 * FMath::Clamp(Cell.Asymmetry, 0.0f, 1.0f));
 	}
 
+	FGenesisSpermCell InterpolateCell(const FGenesisSpermCell& From, const FGenesisSpermCell& To, float Alpha, double MaxJumpUm)
+	{
+		FGenesisSpermCell Result = To;
+		const double A = FMath::Clamp(static_cast<double>(Alpha), 0.0, 1.0);
+		if (A >= 1.0 || FVector::DistSquared(From.Position, To.Position) > FMath::Square(MaxJumpUm))
+		{
+			return Result;
+		}
+		// Phasen laufen nur vorwärts und sind auf 0..1 gefaltet: der kurze Weg vorwärts über den Umbruch
+		const auto Forward = [A](double Start, double End) { return Wrap01(Start + Wrap01(End - Start) * A); };
+		Result.Position = FMath::Lerp(From.Position, To.Position, A);
+		Result.Heading = SafeNormal(FMath::Lerp(From.Heading, To.Heading, A), To.Heading);
+		Result.BeatPhase = Forward(From.BeatPhase, To.BeatPhase);
+		Result.RollPhase = Forward(From.RollPhase, To.RollPhase);
+		Result.HeadAmplitudeUm = FMath::Lerp(From.HeadAmplitudeUm, To.HeadAmplitudeUm, static_cast<float>(A));
+		Result.Asymmetry = FMath::Lerp(From.Asymmetry, To.Asymmetry, static_cast<float>(A));
+		Result.WavelengthUm = FMath::Lerp(From.WavelengthUm, To.WavelengthUm, static_cast<float>(A));
+		Result.PenetrationDepthUm = FMath::Lerp(From.PenetrationDepthUm, To.PenetrationDepthUm, static_cast<float>(A));
+		return Result;
+	}
+
+	double HeadYaw(const FGenesisSpermCell& Cell)
+	{
+		return HeadYawAmplitude(Cell) * FMath::Cos(2.0 * UE_DOUBLE_PI * Cell.BeatPhase) + 0.1 * Cell.Asymmetry;
+	}
+
+	double HeadLateral(const FGenesisSpermCell& Cell)
+	{
+		return 0.5 * Cell.HeadAmplitudeUm * FMath::Sin(2.0 * UE_DOUBLE_PI * Cell.BeatPhase);
+	}
+
 	float FlagellumTipAngle(const FGenesisSpermCell& Cell)
 	{
 		// Auslenkungswinkel der Geißel an der Spitze (rad): progressiv ~0,8, hyperaktiviert bis 1,3
@@ -303,11 +342,14 @@ namespace GenesisSpermSwimLogic
 		return FMath::Clamp(0.55f + 0.08f * Cell.HeadAmplitudeUm * (0.5f + Asym), 0.6f, 1.35f);
 	}
 
-	void ComputeMaterialData(const FGenesisSpermCell& Cell, float OutData[4])
+	void ComputeMaterialData(const FGenesisSpermCell& Cell, float OutData[MaterialDataCount])
 	{
 		OutData[0] = static_cast<float>(Cell.BeatPhase);
 		OutData[1] = FlagellumTipAngle(Cell);
 		OutData[2] = Cell.Asymmetry;
 		OutData[3] = Cell.WavelengthUm;
+		// Kopfdrehung und Seitenversatz dieses Bildes: Der Shader nimmt sie entlang der Geißel wieder heraus
+		OutData[4] = static_cast<float>(HeadYaw(Cell));
+		OutData[5] = static_cast<float>(HeadLateral(Cell));
 	}
 }

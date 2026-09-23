@@ -434,7 +434,11 @@ def create_section_collection():
     active = unreal.CollectionScalarParameter()
     active.set_editor_property("parameter_name", "SectionActive")
     active.set_editor_property("default_value", 0.0)
-    mpc.set_editor_property("scalar_parameters", [front, back, active])
+    # Breite des Übergangs (µm): fast hart im Mikroskop-Schnitt, weich beim Schwimmen, wo nahe Zellen vor der Linse vergehen
+    soft = unreal.CollectionScalarParameter()
+    soft.set_editor_property("parameter_name", "SectionSoftUm")
+    soft.set_editor_property("default_value", 0.5)
+    mpc.set_editor_property("scalar_parameters", [front, back, active, soft])
     eal.save_loaded_asset(mpc)
     return mpc
 
@@ -455,17 +459,21 @@ def section_fade(material, mpc, x, y, dither):
     # Eine Schicht, keine Kante: vorn und hinten blendet es aus. Fast harte Kante (0,5 µm): Breite Übergänge (8, dann
     # 3 µm) legten in der dünnen Schicht grobe Rastermuster über ganze Zellen (gesehen in GENESIS-047 Teil 2b). Ein
     # Mikroskop zeigt angeschnittene Zellen als Schnitt, nicht als zerfallendes Muster.
-    code = "float fade = min(saturate((Depth - Front) / 0.5), saturate((Back - Depth) / 0.5));\n"
+    soft = expression(material, unreal.MaterialExpressionCollectionParameter, x - 250, y + 240)
+    soft.set_editor_property("collection", mpc)
+    soft.set_editor_property("parameter_name", "SectionSoftUm")
+    code = "float w = max(Soft, 0.1);\nfloat fade = min(saturate((Depth - Front) / w), saturate((Back - Depth) / w));\n"
     if dither:
         code += ("float2 p = Parameters.SvPosition.xy + 5.588238 * float(View.StateFrameIndexMod8);\n"
                  "float noise = frac(52.9829189 * frac(dot(p, float2(0.06711056, 0.00583715))));\n"
                  "return fade + (noise - 0.5) * 0.98;\n")
     else:
         code += "return fade;\n"
-    node = custom(material, x, y, "Optischer Schnitt", code, ["Depth", "Front", "Back"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    node = custom(material, x, y, "Optischer Schnitt", code, ["Depth", "Front", "Back", "Soft"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     connect(depth, "", node, ["Depth"])
     connect(front, "", node, ["Front"])
     connect(back, "", node, ["Back"])
+    connect(soft, "", node, ["Soft"])
     return node
 
 

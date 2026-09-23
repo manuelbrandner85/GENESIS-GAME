@@ -136,8 +136,10 @@ WPO_CODE = """
 // schwingt – ψ(s,t) = ψ0(s) + A(s)·[sin(k·s − ωt) + ε·sin(2(k·s − ωt) + φ2)], A wächst vom Mittelstück zur Spitze.
 // Die Mittellinie ist das Integral des Winkels, dadurch bleibt die Geißel exakt 55 µm lang. Die frühere seitliche
 // Verschiebung dehnte die Geißel bei kurzen Wellen um ein Vielfaches und ließ sie zappeln statt schlagen.
-// Lage entlang der Zelle aus der UV (V: 0 Kopfspitze … 1 Geißelende), lokale Achsen: X vorn, Y Schlagseite.
-float s = UV.y * 60.6;                       // µm ab Kopfspitze
+// Lage entlang der Zelle aus der UV, lokale Achsen: X vorn, Y Schlagseite. Der FBX-Weg aus Blender spiegelt V:
+// In Unreal hat die Kopfspitze V = 1, das Geißelende V = 0 (gemessen am Mesh, GENESIS-047). Bis dahin stand hier
+// UV.y – dann blieb das Geißelende starr, und der Kopf schlug als freies Ende der Welle mit voller Auslenkung um sich.
+float s = (1.0 - UV.y) * 60.6;               // µm ab Kopfspitze
 const float s0 = 5.6;                        // Hals: davor starr (Kopf)
 const float L = 55.0;
 if (s <= s0) return float3(0.0, 0.0, 0.0);
@@ -160,8 +162,14 @@ for (int i = 0; i < N; ++i)
     float ramp = saturate(sm / 1.5);         // weicher Übergang am Hals, kein Knick
     float x = k * sm - w;
     float a = bias * tt + ramp * lerp(A0, Amp, tt) * (sin(x) + eps * sin(2.0 * x + 1.3));
+    // Gegendrehung (GENESIS-047): Die Instanz ist um die Kopfdrehung Yaw gedreht. Nur der Kopf soll ihr folgen –
+    // die Geißel nimmt sie über die ersten 12 µm wieder heraus und bleibt als Welle auf der Schwimmbahn.
+    // Vorher schwang die ganze Zelle wie ein steifer Stab im Schlagtakt mit und wirkte zuckend.
+    a += Yaw * saturate(sm / 12.0);
     p += float2(-cos(a), sin(a)) * ds;
 }
+// Ebenso der Seitenversatz des Kopfes: Er gehört dem Kopf, die Geißel kehrt über 25 µm auf die Bahn zurück.
+p.y -= Lat * saturate((s - s0) / 25.0);
 // Der ganze Ring des Querschnitts wandert auf die gebogene Mittellinie. Die Drehung des Querschnitts
 // selbst (Dicke unter 1 µm) sieht man nicht. Positionsknoten liefern bei Instanzen keine verlässliche
 // Lage im Mesh – ein erster Versuch damit schleuderte die Geißeln quer durch den Kanal.
@@ -177,7 +185,7 @@ return frac(T * BeatHz + h);
 OPACITY_CODE = """
 // Optische Dichte entlang der Zelle (Referenz: Blender-Volumenmaterial). Kern und postakrosomale Region am dichtesten,
 // Mittelstück (Mitochondrien) mittel, Geißel fast durchsichtig. Dünnere Weglänge am Rand (Blickwinkel).
-float s = UV.y * 60.6;
+float s = (1.0 - UV.y) * 60.6;               // µm ab Kopfspitze (V ist im Mesh gespiegelt)
 float post = smoothstep(2.3, 2.8, s) * (1.0 - smoothstep(3.9, 4.6, s));
 float core = smoothstep(0.8, 1.8, s) * (1.0 - smoothstep(3.4, 4.3, s));
 float tau = 0.03 + 0.55 * VC.b + 0.55 * post + 0.40 * core + 0.30 * VC.g;
@@ -196,7 +204,7 @@ return saturate(1.0 - exp(-tau));
 COLOR_CODE = """
 // Streufarbe: blass, Mittelstück leicht gelblich (Cytochrome). Der dicht gepackte Kern streut am stärksten
 // und hebt sich dadurch heller ab; die Akrosomkappe davor bleibt klarer.
-float s = UV.y * 60.6;
+float s = (1.0 - UV.y) * 60.6;               // µm ab Kopfspitze (V ist im Mesh gespiegelt)
 float core = smoothstep(0.9, 1.9, s) * (1.0 - smoothstep(3.6, 4.4, s));
 float3 base = lerp(float3(0.22, 0.215, 0.205), float3(0.21, 0.19, 0.16), VC.g);
 return lerp(base, float3(0.34, 0.335, 0.32), core * 0.7);
@@ -256,8 +264,13 @@ def create_sperm_material(mpc):
     amplitude = instance_data(1, tip_amp, -300)
     asymmetry = instance_data(2, asym, -200)
     lam = instance_data(3, wavelength, -100)
+    # Kopfdrehung und Seitenversatz je Instanz (GENESIS-047); Einzelobjekte ohne Instanzdaten: keine
+    yaw = instance_data(4, expression(material, unreal.MaterialExpressionConstant, -1500, 0, r=0.0), 0)
+    lateral = instance_data(5, expression(material, unreal.MaterialExpressionConstant, -1500, 100, r=0.0), 100)
 
-    wpo = custom(material, -800, -300, "Geisselschlag", WPO_CODE, ["UV", "Phase", "Amp", "Asym", "Lambda"], float3)
+    wpo = custom(material, -800, -300, "Geisselschlag", WPO_CODE, ["UV", "Phase", "Amp", "Asym", "Lambda", "Yaw", "Lat"], float3)
+    connect(yaw, "", wpo, ["Yaw"])
+    connect(lateral, "", wpo, ["Lat"])
     connect(texture_coords, "", wpo, ["UV"])
     connect(phase, "", wpo, ["Phase"])
     connect(amplitude, "", wpo, ["Amp"])
@@ -476,7 +489,9 @@ CILIA_CODE = """
 // Metachroner Schlag: Die Zilien schlagen nicht gleichzeitig, sondern als Welle, die über das Epithel läuft
 // (Wellenlänge ~25 µm, 8 Schläge/s). Der Halm biegt sich zur Spitze hin immer stärker.
 // Der Arbeitsschlag geht Richtung Gebärmutter (−X), die Rückholbewegung ist langsamer und flacher.
-float h = UV.y;                       // 0 am Fuß, 1 an der Spitze
+// 0 am Fuß, 1 an der Spitze. Der FBX-Import spiegelt V (in Blender ist V = h): Bis GENESIS-047 stand hier UV.y,
+// dann schwang der Fuß und die Spitze stand still.
+float h = 1.0 - UV.y;
 float jitter = UV.x;
 float wave = sin(6.2831853 * (WorldPos.x / 25.0 - Time * 8.0 + jitter));
 float stroke = wave >= 0.0 ? pow(wave, 0.6) : -pow(-wave, 1.6) * 0.55;   // schneller Arbeitsschlag, weiche Rückholung

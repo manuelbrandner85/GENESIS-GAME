@@ -292,7 +292,7 @@ bool FGenesisSpermVisualTest::RunTest(const FString& Parameters)
 		// die ganze Zelle pendelt nicht, nur der Kopf gibt der Geißel nach
 		const double YawDegrees = FMath::RadiansToDegrees(GenesisSpermSwimLogic::HeadYawAmplitude(Cell));
 		bYawReal &= Cell.Motility == EGenesisSpermMotility::Hyperactivated ? YawDegrees <= 40.0 : YawDegrees <= 6.5;
-		float Data[4];
+		float Data[GenesisSpermSwimLogic::MaterialDataCount];
 		GenesisSpermSwimLogic::ComputeMaterialData(Cell, Data);
 		bDataValid &= Data[0] >= 0.0f && Data[0] < 1.0f && Data[1] >= 0.5f && Data[1] <= 1.4f && Data[2] >= 0.0f && Data[2] <= 1.0f && Data[3] > 0.0f;
 	}
@@ -300,6 +300,25 @@ bool FGenesisSpermVisualTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Zelle zeigt in Schwimmrichtung"), bAligned);
 	TestTrue(TEXT("Kopfdrehung im gemessenen Bereich"), bYawReal);
 	TestTrue(TEXT("Materialdaten gültig"), bDataValid);
+
+	// Glättung zwischen zwei Schritten (GENESIS-047): Phase läuft vorwärts über den Umbruch, Lage liegt dazwischen,
+	// Umlauf am Kanalende wird nicht überblendet
+	{
+		FGenesisSpermCell From = Cells[0];
+		From.Motility = EGenesisSpermMotility::Progressive;
+		From.BeatPhase = 0.95;
+		From.Position = FVector(100.0, 0.0, 0.0);
+		FGenesisSpermCell To = From;
+		GenesisSpermSwimLogic::Step(To, Channel, Tuning, Tuning.FixedStepSeconds);
+		To.BeatPhase = 0.05;
+		To.Position = FVector(102.0, 0.0, 0.0);
+		const FGenesisSpermCell Half = GenesisSpermSwimLogic::InterpolateCell(From, To, 0.5f, 1500.0);
+		TestTrue(FString::Printf(TEXT("Schlagphase gleitet vorwärts über den Umbruch (%.3f)"), Half.BeatPhase), FMath::IsNearlyEqual(Half.BeatPhase, 0.0, 1e-6) || FMath::IsNearlyEqual(Half.BeatPhase, 1.0, 1e-6));
+		TestTrue(TEXT("Lage zwischen beiden Schritten"), Half.Position.Equals(FVector(101.0, 0.0, 0.0), 1e-6));
+		TestTrue(TEXT("Alpha 1 ist der neue Schritt"), GenesisSpermSwimLogic::InterpolateCell(From, To, 1.0f, 1500.0).Position.Equals(To.Position));
+		To.Position = FVector(-2900.0, 0.0, 0.0);
+		TestTrue(TEXT("Umlauf am Kanalende wird nicht überblendet"), GenesisSpermSwimLogic::InterpolateCell(From, To, 0.5f, 1500.0).Position.Equals(To.Position));
+	}
 
 	// Performance: 1000 Zellen, 1 s Simulationszeit (240 Schritte)
 	TArray<FGenesisSpermCell> Swarm;

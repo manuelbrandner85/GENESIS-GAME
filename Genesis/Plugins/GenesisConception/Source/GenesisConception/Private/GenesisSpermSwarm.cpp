@@ -16,12 +16,15 @@
 
 namespace
 {
-	constexpr int32 MaterialDataCount = 4;
+	constexpr int32 MaterialDataCount = GenesisSpermSwimLogic::MaterialDataCount;
 	constexpr uint64 CellSeedSalt = 0x5BE2Aull;
 }
 
 #if !UE_BUILD_SHIPPING
+#include "Camera/PlayerCameraManager.h"
+#include "DrawDebugHelpers.h"
 #include "EngineUtils.h"
+#include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
 
 namespace
@@ -30,6 +33,16 @@ namespace
 		TEXT("genesis.Race.AutoPilot"),
 		0,
 		TEXT("1 = die eigene Zelle lenkt und schlägt von selbst wie ein guter Spieler (Prüfhilfe)."));
+
+	TAutoConsoleVariable<int32> CVarHidePlayer(
+		TEXT("genesis.Conception.HidePlayer"),
+		0,
+		TEXT("1 = die eigene Zelle unsichtbar (Prüfhilfe: welche Zelle ist im Bild?)."));
+
+	TAutoConsoleVariable<int32> CVarTraceMotion(
+		TEXT("genesis.Conception.TraceMotion"),
+		0,
+		TEXT("N = protokolliert N Bilder lang die Bewegung der eigenen Zelle (Schlagphase, Drehung von Achse und Kamera)."));
 
 	FAutoConsoleCommandWithWorldAndArgs GenesisTimeLapseCommand(
 		TEXT("genesis.Conception.TimeLapse"),
@@ -364,9 +377,55 @@ void AGenesisSpermSwarm::Tick(float DeltaSeconds)
 	EffectiveTimeScale = FMath::Exp(FMath::FInterpConstantTo(FMath::Loge(EffectiveTimeScale), FMath::Loge(Target), DeltaSeconds, LogRate));
 	SimulateFor(DeltaSeconds * EffectiveTimeScale, IsTimeLapse() ? TimeLapseStepSeconds : Tuning.FixedStepSeconds);
 	PushInstances(false);
+#if !UE_BUILD_SHIPPING
+	TraceMotion(DeltaSeconds);
+#endif
 
 	LastTickMs = static_cast<float>((FPlatformTime::Seconds() - Start) * 1000.0);
 }
+
+#if !UE_BUILD_SHIPPING
+void AGenesisSpermSwarm::TraceMotion(float DeltaSeconds)
+{
+	// Prüfhilfe für Bewegungsruhe: je Bild Schlagphase, Drehung der gezeichneten Achse, der Kamera und beider zueinander
+	const int32 Remaining = CVarTraceMotion.GetValueOnGameThread();
+	if (Remaining <= 0 || !Cells.IsValidIndex(PlayerCellIndex) || !TransformBuffer.IsValidIndex(PlayerCellIndex))
+	{
+		return;
+	}
+	CVarTraceMotion->Set(Remaining - 1, ECVF_SetByConsole);
+	const FGenesisSpermCell& Mine = *GetCell(PlayerCellIndex);
+	const FVector Axis = TransformBuffer[PlayerCellIndex].GetUnitAxis(EAxis::X);
+	const APlayerController* Controller = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	const FQuat CameraRotation = Controller && Controller->PlayerCameraManager ? Controller->PlayerCameraManager->GetCameraRotation().Quaternion() : FQuat::Identity;
+	const FVector AxisInView = CameraRotation.UnrotateVector(Axis);
+	const auto Degrees = [](const FVector& A, const FVector& B) { return FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(FVector::DotProduct(A, B), -1.0, 1.0))); };
+	const FVector Head = GetCellHeadWorldPosition(PlayerCellIndex);
+	FVector2D Screen(-1.0, -1.0);
+	if (Controller)
+	{
+		Controller->ProjectWorldLocationToScreen(Head, Screen);
+	}
+	const double CameraDistance = Controller && Controller->PlayerCameraManager ? FVector::Dist(Controller->PlayerCameraManager->GetCameraLocation(), Head) : -1.0;
+	// Markierung am berechneten Kopf: Liegt der gezeichnete Kopf woanders, sieht man es sofort im Bild
+	DrawDebugPoint(GetWorld(), Head, 10.0f, FColor::Green, false, 0.0f, SDPG_Foreground);
+	FTransform Drawn;
+	if (Instances && Instances->GetInstanceTransform(PlayerCellIndex, Drawn, true))
+	{
+		DrawDebugPoint(GetWorld(), Drawn.GetLocation(), 6.0f, FColor::Red, false, 0.0f, SDPG_Foreground);
+	}
+	UE_LOG(LogGenesis, Display, TEXT("Bewegung: dt %.1f ms, Zeitfaktor %.2f, Phase %.3f (+%.3f), Kopfachse %.1f°, Kamera %.1f°, Achse im Bild %.1f°, Kurs %.1f°, Kopfdrehung %.1f°, Kopf im Bild (%.0f, %.0f), Abstand %.1f µm"),
+		DeltaSeconds * 1000.0f, EffectiveTimeScale, Mine.BeatPhase, FMath::Frac(Mine.BeatPhase - TracedPhase + 1.0f),
+		Degrees(Axis, TracedAxis), CameraRotation.AngularDistance(TracedCamera) * 180.0 / UE_DOUBLE_PI, Degrees(AxisInView, TracedAxisInView),
+		Degrees(Mine.Heading, TracedHeading), FMath::RadiansToDegrees(GenesisSpermSwimLogic::HeadYaw(Mine)), Screen.X, Screen.Y,
+		CameraDistance / GenesisMicroScale::UnitsPerMicrometer);
+	TracedPhase = Mine.BeatPhase;
+	TracedAxis = Axis;
+	TracedCamera = CameraRotation;
+	TracedAxisInView = AxisInView;
+	TracedHeading = Mine.Heading;
+}
+#endif
 
 void AGenesisSpermSwarm::SimulateFor(float SimulationDelta, float RequestedStepSeconds)
 {
@@ -394,6 +453,13 @@ void AGenesisSpermSwarm::SimulateFor(float SimulationDelta, float RequestedStepS
 
 	for (int32 StepIndex = 0; StepIndex < Steps; ++StepIndex)
 	{
+		// Ausgangspunkt der Glättung: das Bild liegt zwischen dem vorletzten und dem letzten Schritt
+		if (StepIndex == Steps - 1)
+		{
+			PreviousCells = Cells;
+			LastStepSeconds = StepSeconds;
+		}
+
 		// Die Hand des Spielers an seiner Zelle: Lenken beim Schwimmen, Kraft beim Bohren
 		if (Cells.IsValidIndex(PlayerCellIndex))
 		{
@@ -465,20 +531,43 @@ void AGenesisSpermSwarm::PushInstances(bool bTeleport)
 	PreviousTransformBuffer.SetNum(Cells.Num());
 	CustomDataBuffer.SetNum(Cells.Num() * MaterialDataCount);
 	const double JumpThreshold = 0.5 * Channel.LengthUm * GenesisMicroScale::UnitsPerMicrometer;
+
+	// Gezeichnet wird der Zustand zwischen den letzten beiden festen Schritten, anteilig zur Restzeit im Akkumulator.
+	// Sonst fallen je Bild mal null, mal ein, mal zwei Schritte an, und Schlag und Lage springen ruckartig (gemessen, GENESIS-047).
+	const bool bBlend = !bTeleport && PreviousCells.Num() == Cells.Num() && LastStepSeconds > 0.0f;
+	const float Alpha = bBlend ? FMath::Clamp(StepAccumulator / LastStepSeconds, 0.0f, 1.0f) : 1.0f;
+	DisplayCells.SetNum(Cells.Num());
 	for (int32 Index = 0; Index < Cells.Num(); ++Index)
 	{
-		const FGenesisSpermCell& Cell = Cells[Index];
+		const bool bSamePhase = bBlend && GenesisFertilizationLogic::GetPhase(PreviousCells[Index]) == GenesisFertilizationLogic::GetPhase(Cells[Index]);
+		DisplayCells[Index] = bSamePhase ? GenesisSpermSwimLogic::InterpolateCell(PreviousCells[Index], Cells[Index], Alpha, 0.5 * Channel.LengthUm) : Cells[Index];
+	}
+
+	for (int32 Index = 0; Index < Cells.Num(); ++Index)
+	{
+		const FGenesisSpermCell& Cell = DisplayCells[Index];
 		// Anhaftende Zellen stecken mit dem Kopf an oder in der Zona – sie werden anders ausgerichtet als schwimmende
 		const bool bAttached = Oocyte && GenesisFertilizationLogic::IsAttached(Cell);
-		const FTransform Current = bAttached
+		FTransform Current = bAttached
 			? GenesisFertilizationLogic::ComputeAttachedTransform(Cell, Oocyte->GetState())
 			: GenesisSpermSwimLogic::ComputeVisualTransform(Cell);
 		// Bewegungsunschärfe aus der echten Bewegung; beim Umlaufen am Abschnittsende kein Wisch durch den ganzen Kanal
+#if !UE_BUILD_SHIPPING
+		if (Index == PlayerCellIndex && CVarHidePlayer.GetValueOnGameThread() > 0)
+		{
+			Current.SetScale3D(FVector(0.001));
+		}
+#endif
 		const bool bJumped = !bHasPrevious || FVector::Dist(TransformBuffer[Index].GetLocation(), Current.GetLocation()) > JumpThreshold;
 		PreviousTransformBuffer[Index] = bJumped ? Current : TransformBuffer[Index];
 		TransformBuffer[Index] = Current;
 		GenesisSpermSwimLogic::ComputeMaterialData(Cell, &CustomDataBuffer[Index * MaterialDataCount]);
-	}
+		if (bAttached)
+		{
+			// Anhaftende Zellen tragen keine Kopfdrehung und keinen Versatz in ihrer Lage – also auch nichts herauszurechnen
+			CustomDataBuffer[Index * MaterialDataCount + 4] = 0.0f;
+			CustomDataBuffer[Index * MaterialDataCount + 5] = 0.0f;
+		}	}
 
 	Instances->BatchUpdateInstancesTransforms(0, TransformBuffer, PreviousTransformBuffer, false, false, bTeleport);
 	for (int32 Index = 0; Index < Cells.Num(); ++Index)

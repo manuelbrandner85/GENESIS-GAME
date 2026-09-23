@@ -5,6 +5,7 @@
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
+#include "UnrealClient.h"
 #include "Engine/World.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
@@ -28,6 +29,26 @@ namespace GenesisDebug
 		const FName GenesisDebugCategory(TEXT("Genesis"));
 
 #if !UE_BUILD_SHIPPING
+		// Bildfolge für Bewegungsprüfungen: in N aufeinanderfolgenden Bildern je ein Screenshot (Burst_00.png …).
+		// Mehrere "shot"-Befehle kurz hintereinander fasst die Engine zu einem zusammen – so geht es Bild für Bild.
+		FAutoConsoleCommand BurstCommand(
+			TEXT("genesis.Debug.Burst"),
+			TEXT("Entwickler: genesis.Debug.Burst <Bilder> – je ein Screenshot in aufeinanderfolgenden Bildern."),
+			FConsoleCommandWithArgsDelegate::CreateLambda([](const TArray<FString>& Args)
+			{
+				const int32 Count = Args.Num() > 0 ? FMath::Clamp(FCString::Atoi(*Args[0]), 1, 120) : 8;
+				TSharedRef<int32> Taken = MakeShared<int32>(0);
+				FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([Count, Taken](float)
+				{
+					if (FScreenshotRequest::IsScreenshotRequested())
+					{
+						return true;
+					}
+					FScreenshotRequest::RequestScreenshot(FString::Printf(TEXT("Burst_%02d.png"), (*Taken)++), false, false);
+					return *Taken < Count;
+				}));
+			}));
+
 		// Führt Befehle nach einer Wartezeit aus – z. B. damit automatische Screenshots einen eingeschwungenen Zustand zeigen.
 		// Mehrere Befehle mit ';' trennen (',' trennt bereits die -ExecCmds der Kommandozeile).
 		FAutoConsoleCommandWithWorldAndArgs DelayedExecCommand(

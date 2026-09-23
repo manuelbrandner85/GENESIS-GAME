@@ -232,6 +232,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Race")
 	TObjectPtr<class UMaterialParameterCollection> SectionParameters;
 
+	/** Beim Schwimmen: Was näher an der Linse liegt als der eigene Kopf minus diesen Abstand (µm), blendet aus. */
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "0"))
+	float OcclusionMarginUm = 3.0f;
+
 	/** Die Schnittebene liegt so weit vor dem Kopf der eigenen Zelle (µm). */
 	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "0"))
 	float SectionMarginUm = 4.0f;
@@ -341,8 +345,6 @@ public:
 private:
 	bool ComputeDesired(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const;
 	bool ComputeOocyteView(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const;
-	/** Rückt die Kamera vor Cumuluszellen, die zwischen ihr und dem Motiv stehen (wie ein Kamera-Federarm). */
-	FVector AvoidCumulus(const FVector& Subject, const FVector& Desired) const;
 
 	void UpdateBeatNormal(float DeltaSeconds);
 	/** Regelt das Endoskoplicht auf den Arbeitsabstand. */
@@ -357,6 +359,9 @@ private:
 	float SectionWeight = 0.0f;
 	/** Seite, von der die Profilansicht auf die eigene Zelle blickt (bleibt, solange sie im Lumen liegt). */
 	mutable FVector ProfileDirection = FVector::ZeroVector;
+
+	/** Ich-Perspektive von unten, solange die Linse oben in der Schleimhaut läge. */
+	mutable bool bEgoFromBelow = false;
 	void UpdateSection(float DeltaSeconds);
 	/** Richtung (von der Eizellmitte) zur führenden Zelle, geglättet – sie wechselt, wenn eine andere Zelle vorn liegt. */
 	FVector SmoothedLeaderDirection = FVector::ZeroVector;

@@ -148,9 +148,19 @@ void AGenesisOocyte::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 #if !UE_BUILD_SHIPPING
-	// 1 = alles, 2 = nur Zona, 3 = nur Corona, 4 = nur Zellleib, 5 = nur Fäden
+	// 1 = alles, 2 = nur Zona, 3 = nur Corona, 4 = nur Zellleib, 5 = nur Fäden, 6 = nur Cumuluszellen
 	if (const int32 Hide = CVarHideEgg.GetValueOnGameThread(); Hide > 0)
 	{
+		if (Hide == 1 || Hide == 6)
+		{
+			for (UInstancedStaticMeshComponent* Variant : CumulusCells)
+			{
+				if (Variant)
+				{
+					Variant->SetVisibility(false);
+				}
+			}
+		}
 		const TArray<UStaticMeshComponent*> Parts = { Ooplasm.Get(), Zona.Get(), Corona.Get(), CumulusStrands.Get() };
 		const int32 Only[] = { -1, -1, 1, 2, 0, 3 };
 		for (int32 Index = 0; Index < Parts.Num(); ++Index)

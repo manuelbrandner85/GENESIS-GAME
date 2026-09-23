@@ -478,7 +478,19 @@ void AGenesisMicroscopeCameraRig::UpdateSection(float DeltaSeconds)
 
 	float Front = -1000000.0f;
 	float Back = 1000000.0f;
-	if (SectionWeight > 0.001f && Camera)
+	float Soft = 0.5f;
+	// Beim Schwimmen hinter der eigenen Zelle: Alles zwischen Linse und Zelle blendet weich aus – ohne dass die
+	// Kamera springt. Der Übergang ist breit (4 µm), damit eine Zelle, die die Ebene kreuzt, sanft vergeht.
+	const bool bFollowing = Mine && !bWatchOocyte && FollowCellIndex == Swarm->GetPlayerCellIndex()
+		&& GenesisFertilizationLogic::GetPhase(*Mine) == EGenesisSpermPhase::Swimming;
+	if (bFollowing && Camera)
+	{
+		const FVector Head = Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex());
+		const float HeadDepth = static_cast<float>(FVector::DotProduct(Head - Camera->GetComponentLocation(), Camera->GetForwardVector()));
+		Front = FMath::Max(0.0f, HeadDepth - OcclusionMarginUm);
+		Soft = 4.0f;
+	}
+	else if (SectionWeight > 0.001f && Camera)
 	{
 		// Tiefe des eigenen Kopfes entlang der Blickachse – so misst auch das Material (Pixeltiefe)
 		const FVector Head = Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex());
@@ -490,100 +502,7 @@ void AGenesisMicroscopeCameraRig::UpdateSection(float DeltaSeconds)
 	Instance->SetScalarParameterValue(TEXT("SectionFrontUm"), Front);
 	Instance->SetScalarParameterValue(TEXT("SectionBackUm"), Back);
 	Instance->SetScalarParameterValue(TEXT("SectionActive"), SectionWeight);
-}
-
-FVector AGenesisMicroscopeCameraRig::AvoidCumulus(const FVector& Subject, const FVector& Desired) const
-{
-	const AGenesisOocyte* Egg = Swarm ? Swarm->GetOocyte() : nullptr;
-	const FGenesisCumulusField* Field = Egg ? Egg->GetState().Cumulus.Get() : nullptr;
-	if (!Field)
-	{
-		return Desired;
-	}
-	// Vom Motiv zur Kamera: die erste Zelle, die den Weg schneidet, bestimmt, wie weit die Kamera zurück darf.
-	// Kugeltest mit der längsten Halbachse und 2 µm Luft – lieber etwas zu nah als eine Zelle im Bild.
-	const FVector Center = Egg->GetActorLocation();
-	const FVector Ray = Desired - Subject;
-	const double Length = Ray.Size();
-	if (Length < UE_KINDA_SMALL_NUMBER)
-	{
-		return Desired;
-	}
-	const FVector Direction = Ray / Length;
-	double Allowed = Length;
-	TSet<int32> Seen;
-	for (double Along = 0.0; Along <= Length + Field->CellSizeUm; Along += 0.5 * Field->CellSizeUm)
-	{
-		const FIntVector Key = Field->Key((Subject + Direction * FMath::Min(Along, Length)) - Center);
-		for (int32 X = -1; X <= 1; ++X)
-		{
-			for (int32 Y = -1; Y <= 1; ++Y)
-			{
-				for (int32 Z = -1; Z <= 1; ++Z)
-				{
-					const TArray<int32>* Bucket = Field->Grid.Find(Key + FIntVector(X, Y, Z));
-					if (!Bucket)
-					{
-						continue;
-					}
-					for (const int32 Index : *Bucket)
-					{
-						bool bAlready = false;
-						Seen.Add(Index, &bAlready);
-						if (bAlready)
-						{
-							continue;
-						}
-						const FGenesisCumulusCell& Cell = Field->Cells[Index];
-						const double Radius = Cell.HalfAxes.GetMax() + 2.0;
-						const FVector ToCell = (Center + Cell.Center) - Subject;
-						const double Projection = FVector::DotProduct(ToCell, Direction);
-						const double Miss = (ToCell - Direction * Projection).SizeSquared();
-						if (Projection < 0.0 || Miss > Radius * Radius)
-						{
-							continue;
-						}
-						const double Entry = Projection - FMath::Sqrt(Radius * Radius - Miss);
-						Allowed = FMath::Min(Allowed, Entry);
-					}
-				}
-			}
-		}
-	}
-	// Auch seitlich darf keine Zelle an der Linse kleben: Eine Zelle 3 µm vor dem Glas füllt das halbe Bild.
-	// Die Kamera rückt so lange zum Motiv, bis 6 µm Luft zu jeder Membran bleiben.
-	constexpr double Clearance = 6.0;
-	auto Crowded = [Field, &Center](const FVector& Where)
-	{
-		const FIntVector Key = Field->Key(Where - Center);
-		for (int32 X = -1; X <= 1; ++X)
-		{
-			for (int32 Y = -1; Y <= 1; ++Y)
-			{
-				for (int32 Z = -1; Z <= 1; ++Z)
-				{
-					if (const TArray<int32>* Bucket = Field->Grid.Find(Key + FIntVector(X, Y, Z)))
-					{
-						for (const int32 Index : *Bucket)
-						{
-							const FGenesisCumulusCell& Cell = Field->Cells[Index];
-							if (FVector::DistSquared(Where, Center + Cell.Center) < FMath::Square(Cell.HalfAxes.GetMax() + Clearance))
-							{
-								return true;
-							}
-						}
-					}
-				}
-			}
-		}
-		return false;
-	};
-	while (Allowed > 4.0 && Crowded(Subject + Direction * Allowed))
-	{
-		Allowed -= 1.0;
-	}
-	// Nie näher als 4 µm an die eigene Zelle: Dann ist sie noch zu sehen, auch wenn dahinter eine Zelle steht
-	return Subject + Direction * FMath::Max(4.0, Allowed);
+	Instance->SetScalarParameterValue(TEXT("SectionSoftUm"), Soft);
 }
 
 bool AGenesisMicroscopeCameraRig::ComputeDesired(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const
@@ -640,8 +559,18 @@ bool AGenesisMicroscopeCameraRig::ComputeDesired(FVector& OutLocation, FQuat& Ou
 		const float EgoElevation = FMath::DegreesToRadians(RaceEgoElevationDegrees
 			+ 0.35f * FMath::Clamp(PlayerOrbitDegrees.Y, -MaxPlayerPitchDegrees, MaxPlayerPitchDegrees));
 		const float EgoDistance = RaceEgoDistanceUm * GenesisMicroScale::UnitsPerMicrometer;
-		OutLocation = Body + (Forward * FMath::Cos(EgoAzimuth) * FMath::Cos(EgoElevation) + EgoSide * FMath::Sin(EgoAzimuth) * FMath::Cos(EgoElevation)
-			+ EgoUp * FMath::Sin(EgoElevation)) * EgoDistance;
+		const FVector Behind = (Forward * FMath::Cos(EgoAzimuth) + EgoSide * FMath::Sin(EgoAzimuth)) * FMath::Cos(EgoElevation) * EgoDistance;
+		OutLocation = Body + Behind + EgoUp * FMath::Sin(EgoElevation) * EgoDistance;
+		// Schwimmt die Zelle oben an der Wand, läge die Linse in der Schleimhaut: dann von unten schräg herauf.
+		// Mit 20 µm Abstand zwischen Hin- und Rückweg, damit die Kamera an der Grenze nicht hin- und herspringt.
+		const FVector LocalCamera = SwarmTransform.InverseTransformPosition(OutLocation) / GenesisMicroScale::UnitsPerMicrometer;
+		const float CameraRadial = static_cast<float>(FVector2D(LocalCamera.Y, LocalCamera.Z).Size());
+		const float WallLimit = Swarm->GetChannel().LumenRadiusUm - 10.0f;
+		bEgoFromBelow = bEgoFromBelow ? CameraRadial > WallLimit - 20.0f : CameraRadial > WallLimit;
+		if (bEgoFromBelow)
+		{
+			OutLocation = Body + Behind - EgoUp * FMath::Sin(EgoElevation) * EgoDistance;
+		}
 		const FVector Ahead = Body + Forward * RaceEgoLookAheadUm * GenesisMicroScale::UnitsPerMicrometer;
 		OutRotation = FRotationMatrix::MakeFromXZ(Ahead - OutLocation, EgoUp).ToQuat();
 		OutFocusDistance = static_cast<float>(FVector::Dist(OutLocation, Body + Forward * RaceEgoFocusAheadUm * GenesisMicroScale::UnitsPerMicrometer));
@@ -788,14 +717,10 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 	{
 		return;
 	}
-	// Im Rennen hinter der eigenen Zelle: Keine Cumuluszelle darf sich vor die Linse schieben (GENESIS-047 Teil 2)
-	if (Swarm && Swarm->IsRacing() && !bWatchOocyte && FollowCellIndex == Swarm->GetPlayerCellIndex())
-	{
-		const FVector Subject = Swarm->GetCellHeadWorldPosition(FollowCellIndex);
-		const FVector Avoided = AvoidCumulus(Subject, DesiredLocation);
-		DesiredFocus = FMath::Max(1.0f, DesiredFocus - static_cast<float>(FVector::Dist(Avoided, DesiredLocation)));
-		DesiredLocation = Avoided;
-	}
+	// Im Rennen hinter der eigenen Zelle schieben sich Cumuluszellen vor die Linse. Früher rückte die Kamera dann vor sie
+	// (AvoidCumulus) – aus wenigen Mikrometern Abstand sprang dadurch das ganze Bild von einem Bild zum nächsten, und die
+	// eigene Zelle wirkte zuckend (Game Director, GENESIS-047). Jetzt bleibt die Kamera auf ihrer Bahn; was zwischen ihr
+	// und der Zelle liegt, blendet weich aus (UpdateSection).
 
 	// Umlauf am Abschnittsende: springen statt quer durch den Kanal zu fahren
 	const bool bJump = Swarm && FVector::Dist(GetActorLocation(), DesiredLocation) > 0.5f * Swarm->GetChannel().LengthUm * GenesisMicroScale::UnitsPerMicrometer;

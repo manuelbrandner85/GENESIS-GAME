@@ -43,7 +43,12 @@ public:
 	void RebuildSwarm();
 
 	int32 GetCellCount() const { return Cells.Num(); }
-	const FGenesisSpermCell* GetCell(int32 Index) const { return Cells.IsValidIndex(Index) ? &Cells[Index] : nullptr; }
+	/** Zelle, wie sie gezeichnet wird: zwischen den festen Simulationsschritten geglättet (Kamera und Anzeige folgen genau diesem Bild). */
+	const FGenesisSpermCell* GetCell(int32 Index) const
+	{
+		const TArray<FGenesisSpermCell>& Shown = DisplayCells.Num() == Cells.Num() ? DisplayCells : Cells;
+		return Shown.IsValidIndex(Index) ? &Shown[Index] : nullptr;
+	}
 
 	/** Weltposition des Kopfes einer Zelle (für Kamera und Gameplay). */
 	FVector GetCellHeadWorldPosition(int32 Index) const;
@@ -212,8 +217,20 @@ private:
 	void SimulateFor(float SimulationDelta, float StepSeconds);
 	void PushInstances(bool bTeleport);
 	void RegisterDebugPage();
+#if !UE_BUILD_SHIPPING
+	void TraceMotion(float DeltaSeconds);
+	float TracedPhase = 0.0f;
+	FVector TracedAxis = FVector::ForwardVector;
+	FVector TracedAxisInView = FVector::ForwardVector;
+	FVector TracedHeading = FVector::ForwardVector;
+	FQuat TracedCamera = FQuat::Identity;
+#endif
 
 	TArray<FGenesisSpermCell> Cells;
+	/** Zustand vor dem letzten Simulationsschritt und der daraus geglättete, gezeichnete Zustand */
+	TArray<FGenesisSpermCell> PreviousCells;
+	TArray<FGenesisSpermCell> DisplayCells;
+	float LastStepSeconds = 0.0f;
 	TArray<FTransform> TransformBuffer;
 	TArray<FTransform> PreviousTransformBuffer;
 	TArray<float> CustomDataBuffer;

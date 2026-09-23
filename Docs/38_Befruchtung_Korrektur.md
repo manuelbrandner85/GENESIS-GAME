@@ -106,3 +106,19 @@ sie sich zurück (Maus: 4–8 h danach vollständig; ERK-/Calpain-abhängig) –
 Wiederaufnahme der Meiose (Amargant 2023, DOI 10.1093/humrep/dead162; Xie 2023, DOI 10.3389/fcell.2023.1087612). Beim
 Menschen liegt der Eisprung ~36 h nach dem Anstieg. Die ovulierte Eizelle hat also keine Fortsätze mehr; im Spiel
 standen bis hierhin 3 µm dicke Kegel bis in die Zona. Entfernt.
+
+## GENESIS-047 Teil 2d: Schwimmen statt Zucken (2026-09-24)
+
+Ein Spermium schwimmt, weil eine Biegewelle vom Hals zur Geißelspitze läuft; die Auslenkung wächst zur Spitze hin, der
+Kopf gibt nur als Gegenbewegung nach (progressiv ±3–6°, hyperaktiviert ±25–40°, Docs/26). Im Spiel lief es umgekehrt:
+Der Geißel-Shader rechnete die Lage entlang der Zelle aus der UV, und der FBX-Weg aus Blender spiegelt V – am Mesh
+gemessen hat die Kopfspitze V = 1. Das Geißelende war damit der „starre Kopf“, der echte Kopf das freie Ende mit voller
+Auslenkung. Die Zelle peitschte um ihr Schwanzende; hyperaktiviert lag der gezeichnete Kopf 7–15 µm neben seinem
+berechneten Punkt. Nach der Korrektur (`s = (1 − V)·60,6 µm`) sitzt der Kopf auf seinem Punkt, die Welle läuft nach
+hinten aus. Die Zilien der Eileiterwand hatten denselben Fehler (der Fuß schwang).
+
+Dazu drei Glättungen, alle gemessen mit `genesis.Conception.TraceMotion`:
+- Darstellung zwischen den festen Rechenschritten (vorher sprang der Schlag je Bild um 0°, 34° oder 68°).
+- Kopfdrehung und Seitenversatz gehören nur dem Kopf; die Geißel nimmt sie über 12 bzw. 25 µm wieder heraus.
+- Richtungswechsel als geglättete Drehgeschwindigkeit (Ornstein-Uhlenbeck, Gedächtnis 0,15 s) bei gleicher
+  Rotationsdiffusion – Bahnen streuen wie zuvor, ohne Knicke von Schritt zu Schritt.

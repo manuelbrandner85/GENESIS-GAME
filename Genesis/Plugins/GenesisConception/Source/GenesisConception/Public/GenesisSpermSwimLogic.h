@@ -58,9 +58,26 @@ namespace GenesisSpermSwimLogic
 	/** Biegewinkel der Geißel an der Spitze (rad): progressiv ~0,8, hyperaktiviert bis 1,3. */
 	GENESISCONCEPTION_API float FlagellumTipAngle(const FGenesisSpermCell& Cell);
 
+	/** Momentane Kopfdrehung (rad) und seitliche Kopfauslenkung (µm) im Schlagtakt. */
+	GENESISCONCEPTION_API double HeadYaw(const FGenesisSpermCell& Cell);
+	GENESISCONCEPTION_API double HeadLateral(const FGenesisSpermCell& Cell);
+
+	/**
+	 * Darstellungszustand zwischen zwei festen Simulationsschritten (Alpha 0 = From, 1 = To): Lage, Richtung, Schlag- und
+	 * Rollphase gleiten, alles andere gilt aus To. Ohne diese Glättung fallen bei 100 Bildern je Sekunde und Schritten von
+	 * 4 ms mal null, mal ein, mal zwei Schritte in ein Bild – der Schlag springt um 0°, 34° oder 68° und die Zelle zuckt.
+	 * Ein Sprung weiter als MaxJumpUm (Umlauf am Kanalende) wird nicht überblendet.
+	 */
+	GENESISCONCEPTION_API FGenesisSpermCell InterpolateCell(const FGenesisSpermCell& From, const FGenesisSpermCell& To, float Alpha, double MaxJumpUm);
+
+	/** Zahl der Per-Instance-Daten je Zelle. */
+	constexpr int32 MaterialDataCount = 6;
+
 	/**
 	 * Per-Instance-Daten für das Material: [0] Schlagphase (Zyklen), [1] Biegewinkel an der Geißelspitze (rad),
-	 * [2] Asymmetrie, [3] Bogenwellenlänge (µm). Der Shader integriert daraus eine längentreue Mittellinie.
+	 * [2] Asymmetrie, [3] Bogenwellenlänge (µm), [4] Kopfdrehung (rad), [5] seitliche Kopfauslenkung (µm).
+	 * Der Shader integriert daraus eine längentreue Mittellinie. Kopfdrehung und Auslenkung nimmt er entlang der Geißel
+	 * wieder heraus: Nur der Kopf gibt der Geißel nach, die Geißel selbst bleibt als Welle auf der Bahn (GENESIS-047).
 	 */
-	GENESISCONCEPTION_API void ComputeMaterialData(const FGenesisSpermCell& Cell, float OutData[4]);
+	GENESISCONCEPTION_API void ComputeMaterialData(const FGenesisSpermCell& Cell, float OutData[MaterialDataCount]);
 }
