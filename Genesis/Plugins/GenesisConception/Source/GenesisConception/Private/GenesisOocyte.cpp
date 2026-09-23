@@ -25,6 +25,10 @@ AGenesisOocyte::AGenesisOocyte()
 	Ooplasm = MakePart(TEXT("Ooplasm"), true);
 	Zona = MakePart(TEXT("Zona"), false);
 	PolarBody = MakePart(TEXT("PolarBody"), false);
+	// Dasselbe Bauteil neben dem ersten, an der Stelle der Spindel (beide liegen am animalen Pol)
+	SecondPolarBody = MakePart(TEXT("SecondPolarBody"), false);
+	SecondPolarBody->SetRelativeRotation(FRotator(0.0f, 0.0f, 16.0f));
+	SecondPolarBody->SetVisibility(false);
 	Corona = MakePart(TEXT("Corona"), false);
 	CumulusMatrix = MakePart(TEXT("CumulusMatrix"), false);
 	// Die Fäden der Hyaluronsäure-Matrix zwischen den Zellen: Sie halten den expandierten Cumulus

@@ -42,3 +42,21 @@ Bianchi 2014 (DOI 10.1038/nature13203), Inoue 2005 (DOI 10.1038/nature03362), Sa
 Drobnis 1988 (DOI 10.1016/0012-1606(88)90437-x), Bedford 1998 (DOI 10.1095/biolreprod59.6.1275), Valeri 2011
 (DOI 10.1007/s10815-011-9555-3), Miki & Clapham 2013 (DOI 10.1016/j.cub.2013.02.007), Wilcox 1995
 (DOI 10.1056/NEJM199512073332301).
+
+## Umsetzung GENESIS-047 Teil 1 (2026-09-23)
+
+| Punkt | Umgesetzt | Gemessen (Tests) |
+|---|---|---|
+| Zahl der Zellen | 150 im Abschnitt, Feld reicht weit zurück, Ankunft nach und nach | je Rennen 4–10 an der Zona, 1–8 im Spalt |
+| Kapazitation | eigener Zustand (`bCapacitated`, 10 %); nur diese folgen dem Lockstoff, hyperaktivieren, binden | 8,9 % im Schwarm; ohne Kapazitation keine Bindung |
+| Akrosomreaktion | kann im Cumulus beginnen (0,08 je s), sonst an der Zona | – |
+| Zona | 17 µm, schräg (40°) und mechanisch, 0,015–0,035 µm/s | im Mittel 12,7 min |
+| Perivitelliner Spalt | neuer Zustand `Perivitelline`, Kopf flach an der Membran, 15,8 ± 5,7 min | im Mittel 15,6 min; kürzester Weg Zona → Verschmelzung 17 min |
+| Schutz | Cortikalreaktion 20 min, Zona bindet nach 5 min nicht mehr; Gebundene lösen sich, Steckende bleiben, Überzählige bleiben im Spalt | Zona-Block nach 5,0 min; zwei im Spalt → eine verschmilzt, eine bleibt liegen |
+| Zeit sichtbar | Zeitraffer ×45 an der Eizelle mit Uhr, logarithmische Rampe; Uhr „an der Eizelle“ bzw. „nach der Verschmelzung“ | Befruchtung nach 19–35 min biologisch, rund 30–45 s Spielzeit |
+| 2. Polkörper | schnürt sich 2,5–3,5 h nach der Verschmelzung ab | – |
+| „hpi“ | ersetzt durch „h seit Verschmelzung“ | – |
+
+Offen für Teil 2: Cumulus in echter Größe (Millimeter) und Eileiter-Geometrie; dabei der Blick auf Zona und Spalt
+(im Zeitraffer verdeckt ihn heute der dichte Zellkranz – geplant ist ein optischer Schnitt wie bei der Blastozyste);
+Kapazitation als zeitlich begrenzter Zustand; der Satz im Vorfilm.

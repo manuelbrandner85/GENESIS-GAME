@@ -97,8 +97,13 @@ public:
 
 	double GetSimulationSeconds() const { return SimulationSeconds; }
 
+	/**
+	 * Zellen im Abschnitt. Rund 18 Stunden nach der Besamung finden sich in beiden Eileitern zusammen im
+	 * Median 251 Spermien (79–1.386; Williams 1993). Vorher standen hier 6.000 – ein Bild, das nach Schwarm
+	 * aussah und falsch war (Docs/38). In diesen 3 mm vor der Eizelle sind es 150.
+	 */
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "1", ClampMax = "20000"))
-	int32 CellCount = 6000;
+	int32 CellCount = 150;
 
 	UPROPERTY(EditAnywhere, Category = "Swarm")
 	int32 Seed = 1;
@@ -129,22 +134,39 @@ public:
 	float TimeScale = 0.25f;
 
 	/**
-	 * Zeitlupe, solange Zellen an der Zona hängen und bohren (GENESIS-037).
+	 * Zeitraffer an der Eizelle (Simulationssekunden je Echtzeitsekunde, GENESIS-047).
 	 *
-	 * Die Zeitlupe ist nötig, damit der Geißelschlag als Welle sichtbar bleibt (GENESIS-030). An der Zona
-	 * hängen aber nur hyperaktivierte Zellen, und die schlagen langsamer (9–15 Hz statt 16–24 Hz). Die
-	 * Szene darf dort deshalb schneller laufen, ohne dass ein Schlag unter fünf Bilder fällt – und die
-	 * Minute, in der sich außer dem Bohren nichts ändert, wird eine halbe.
+	 * Durch die Zona braucht eine Zelle rund 13 Minuten, im Spalt darunter bis zur Verschmelzung weitere
+	 * 16 ± 6 (Docs/38). Vorher war das in einer halben Minute Zeitlupe geschehen – heimlich zwanzig- bis
+	 * sechzigmal zu schnell. Jetzt läuft die Zeit dort sichtbar gerafft, mit Uhr, wie in einer
+	 * Zeitrafferaufnahme am Mikroskop: Eine halbe Stunde Biologie dauert so gut vierzig Sekunden.
 	 */
-	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0", ClampMax = "4"))
-	float PenetrationTimeScale = 0.5f;
+	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "1", ClampMax = "600"))
+	float TimeLapseScale = 45.0f;
 
-	/** Übergang zwischen den beiden Zeitlupen (s Echtzeit) – kein Sprung, ein Anziehen wie beim Filmschnitt mit Rampe. */
+	/**
+	 * Schrittweite im Zeitraffer (s Simulationszeit). Die feine Schrittweite des Schwimmmodells (1/240 s) ergäbe
+	 * bei 45-facher Raffung 180 Schritte je Bild; 1/30 s bleibt für eine schwimmende Zelle (unter 2 µm je Schritt)
+	 * genau genug und kostet ein Achtel.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0.001", ClampMax = "0.1"))
+	float TimeLapseStepSeconds = 1.0f / 30.0f;
+
+	/** Übergang zwischen Zeitlupe und Zeitraffer (s Echtzeit) – kein Sprung, ein Anziehen wie beim Filmschnitt mit Rampe. */
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0.1"))
 	float TimeScaleRampSeconds = 3.0f;
 
-	/** Zeitlupe, die gerade tatsächlich gilt. */
+	/** Zeitmaßstab, der gerade tatsächlich gilt (unter 1 Zeitlupe, über 1 Zeitraffer). */
 	float GetEffectiveTimeScale() const { return EffectiveTimeScale >= 0.0f ? EffectiveTimeScale : TimeScale; }
+
+	/** Läuft die Szene gerade sichtbar gerafft? */
+	bool IsTimeLapse() const { return GetEffectiveTimeScale() > 1.5f; }
+
+	/** Biologische Zeit, seit die eigene Zelle an der Zona gebunden hat (s; −1 = noch nicht). */
+	float GetPlayerSecondsAtEgg() const { return PlayerAtEggSeconds >= 0.0 ? static_cast<float>(SimulationSeconds - PlayerAtEggSeconds) : -1.0f; }
+
+	/** Zellen im perivitellinen Spalt (für die Anzeige). */
+	int32 GetPerivitellineCells() const;
 
 	/** Im Editor-Viewport ohne Play weiterlaufen lassen. */
 	UPROPERTY(EditAnywhere, Category = "Swarm")
@@ -161,6 +183,8 @@ public:
 
 private:
 	float EffectiveTimeScale = -1.0f;
+	double PlayerAtEggSeconds = -1.0;
+	bool WantsTimeLapse() const;
 
 	bool bRaceLayout = false;
 	int32 PlayerCellIndex = INDEX_NONE;
@@ -176,7 +200,7 @@ private:
 	bool bReportedHyper = false;
 	void ReportPlayerProgress();
 
-	void SimulateFor(float SimulationDelta);
+	void SimulateFor(float SimulationDelta, float StepSeconds);
 	void PushInstances(bool bTeleport);
 	void RegisterDebugPage();
 

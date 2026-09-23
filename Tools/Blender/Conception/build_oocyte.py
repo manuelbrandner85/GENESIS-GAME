@@ -7,7 +7,7 @@
 # Anatomie (reife Eizelle, Metaphase II):
 #   - Ooplasma (Zellleib) ~110 µm Durchmesser, körnig (Organellen), unter der Membran Cortikalgranula
 #   - Perivitelliner Spalt 1–5 µm mit dem ersten Polkörper (~10 µm)
-#   - Zona pellucida 13–15 µm dick, gallertig, aus Glykoproteinfasern – daran binden die Spermien
+#   - Zona pellucida 17 µm dick (16,7–17,7 µm, Valeri 2011), gallertig, aus Glykoproteinfasern – daran binden die Spermien
 #   - Corona radiata: 2–3 Lagen radial gestreckter Cumuluszellen (10–20 µm) in einer Hyaluronsäure-Matrix,
 #     mit Zellfortsätzen, die bis an die Zona reichen
 #   - Der gesamte Cumulus-Oozyten-Komplex misst mehrere hundert µm
@@ -29,7 +29,7 @@ from mathutils import Vector
 OOPLASM_RADIUS = 55.0
 PERIVITELLINE = 3.0
 ZONA_INNER = OOPLASM_RADIUS + PERIVITELLINE
-ZONA_THICKNESS = 14.0
+ZONA_THICKNESS = 17.0  # 16,7–17,7 µm (Valeri 2011, Docs/38)
 POLAR_BODY_RADIUS = 5.0
 CORONA_LAYERS = 3
 

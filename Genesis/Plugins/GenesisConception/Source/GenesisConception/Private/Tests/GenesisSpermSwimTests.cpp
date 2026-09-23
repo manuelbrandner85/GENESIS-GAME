@@ -260,6 +260,8 @@ bool FGenesisSpermVisualTest::RunTest(const FString& Parameters)
 	FGenesisSpermSwimTuning Tuning;
 	Tuning.HyperactivationRate = 0.5f;
 	Tuning.DeactivationRate = 0.5f;
+	// Alle kapazitiert: Hier geht es um den Wechsel selbst, nicht um den Anteil im Schwarm
+	Tuning.CapacitatedFraction = 1.0f;
 
 	// Wechsel zwischen den Bewegungsarten findet statt, Gleichgewicht ~50 %
 	int32 HyperCount = 0;

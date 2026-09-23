@@ -12,12 +12,13 @@ namespace GenesisSpermRaceTests
 {
 	constexpr EAutomationTestFlags Flags = EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter;
 	constexpr float StepSeconds = 1.0f / 120.0f;
+	/** Im Zeitraffer an der Eizelle rechnet die Szene gröber (AGenesisSpermSwarm::TimeLapseStepSeconds). */
+	constexpr float TimeLapseStepSeconds = 1.0f / 30.0f;
 	/**
-	 * So viele Zellen wie im Spiel. Mit 2000 gewann der Testfahrer 4 von 5 – im Spiel mit 6000 verlor
-	 * der Autopilot gegen 73 Konkurrentinnen an der Zona. Ein Test, der ein leichteres Rennen misst als
-	 * das, das man spielt, beweist nichts.
+	 * So viele Zellen wie im Spiel (150, Docs/38). Ein Test, der ein leichteres Rennen misst als das, das
+	 * man spielt, beweist nichts – gelernt in GENESIS-037, als 2000 Testzellen ein anderes Rennen waren als 6000.
 	 */
-	constexpr int32 FieldSize = 6000;
+	constexpr int32 FieldSize = 150;
 
 	enum class EDriver { Passive, Skilled };
 
@@ -26,20 +27,21 @@ namespace GenesisSpermRaceTests
 		EGenesisRaceOutcome Outcome = EGenesisRaceOutcome::Running;
 		float Seconds = 0.0f;
 		int32 BestPlace = TNumericLimits<int32>::Max();
-		/** Zeitpunkte der eigenen Zelle: Cumulus erreicht, hyperaktiviert, gebunden, bohrt (s, −1 = nie). */
+		/** Zeitpunkte der eigenen Zelle: Cumulus erreicht, hyperaktiviert, gebunden, in der Zona, im Spalt (s, −1 = nie). */
 		float AtCumulus = -1.0f;
 		float Hyper = -1.0f;
 		float Bound = -1.0f;
 		float Drilling = -1.0f;
+		float Spalt = -1.0f;
 		float Depth = 0.0f;
-		float ClosestZona = TNumericLimits<float>::Max();
-		float ContactSeconds = 0.0f;
-		float HyperContactSeconds = 0.0f;
+		/** Wie viele Zellen die Zona erreicht haben, wie viele den Spalt darunter. */
+		int32 ReachedZona = 0;
+		int32 ReachedSpalt = 0;
 
 		FString Timeline() const
 		{
-			return FString::Printf(TEXT("Cumulus %.1f s, hyper %.1f s, gebunden %.1f s, bohrt %.1f s, Tiefe %.1f µm | nächste Zona %.1f µm, Kontakt %.1f s (hyper %.1f s)"),
-				AtCumulus, Hyper, Bound, Drilling, Depth, ClosestZona, ContactSeconds, HyperContactSeconds);
+			return FString::Printf(TEXT("Cumulus %.0f s, hyper %.0f s, gebunden %.0f s, Zona ab %.1f min, Spalt ab %.1f min, Tiefe %.1f µm | an der Zona %d Zellen, im Spalt %d"),
+				AtCumulus, Hyper, Bound, Drilling / 60.0f, Spalt / 60.0f, Depth, ReachedZona, ReachedSpalt);
 		}
 	};
 
@@ -56,7 +58,8 @@ namespace GenesisSpermRaceTests
 		FGenesisOocyteState Oocyte;
 		Oocyte.Position = FVector(1500.0, 0.0, 0.0);
 
-		// Der Pulk wie im Schwarm-Actor: Vitalität normalverteilt, Band vor der Eizelle
+		// Das Feld wie im Schwarm-Actor: Vitalität normalverteilt, die vordersten hinter der eigenen Zelle,
+		// der Rest weit zurück – sie treffen nach und nach ein
 		FGenesisRandomStream Random(Seed);
 		TArray<FGenesisSpermCell> Cells;
 		Cells.Reserve(FieldSize);
@@ -64,14 +67,16 @@ namespace GenesisSpermRaceTests
 		{
 			const float Vitality = FMath::Clamp(Random.Gaussian(0.75f, 0.18f), 0.0f, 1.0f);
 			FGenesisSpermCell Cell = GenesisSpermSwimLogic::CreateCell(Seed * 7919 + Index, Vitality, Channel, SwimTuning);
-			Cell.Position.X = Oocyte.Position.X - Race.FieldDistanceUm + Random.Gaussian(0.0f, Race.FieldSpreadUm);
+			const double X = Oocyte.Position.X - Race.FieldDistanceUm - FMath::Abs(Random.Gaussian(0.0f, Race.FieldSpreadUm));
+			Cell.Position.X = FMath::Fmod(X + 2.0 * Channel.LengthUm, static_cast<double>(Channel.LengthUm));
 			Cells.Add(MoveTemp(Cell));
 		}
 
-		// Die eigene Zelle: an der Spitze des Pulks, gute Vitalität, progressiv, Richtung Eizelle
+		// Die eigene Zelle: vorn, gute Vitalität, kapazitiert, progressiv, Richtung Eizelle
 		const int32 Player = 0;
 		{
 			FGenesisSpermCell Mine = GenesisSpermSwimLogic::CreateCell(Seed * 104729, Race.Vitality, Channel, SwimTuning);
+			Mine.bCapacitated = true;
 			GenesisSpermSwimLogic::ApplyMotility(Mine, EGenesisSpermMotility::Progressive, SwimTuning);
 			Mine.Position = FVector(Oocyte.Position.X - Race.StartDistanceUm, 60.0, -40.0);
 			Mine.Heading = FVector::ForwardVector;
@@ -79,44 +84,61 @@ namespace GenesisSpermRaceTests
 		}
 
 		FRace Result;
+		TArray<bool> AtZona;
+		TArray<bool> InSpalt;
+		AtZona.Init(false, Cells.Num());
+		InSpalt.Init(false, Cells.Num());
 		FGenesisFertilizationResult Fusion;
-		const int32 Steps = FMath::RoundToInt(180.0f / StepSeconds);
-		for (int32 Step = 0; Step < Steps; ++Step)
+		float Now = 0.0f;
+		float NextPlace = 0.0f;
+		while (Now < 3.0f * 3600.0f)
 		{
 			FGenesisSpermCell& Mine = Cells[Player];
+			const bool bSwimming = GenesisFertilizationLogic::GetPhase(Mine) == EGenesisSpermPhase::Swimming;
 			if (Driver == EDriver::Skilled)
 			{
-				// Ein guter Spieler hält auf die Eizelle zu und gibt beim Bohren alles
-				Mine.SteerDirection = GenesisFertilizationLogic::GetPhase(Mine) == EGenesisSpermPhase::Swimming
-					? (Oocyte.Position - Mine.Position).GetSafeNormal()
-					: FVector::ZeroVector;
+				// Ein guter Spieler hält auf die Eizelle zu und gibt in der Zona alles
+				Mine.SteerDirection = bSwimming ? (Oocyte.Position - Mine.Position).GetSafeNormal() : FVector::ZeroVector;
 				Mine.Vigor = 1.0f;
 			}
-			if (GenesisFertilizationLogic::Step(Cells, Oocyte, Channel, SwimTuning, Tuning, StepSeconds, Fusion))
+			else
+			{
+				// Wer nichts tut, lenkt nicht und schlägt nicht mit (wie im Spiel: Kraft 0)
+				Mine.Vigor = 0.0f;
+			}
+			// Wie im Spiel: Zeitraffer, sobald die eigene Zelle an der Eizelle hängt
+			const float Dt = GenesisFertilizationLogic::IsAttached(Mine) || Oocyte.IsFertilized() ? TimeLapseStepSeconds : StepSeconds;
+			if (GenesisFertilizationLogic::Step(Cells, Oocyte, Channel, SwimTuning, Tuning, Dt, Fusion))
 			{
 				Result.Outcome = GenesisSpermRace::OutcomeAfterFusion(Player, Fusion.CellIndex);
-				Result.Seconds = Step * StepSeconds;
+				Result.Seconds = Now;
 				break;
 			}
-			const float Now = Step * StepSeconds;
+			Now += Dt;
+			for (int32 Index = 0; Index < Cells.Num(); ++Index)
+			{
+				const EGenesisSpermPhase Phase = GenesisFertilizationLogic::GetPhase(Cells[Index]);
+				AtZona[Index] |= Phase == EGenesisSpermPhase::Bound || Phase == EGenesisSpermPhase::Penetrating;
+				InSpalt[Index] |= Phase == EGenesisSpermPhase::Perivitelline;
+			}
 			const FGenesisSpermCell& Tracked = Cells[Player];
 			const EGenesisSpermPhase Phase = GenesisFertilizationLogic::GetPhase(Tracked);
 			if (Result.AtCumulus < 0.0f && FVector::Dist(Tracked.Position, Oocyte.Position) < Oocyte.CumulusRadiusUm) { Result.AtCumulus = Now; }
 			if (Result.Hyper < 0.0f && Tracked.Motility == EGenesisSpermMotility::Hyperactivated) { Result.Hyper = Now; }
 			if (Result.Bound < 0.0f && Phase == EGenesisSpermPhase::Bound) { Result.Bound = Now; }
 			if (Result.Drilling < 0.0f && Phase == EGenesisSpermPhase::Penetrating) { Result.Drilling = Now; }
+			if (Result.Spalt < 0.0f && Phase == EGenesisSpermPhase::Perivitelline) { Result.Spalt = Now; }
 			Result.Depth = Tracked.PenetrationDepthUm;
-			if (Phase == EGenesisSpermPhase::Swimming && Result.AtCumulus >= 0.0f)
+			if (Now >= NextPlace)
 			{
-				const float Gap = GenesisFertilizationLogic::DistanceToZona(Tracked, Oocyte);
-				Result.ClosestZona = FMath::Min(Result.ClosestZona, Gap);
-				Result.ContactSeconds += Gap < Tuning.BindingDistanceUm ? StepSeconds : 0.0f;
-				Result.HyperContactSeconds += Gap < Tuning.BindingDistanceUm && Tracked.Motility == EGenesisSpermMotility::Hyperactivated ? StepSeconds : 0.0f;
-			}
-			if (Step % 120 == 0)
-			{
+				NextPlace = Now + 1.0f;
 				Result.BestPlace = FMath::Min(Result.BestPlace, GenesisSpermRace::CountCellsAhead(Cells, Player, Oocyte) + 1);
 			}
+		}
+		for (int32 Index = 0; Index < Cells.Num(); ++Index)
+		{
+			Result.ReachedZona += AtZona[Index] || InSpalt[Index] ? 1 : 0;
+			Result.ReachedSpalt += InSpalt[Index] ? 1 : 0;
 		}
 		return Result;
 	}
@@ -139,11 +161,12 @@ bool FGenesisSpermRaceFairnessTest::RunTest(const FString& Parameters)
 		const FRace Passive = Run(Seed, EDriver::Passive);
 		SkilledWins += Skilled.Outcome == EGenesisRaceOutcome::Won ? 1 : 0;
 		PassiveWins += Passive.Outcome == EGenesisRaceOutcome::Won ? 1 : 0;
-		AddInfo(FString::Printf(TEXT("Seed %llu: gelenkt %s nach %.1f s (bester Platz %d) | ohne Führung %s nach %.1f s (bester Platz %d)"),
+		AddInfo(FString::Printf(TEXT("Seed %llu: gelenkt %s nach %.1f min (bester Platz %d) | ohne Führung %s nach %.1f min (bester Platz %d)"),
 			Seed,
-			*UEnum::GetValueAsString(Skilled.Outcome), Skilled.Seconds, Skilled.BestPlace,
-			*UEnum::GetValueAsString(Passive.Outcome), Passive.Seconds, Passive.BestPlace));
+			*UEnum::GetValueAsString(Skilled.Outcome), Skilled.Seconds / 60.0f, Skilled.BestPlace,
+			*UEnum::GetValueAsString(Passive.Outcome), Passive.Seconds / 60.0f, Passive.BestPlace));
 		AddInfo(TEXT("    gelenkt: ") + Skilled.Timeline());
+		AddInfo(TEXT("    ohne Führung: ") + Passive.Timeline());
 	}
 	AddInfo(FString::Printf(TEXT("Siege: gelenkt %d von 5, ohne Führung %d von 5"), SkilledWins, PassiveWins));
 	TestTrue(TEXT("Gut gelenkt gewinnt man meistens"), SkilledWins >= 3);
@@ -211,6 +234,7 @@ bool FGenesisSpermRaceBindingTest::RunTest(const FString& Parameters)
 		Oocyte.Position = FVector(1500.0, 0.0, 0.0);
 		TArray<FGenesisSpermCell> Cells;
 		FGenesisSpermCell Cell = GenesisSpermSwimLogic::CreateCell(900 + Trial, 0.9f, Channel, SwimTuning);
+		Cell.bCapacitated = true;
 		GenesisSpermSwimLogic::ApplyMotility(Cell, EGenesisSpermMotility::Hyperactivated, SwimTuning);
 		Cell.Position = Oocyte.Position - FVector(Oocyte.ZonaOuterRadiusUm + 1.0, 0.0, 0.0);
 		Cell.Heading = FVector::ForwardVector;

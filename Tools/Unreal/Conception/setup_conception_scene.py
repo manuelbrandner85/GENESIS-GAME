@@ -623,8 +623,9 @@ def build_level(mesh, material, wall_mesh=None, wall_material=None):
     swarm.set_actor_label("SpermSwarm")
     swarm.set_editor_property("cell_mesh", mesh)
     swarm.set_editor_property("cell_material", material)
-    # 6 000 Zellen: gemessen 97 FPS. Weniger sieht nicht nach Schwarm aus, mehr kostet den Spiel-Thread.
-    swarm.set_editor_property("cell_count", 6000)
+    # 150 Zellen in diesem Abschnitt: So viele erreichen die Ampulle wirklich (Williams 1993: im Median 251
+    # in beiden Eileitern). Die 6 000 davor sahen nach Schwarm aus und waren falsch (Docs/38, GENESIS-047).
+    swarm.set_editor_property("cell_count", 150)
     swarm.set_editor_property("seed", 7)
 
     rig = actors.spawn_actor_from_class(unreal.GenesisMicroscopeCameraRig, unreal.Vector(-200, 0, 0))

@@ -10,10 +10,11 @@
 /**
  * Das Wettrennen zur Eizelle (GENESIS-037).
  *
- * Der Spieler führt eine einzige Zelle aus Tausenden. Er lenkt sie – innerhalb dessen, was ein Spermium
- * kann – und er gibt beim Bohren durch die Zona seine Kraft. Alles andere entscheidet dieselbe Physik,
- * die für alle Zellen gilt: Strömung, Wand, Lockstoff, Zufall. Nur eine Zelle verschmilzt. Ist es eine
- * andere, beginnt dieses Leben nicht – das Rennen fängt von vorn an.
+ * Der Spieler führt eine einzige Zelle unter den rund 150, die es bis vor die Eizelle geschafft haben. Er lenkt
+ * sie – innerhalb dessen, was ein Spermium kann – und er gibt beim Weg durch die Zona seine Kraft. Alles andere
+ * entscheidet dieselbe Biologie, die für alle Zellen gilt: Strömung, Wand, Reifezustand, Lockstoff, Zufall.
+ * Mehrere kommen an, nur eine verschmilzt (GENESIS-047, Docs/38). Ist es eine andere, beginnt dieses Leben
+ * nicht – das Rennen fängt von vorn an.
  */
 UENUM(BlueprintType)
 enum class EGenesisRaceOutcome : uint8
@@ -34,18 +35,14 @@ struct GENESISCONCEPTION_API FGenesisRaceTuning
 	GENERATED_BODY()
 
 	/**
-	 * Das Feld rückt gemeinsam an: Mitte des Pulks vor der Eizelle und seine Streuung (µm).
-	 * Beim Zuschauen (GENESIS-030) lag der Pulk bei 320 ± 220 µm – dann liegen beim Start schon Zellen
-	 * an der Eizelle, und kein Spieler kann gewinnen (gemessen: 0 von 5 Siegen, auch perfekt gelenkt).
+	 * Das Feld: Die vordersten Zellen stehen so weit vor der Eizelle (µm), dahinter reicht es mit dieser
+	 * Streuung weit zurück – die Zellen treffen nach und nach ein, nicht als Pulk (Wilcox 1995, Docs/38).
+	 * Liegen beim Start schon Zellen an der Eizelle, kann kein Spieler gewinnen (GENESIS-037: 0 von 5).
 	 */
-	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "150")) float FieldDistanceUm = 420.0f;
-	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "10")) float FieldSpreadUm = 90.0f;
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "150")) float FieldDistanceUm = 300.0f;
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "10")) float FieldSpreadUm = 700.0f;
 
-	/**
-	 * Startabstand der eigenen Zelle vor der Eizellmitte (µm): an der Spitze der ersten Reihe
-	 * (das Feld steht bei 420 ± 90 µm, seine vordersten Zellen um 240 µm). Aus 260 µm gewann ein guter
-	 * Spieler gegen 6000 Zellen nur 2 von 5 Rennen, zwei davon um weniger als einen Mikrometer verloren.
-	 */
+	/** Startabstand der eigenen Zelle vor der Eizellmitte (µm): vor dem Feld. */
 	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "130")) float StartDistanceUm = 235.0f;
 
 	/** Vitalität der eigenen Zelle: eine der stärksten im Feld (Mittel 0,75 ± 0,18) – die Seele wählt keine schwache. */
@@ -55,7 +52,7 @@ struct GENESISCONCEPTION_API FGenesisRaceTuning
 	UPROPERTY(EditAnywhere, Category = "Race") float SteerYawDegrees = 70.0f;
 	UPROPERTY(EditAnywhere, Category = "Race") float SteerPitchDegrees = 50.0f;
 
-	/** Anstrengung beim Bohren: je Tastendruck hinzu, je Sekunde wieder ab. */
+	/** Anstrengung in der Zona: je Tastendruck hinzu, je Sekunde (Echtzeit) wieder ab. */
 	UPROPERTY(EditAnywhere, Category = "Race") float VigorPerPress = 0.22f;
 	UPROPERTY(EditAnywhere, Category = "Race") float VigorDecayPerSecond = 0.7f;
 };

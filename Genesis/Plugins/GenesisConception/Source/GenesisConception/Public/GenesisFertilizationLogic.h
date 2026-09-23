@@ -9,14 +9,17 @@
 /**
  * Befruchtung: der Weg der letzten Mikrometer.
  *
- * Ablauf wie in der Reproduktionsbiologie:
- * 1. **Lockwirkung** – aus dem Cumulus tritt Progesteron aus; hyperaktivierte (kapazitierte) Zellen richten sich danach aus.
- * 2. **Cumulus** – in der Gallerte kommen die Zellen langsamer voran.
- * 3. **Bindung** – an der Zona pellucida binden nur kapazitierte Zellen zuverlässig.
- * 4. **Akrosomreaktion** – die Kappe platzt auf und gibt Enzyme frei.
- * 5. **Durchdringung** – die Zelle bohrt sich mit Enzymen und Schlagkraft durch die 14 µm dicke Zona; manche bleiben stecken.
- * 6. **Verschmelzung** – die erste Zelle, die durchkommt, verschmilzt mit der Eizelle.
- * 7. **Cortikalreaktion** – die Zona verhärtet; alle anderen bleiben draußen (Polyspermie-Block).
+ * Ablauf wie in der Reproduktionsbiologie (Zeiten biologisch, Belege in Docs/38):
+ * 1. **Lockwirkung** – aus dem Cumulus tritt Progesteron aus; nur kapazitierte Zellen folgen ihm und hyperaktivieren.
+ * 2. **Cumulus** – in der Gallerte kommen die Zellen langsamer voran; die Akrosomreaktion kann schon hier beginnen.
+ * 3. **Bindung** – an der Zona pellucida binden nur kapazitierte, hyperaktivierte Zellen.
+ * 4. **Akrosomreaktion** – falls noch nicht geschehen, jetzt an der Zona.
+ * 5. **Durchdringung** – die Zelle schiebt sich schräg und vor allem mechanisch durch die 17 µm dicke Zona,
+ *    rund 13 Minuten lang; manche bleiben stecken und lösen sich wieder.
+ * 6. **Perivitelliner Spalt** – der Kopf legt sich flach an die Eizellmembran; nach 16 ± 6 Minuten verschmelzen
+ *    die Membranen. Oft liegen mehrere Zellen hier – verschmelzen kann nur eine.
+ * 7. **Cortikalreaktion** – über Minuten verändert sich die Zona: Gebundene lösen sich, wer in ihr steckt, bleibt
+ *    stecken, Überzählige im Spalt bleiben liegen (Polyspermie-Block).
  */
 namespace GenesisFertilizationLogic
 {
@@ -34,6 +37,12 @@ namespace GenesisFertilizationLogic
 		const FGenesisSpermSwimTuning& SwimTuning, const FGenesisFertilizationTuning& Tuning, float DeltaSeconds,
 		FGenesisFertilizationResult& OutResult);
 
-	/** Darstellung einer gebundenen oder bohrenden Zelle: Kopf an der Zona, Achse zur Eizelle. */
+	/** Hängt die Zelle an oder in der Eizelle (gebunden, in der Zona, im Spalt, verschmolzen, in der Zona steckengeblieben)? */
+	GENESISCONCEPTION_API bool IsAttached(const FGenesisSpermCell& Cell);
+
+	/**
+	 * Darstellung einer anhaftenden Zelle: Kopf an bzw. in der Zona, Achse entlang ihrer Schwimmrichtung
+	 * (schräg beim Eindringen, fast flach im Spalt).
+	 */
 	GENESISCONCEPTION_API FTransform ComputeAttachedTransform(const FGenesisSpermCell& Cell, const FGenesisOocyteState& Oocyte);
 }

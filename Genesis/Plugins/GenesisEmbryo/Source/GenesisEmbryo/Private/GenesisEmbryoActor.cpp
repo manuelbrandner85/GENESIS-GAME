@@ -311,4 +311,12 @@ void AGenesisEmbryo::UpdateOocyteRemains(const FGenesisEmbryoState& State)
 		// Der Polkörper zerfällt in den ersten Tagen
 		Oocyte->PolarBody->SetVisibility(State.HoursSinceFusion < 72.0);
 	}
+	if (Oocyte->SecondPolarBody)
+	{
+		// Der zweite Polkörper schnürt sich zwischen 2,5 und 3,5 Stunden nach der Verschmelzung ab (Docs/38):
+		// Er wächst aus dem Zellleib in den Spalt hinaus – das Bauteil wandert dafür vom Mittelpunkt aus nach außen
+		const float Extrusion = FMath::SmoothStep(2.5f, 3.5f, static_cast<float>(State.HoursSinceFusion));
+		Oocyte->SecondPolarBody->SetVisibility(Extrusion > 0.0f && State.HoursSinceFusion < 72.0);
+		Oocyte->SecondPolarBody->SetRelativeScale3D(FVector(FMath::Lerp(0.85f, 1.0f, Extrusion)));
+	}
 }

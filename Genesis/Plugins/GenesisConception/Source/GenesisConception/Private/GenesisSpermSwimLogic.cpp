@@ -110,6 +110,13 @@ namespace GenesisSpermSwimLogic
 			const float Equilibrium = Tuning.HyperactivationRate / (Tuning.HyperactivationRate + Tuning.DeactivationRate);
 			Motility = Rng.Bernoulli(Equilibrium) ? EGenesisSpermMotility::Hyperactivated : EGenesisSpermMotility::Progressive;
 		}
+		// Nur kapazitierte Zellen hyperaktivieren (Docs/38). Als letzter Zug aus dem Strom gezogen, damit alle
+		// anderen Eigenschaften einer Zelle dieselben bleiben wie vor der Einführung des Zustands.
+		Cell.bCapacitated = Cell.Vitality >= Tuning.SluggishVitalityThreshold && Rng.Bernoulli(Tuning.CapacitatedFraction);
+		if (!Cell.bCapacitated && Motility == EGenesisSpermMotility::Hyperactivated)
+		{
+			Motility = EGenesisSpermMotility::Progressive;
+		}
 		ApplyMotility(Cell, Motility, Tuning);
 		return Cell;
 	}
@@ -142,8 +149,8 @@ namespace GenesisSpermSwimLogic
 		}
 		FGenesisRandomStream& Rng = Cell.Random;
 
-		// 1. Wechsel der Bewegungsart
-		if (Cell.Motility == EGenesisSpermMotility::Progressive && Rng.Bernoulli(Tuning.HyperactivationRate * Dt))
+		// 1. Wechsel der Bewegungsart – hyperaktivieren kann nur eine kapazitierte Zelle
+		if (Cell.Motility == EGenesisSpermMotility::Progressive && Cell.bCapacitated && Rng.Bernoulli(Tuning.HyperactivationRate * Dt))
 		{
 			ApplyMotility(Cell, EGenesisSpermMotility::Hyperactivated, Tuning);
 		}

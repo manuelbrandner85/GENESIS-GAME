@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "GenesisDebug.h"
+#include "GenesisFertilizationLogic.h"
 #include "GenesisOocyte.h"
 #include "GenesisSpermSwarm.h"
 #include "GenesisSpermSwimLogic.h"
@@ -383,6 +384,15 @@ bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat&
 	OutRotation = FRotationMatrix::MakeFromXZ(LookAt - OutLocation, Up).ToQuat();
 	const float SurfaceDistance = static_cast<float>(FVector::Dist(OutLocation, Center)) - Egg->GetState().CumulusRadiusUm * GenesisMicroScale::UnitsPerMicrometer;
 	OutFocusDistance = FMath::Lerp(static_cast<float>(FVector::Dist(OutLocation, Center)), FMath::Max(10.0f, SurfaceDistance), Approach);
+	// Im Rennen steckt die eigene Zelle in der Zona oder liegt im Spalt darunter – 40 µm unter dem Rand des
+	// Cumulus. Die Schärfe gehört dorthin; auf dem Cumulusrand lag sie im Leeren, und das ganze Bild war
+	// weich, solange der Zeitraffer lief (gesehen in GENESIS-047).
+	if (Swarm->IsRacing() && Swarm->GetCell(Swarm->GetPlayerCellIndex())
+		&& GenesisFertilizationLogic::IsAttached(*Swarm->GetCell(Swarm->GetPlayerCellIndex())))
+	{
+		const float PlayerDistance = static_cast<float>(FVector::Dist(OutLocation, Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex())));
+		OutFocusDistance = FMath::Lerp(OutFocusDistance, PlayerDistance, Approach);
+	}
 	return true;
 }
 

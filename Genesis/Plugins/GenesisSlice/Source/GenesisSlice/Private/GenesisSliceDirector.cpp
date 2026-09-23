@@ -271,9 +271,9 @@ void UGenesisSliceDirector::DrivePhase(float DeltaSeconds)
 	{
 	case EGenesisSlicePhase::Conception:
 	{
-		// Der Schwarm läuft im Editor in Zeitlupe (Hochgeschwindigkeitsaufnahme). Für einen Durchlauf,
-		// den jemand spielt, gilt die echte Geschwindigkeit: Die Zellen schwimmen mit 30–55 µm/s,
-		// und die Befruchtung ist nach gut zwanzig Sekunden geschehen statt nach vier Minuten.
+		// Der Schwarm schwimmt in Zeitlupe (Hochgeschwindigkeitsaufnahme, ConceptionTimeScale). An der Eizelle
+		// schaltet er selbst auf sichtbaren Zeitraffer mit Uhr: Zona und Spalt dauern zusammen rund eine halbe
+		// Stunde (GENESIS-047, Docs/38).
 		for (TActorIterator<AGenesisSpermSwarm> It(GameInstance->GetWorld()); It; ++It)
 		{
 			It->TimeScale = Tuning.ConceptionTimeScale;

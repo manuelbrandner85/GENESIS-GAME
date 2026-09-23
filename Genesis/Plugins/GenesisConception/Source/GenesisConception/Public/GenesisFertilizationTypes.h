@@ -7,19 +7,30 @@
 #include "GenesisTypes.h"
 #include "GenesisFertilizationTypes.generated.h"
 
-/** Was eine Zelle gerade tut. Der Weg ist einbahnig: schwimmen → gebunden → durchdringen → verschmolzen oder abgewiesen. */
+/**
+ * Was eine Zelle gerade tut. Der Weg ist einbahnig: schwimmen → gebunden → durch die Zona → im Spalt unter
+ * der Zona → verschmolzen. Wer zu spät kommt, wird abgewiesen – oder bleibt im Spalt liegen (Docs/38).
+ */
 UENUM(BlueprintType)
 enum class EGenesisSpermPhase : uint8
 {
 	Swimming,
-	/** An der Zona pellucida gebunden; die Akrosomreaktion läuft. */
+	/** An der Zona pellucida gebunden; die Akrosomreaktion läuft (falls sie nicht schon im Cumulus geschah). */
 	Bound,
-	/** Bohrt sich durch die Zona (Enzyme + Schlagkraft). */
+	/** Schiebt sich schräg durch die Zona – vor allem mechanisch, mit kräftigen Geißelschlägen (Drobnis 1988, Bedford 1998). */
 	Penetrating,
 	/** Mit der Eizelle verschmolzen – nur eine einzige Zelle erreicht das. */
 	Fused,
-	/** Zu spät: Die Zona ist nach der Cortikalreaktion verhärtet. */
-	Blocked
+	/**
+	 * Abgewiesen: Die Zona ist nach der Verschmelzung verändert (ZP2 gespalten). Gebundene lösen sich und
+	 * schwimmen weiter, ohne erneut zu binden; wer in der Zona steckt, bleibt dort stecken.
+	 */
+	Blocked,
+	/**
+	 * Durch die Zona, im perivitellinen Spalt: Der Kopf liegt flach an der Eizellmembran, bis die Membranen
+	 * verschmelzen (Maus: 16 ± 6 min, Dubois 2025). Nach der Verschmelzung einer anderen Zelle bleibt sie hier liegen.
+	 */
+	Perivitelline
 };
 
 /**
@@ -41,8 +52,9 @@ struct GENESISCONCEPTION_API FGenesisOocyteState
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Conception")
 	float ZonaInnerRadiusUm = 58.0f;
 
+	/** Zona 17 µm dick: gemessen 16,7–17,7 µm an menschlichen Eizellen (Valeri 2011). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Conception")
-	float ZonaOuterRadiusUm = 72.0f;
+	float ZonaOuterRadiusUm = 75.0f;
 
 	/** Äußerer Rand des Cumulus (Corona radiata mit Gallerte) – dort werden Zellen langsamer. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Conception")
@@ -67,19 +79,27 @@ struct GENESISCONCEPTION_API FGenesisOocyteState
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
 	int32 BoundCells = 0;
 
+	/** Zellen im perivitellinen Spalt – vor der Verschmelzung Mitbewerberinnen, danach Überzählige, die liegen bleiben. */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
+	int32 PerivitellineCells = 0;
+
 	bool IsFertilized() const { return FertilizedByCell != INDEX_NONE; }
 };
 
 /**
- * Stellschrauben der Befruchtung. Die Zeiten sind Simulationszeit; die Szene läuft in Zeitlupe (TimeScale),
- * damit der Geißelschlag sichtbar bleibt.
+ * Stellschrauben der Befruchtung. Alle Zeiten sind biologische Zeit (Simulationssekunden = echte Sekunden
+ * im Eileiter). Wie schnell sie abläuft, bestimmt die Szene: Zeitlupe beim Schwimmen, damit der Geißelschlag
+ * sichtbar bleibt, sichtbarer Zeitraffer mit Uhr an der Zona (AGenesisSpermSwarm::TimeLapseScale).
  */
 USTRUCT(BlueprintType)
 struct GENESISCONCEPTION_API FGenesisFertilizationTuning
 {
 	GENERATED_BODY()
 
-	/** Reichweite der Lockwirkung (Progesteron aus dem Cumulus). Nur hyperaktivierte Zellen reagieren darauf. */
+	/**
+	 * Reichweite der Lockwirkung (Progesteron aus dem Cumulus). Nur kapazitierte Zellen folgen ihr
+	 * (Cohen-Dayag 1995) – hyperaktivierte am stärksten, progressive träger, nicht kapazitierte gar nicht.
+	 */
 	UPROPERTY(EditAnywhere, Category = "Chemotaxis") float ChemotaxisRangeUm = 220.0f;
 	UPROPERTY(EditAnywhere, Category = "Chemotaxis") float ChemotaxisTurnRate = 0.9f;
 
@@ -89,6 +109,13 @@ struct GENESISCONCEPTION_API FGenesisFertilizationTuning
 	 * asymmetrisch und kräftig. Erst so kann eine Zelle an der Zona binden und durchdringen.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Chemotaxis", meta = (ClampMin = "0")) float ProgesteroneHyperactivationPerSecond = 0.5f;
+
+	/**
+	 * Akrosomreaktion schon im Cumulus (je Sekunde, nur kapazitierte Zellen): Bei der Maus hatten 12 von 13
+	 * erfolgreichen Spermien sie schon vor der Zona hinter sich (Jin 2011). Beim Menschen ist das umstritten –
+	 * deshalb bleibt die Reaktion an der Zona möglich.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Chemotaxis", meta = (ClampMin = "0")) float AcrosomeInCumulusPerSecond = 0.08f;
 
 	/** Im Cumulus bremst die Gallerte; die Zellen müssen sich hindurcharbeiten. */
 	UPROPERTY(EditAnywhere, Category = "Cumulus", meta = (ClampMin = "0.05", ClampMax = "1")) float CumulusSpeedFactor = 0.55f;
@@ -101,20 +128,51 @@ struct GENESISCONCEPTION_API FGenesisFertilizationTuning
 	UPROPERTY(EditAnywhere, Category = "Binding", meta = (ClampMin = "0", ClampMax = "1")) float BindingChancePerSecondHyper = 0.85f;
 	UPROPERTY(EditAnywhere, Category = "Binding", meta = (ClampMin = "0", ClampMax = "1")) float BindingChancePerSecondProgressive = 0.0f;
 
-	/** Akrosomreaktion: Die Kappe platzt auf und gibt Enzyme frei, bevor die Zelle bohren kann (s). */
+	/** Akrosomreaktion: Die Kappe öffnet sich, erst danach kann die Zelle in die Zona eindringen (s). */
 	UPROPERTY(EditAnywhere, Category = "Penetration") FFloatInterval AcrosomeReactionSeconds = FFloatInterval(2.0f, 6.0f);
 
-	/** Bohrgeschwindigkeit durch die Zona (µm/s), skaliert mit Vitalität und Schlagkraft. */
-	UPROPERTY(EditAnywhere, Category = "Penetration") FFloatInterval PenetrationSpeedUm = FFloatInterval(0.35f, 1.2f);
+	/**
+	 * Vortrieb durch die Zona (µm/s, radial), skaliert mit Vitalität und Schlagkraft. Lebendaufnahmen der
+	 * Maus: rund 13 Minuten für die Zona (Jin 2011) – bei 17 µm im Mittel gut 0,02 µm/s. Das Band reicht von
+	 * gut 8 Minuten (volle Kraft) bis 19 Minuten (schwacher Schlag).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Penetration") FFloatInterval PenetrationSpeedUm = FFloatInterval(0.015f, 0.035f);
 
-	/** Manche Zellen bleiben stecken und geben auf (je Sekunde). */
-	UPROPERTY(EditAnywhere, Category = "Penetration", meta = (ClampMin = "0", ClampMax = "1")) float PenetrationFailureRate = 0.02f;
+	/**
+	 * Winkel des Eindringens gegen die Senkrechte (Grad): Spermien legen sich flach an und schieben sich
+	 * schräg durch die Zona, sie bohren nicht senkrecht (Drobnis 1988).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Penetration", meta = (ClampMin = "0", ClampMax = "70")) float EntryAngleDegrees = 40.0f;
 
-	/** Cortikalreaktion nach der Verschmelzung: Zeit bis die Zona vollständig verhärtet ist (s). */
-	UPROPERTY(EditAnywhere, Category = "Block") float CorticalReactionSeconds = 12.0f;
+	/**
+	 * Manche Zellen bleiben stecken und lösen sich wieder (je Sekunde, bei schwachem Schlag; ein kräftiger
+	 * senkt die Rate auf ein Drittel). Bei 13 Minuten in der Zona: rund die Hälfte der schwach schlagenden
+	 * Zellen gibt auf, von den kräftig schlagenden jede siebte.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Penetration", meta = (ClampMin = "0", ClampMax = "1")) float PenetrationFailureRate = 0.001f;
 
-	/** Ab diesem Fortschritt bindet keine Zelle mehr (die Membranblockade wirkt sofort, die Zona-Blockade verzögert). */
-	UPROPERTY(EditAnywhere, Category = "Block", meta = (ClampMin = "0", ClampMax = "1")) float HardeningBlockThreshold = 0.15f;
+	/**
+	 * Zeit im perivitellinen Spalt bis zur Verschmelzung (s): Maus, Lebendaufnahme 15,8 ± 5,7 min (Dubois 2025).
+	 * Die Membranen müssen sich finden (Izumo1 an Juno), verschmolzen wird seitlich am Kopf (Äquatorialsegment).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Fusion") float PerivitellineMeanSeconds = 948.0f;
+	UPROPERTY(EditAnywhere, Category = "Fusion") float PerivitellineSigmaSeconds = 342.0f;
+	UPROPERTY(EditAnywhere, Category = "Fusion") FFloatInterval PerivitellineClampSeconds = FFloatInterval(300.0f, 1800.0f);
+
+	/** Spalt zwischen Eizellmembran und Zona, in dem der Kopf flach liegt: Neigung gegen die Senkrechte (Grad). */
+	UPROPERTY(EditAnywhere, Category = "Fusion", meta = (ClampMin = "0", ClampMax = "90")) float PerivitellineTiltDegrees = 70.0f;
+
+	/**
+	 * Cortikalreaktion nach der Verschmelzung bis zum Ende (s). Die Granula geben Ovastacin frei, das ZP2
+	 * spaltet (Burkart 2012); die Membran verliert Juno innerhalb von rund 40 Minuten (Bianchi 2014).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Block") float CorticalReactionSeconds = 1200.0f;
+
+	/**
+	 * Ab diesem Fortschritt bindet keine Zelle mehr an der Zona (bei 20 min: nach 5 Minuten). Die zweite
+	 * Verschmelzung verhindert die Membran schon vorher – im Modell verschmilzt nur die erste Zelle.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Block", meta = (ClampMin = "0", ClampMax = "1")) float HardeningBlockThreshold = 0.25f;
 };
 
 /** Ergebnis einer Befruchtung – Eingang für Genetik, Körper und Seele. */

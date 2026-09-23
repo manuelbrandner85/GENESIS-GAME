@@ -48,6 +48,13 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> PolarBody;
 
+	/**
+	 * Zweiter Polkörper: Erst die Verschmelzung weckt die Eizelle aus der Metaphase II; sie schnürt die
+	 * überzähligen Chromosomen ab, rund 3,5 Stunden danach (Docs/38). Bis dahin unsichtbar, der Keim zeigt ihn.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> SecondPolarBody;
+
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> Corona;
 

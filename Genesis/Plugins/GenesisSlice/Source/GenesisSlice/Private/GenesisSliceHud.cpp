@@ -14,6 +14,7 @@
 #include "GenesisBootFlow.h"
 #include "GenesisSlicePlayerController.h"
 #include "GenesisSpermSwarm.h"
+#include "GenesisOocyte.h"
 #include "GenesisMicroscopeCameraRig.h"
 #include "GenesisEmbryoSubsystem.h"
 #include "GenesisEmbryoLogic.h"
@@ -681,7 +682,16 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 		Status = TEXT("An der Zona gebunden – Akrosomreaktion");
 		break;
 	case EGenesisSpermPhase::Penetrating:
-		Status = FString::Printf(TEXT("Durch die Zona: %.1f von %.0f µm"), Swarm->GetPlayerPenetrationUm(), Swarm->GetZonaThicknessUm());
+		Status = FString::Printf(TEXT("In der Zona: %.1f von %.0f µm"), Swarm->GetPlayerPenetrationUm(), Swarm->GetZonaThicknessUm());
+		break;
+	case EGenesisSpermPhase::Perivitelline:
+		// Die Membranen müssen sich finden (Izumo1 an Juno) – das dauert Minuten, und es liegt nicht mehr in der Hand
+		Status = Swarm->GetOocyte() && Swarm->GetOocyte()->GetState().IsFertilized()
+			? TEXT("Im Spalt unter der Zona – eine andere Zelle ist verschmolzen")
+			: TEXT("Im Spalt unter der Zona – die Membranen suchen einander");
+		break;
+	case EGenesisSpermPhase::Blocked:
+		Status = TEXT("Abgewiesen – die Zona hat sich verändert");
 		break;
 	default:
 		// Keine Platzierung: Es ist kein Wettlauf um Tempo (Docs/38)
@@ -695,7 +705,28 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 	}
 	DrawCentered(Status, Canvas->SizeY - 110.0f * Scale, Scale * 1.15f, 0.85f, false);
 
-	// Kraft beim Bohren: ein schlichter Balken, nur solange sie zählt
+	// Zeitraffer mit Uhr, wie der Zeitstempel oben auf einer Zeitrafferaufnahme am Mikroskop: Die Zeit an
+	// der Eizelle wird sichtbar gerafft statt heimlich (Docs/38) – eine halbe Stunde Biologie in gut vierzig
+	// Sekunden. Oben, weil unten Zustand und Tastenhinweise stehen (dort lagen sie zuerst übereinander).
+	if (Swarm->IsTimeLapse())
+	{
+		const FGenesisOocyteState* Egg = Swarm->GetOocyte() ? &Swarm->GetOocyte()->GetState() : nullptr;
+		const bool bAfterFusion = Egg && Egg->IsFertilized();
+		const float Clock = bAfterFusion ? Egg->SecondsSinceFusion : Swarm->GetPlayerSecondsAtEgg();
+		if (Clock >= 0.0f)
+		{
+			const int32 Whole = FMath::FloorToInt(Clock);
+			FString Line = FString::Printf(TEXT("Zeitraffer ×%.0f · %d:%02d min %s"), Swarm->GetEffectiveTimeScale(),
+				Whole / 60, Whole % 60, bAfterFusion ? TEXT("nach der Verschmelzung") : TEXT("an der Eizelle"));
+			if (Egg && Egg->PerivitellineCells > 0)
+			{
+				Line += FString::Printf(TEXT(" · im Spalt %d"), Egg->PerivitellineCells);
+			}
+			DrawCentered(Line, 48.0f * Scale, Scale * 1.0f, 0.75f, false);
+		}
+	}
+
+	// Kraft in der Zona: ein schlichter Balken, nur solange sie zählt
 	if (Swarm->GetPlayerPhase() == EGenesisSpermPhase::Penetrating || Swarm->GetPlayerPhase() == EGenesisSpermPhase::Bound)
 	{
 		const float Width = 260.0f * Scale;
@@ -716,12 +747,16 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 	{
 		SteerHintUsedSeconds = Now;
 	}
-	DrawLine(TEXT("W A S D / linker Stick: lenken"), 0.0f, SteerAlpha);
-	if (Swarm->GetPlayerPhase() != EGenesisSpermPhase::Swimming)
+	// Lenken nur, solange die Zelle schwimmt – an und in der Eizelle gibt es nichts zu lenken
+	if (Swarm->GetPlayerPhase() == EGenesisSpermPhase::Swimming)
+	{
+		DrawLine(TEXT("W A S D / linker Stick: lenken"), 0.0f, SteerAlpha);
+	}
+	if (Swarm->GetPlayerPhase() == EGenesisSpermPhase::Bound || Swarm->GetPlayerPhase() == EGenesisSpermPhase::Penetrating)
 	{
 		DrawLine(AGenesisSlicePlayerController::DescribeAction(TEXT("GenesisCry")) + TEXT(" schnell drücken: schlagen – die Kraft bringt dich durch die Zona"), 1.0f, 1.0f);
 	}
-	else
+	else if (Swarm->GetPlayerPhase() == EGenesisSpermPhase::Swimming)
 	{
 		DrawLine(TEXT("Maus / rechter Stick: umsehen"), 1.0f, Controller->HasMovedMicroscope() ? 0.0f : 0.7f);
 		DrawLine(AGenesisSlicePlayerController::DescribeAction(TEXT("GenesisToggleView")) + TEXT(": Ansicht wechseln"), -1.0f, Controller->HasToggledView() ? 0.0f : 0.6f);
@@ -811,10 +846,10 @@ void AGenesisSliceHud::DrawHUD()
 					Plan.Somites > 0 ? *FString::Printf(TEXT(" · %d Somitenpaare"), Plan.Somites) : TEXT(""),
 					Plan.bHeartBeating ? *FString::Printf(TEXT(" · Herz %.0f/min"), Plan.HeartRateBpm) : TEXT(""))
 				: bSecondWeek
-				? FString::Printf(TEXT("%.0f hpi · Tag %d · Keim %.2f mm%s"),
+				? FString::Printf(TEXT("%.0f h seit Verschmelzung · Tag %d · Keim %.2f mm%s"),
 					Keim.HoursSinceFusion, static_cast<int32>(Keim.HoursSinceFusion / 24.0) + 1, Nid.ConceptusDiameterUm / 1000.0f,
 					Nid.HcgMilliIU >= 1.0f ? *FString::Printf(TEXT(" · hCG %.0f mIU/ml"), Nid.HcgMilliIU) : TEXT(""))
-				: FString::Printf(TEXT("%.1f hpi · Tag %d · %d %s"),
+				: FString::Printf(TEXT("%.1f h seit Verschmelzung · Tag %d · %d %s"),
 					Keim.HoursSinceFusion, static_cast<int32>(Keim.HoursSinceFusion / 24.0) + 1,
 					Keim.GetCellCount(), Keim.GetCellCount() == 1 ? TEXT("Zelle") : TEXT("Zellen"));
 			DrawCentered(Clock, Canvas->SizeY - 118.0f * Scale, Scale * 1.15f, 0.85f, false);

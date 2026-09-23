@@ -121,10 +121,8 @@ void AGenesisSpermSwarm::RebuildSwarm()
 		const uint64 CellSeed = GenesisHash::Combine(GenesisHash::Combine(static_cast<uint64>(Seed), CellSeedSalt), static_cast<uint64>(Index));
 		FGenesisSpermCell Cell = GenesisSpermSwimLogic::CreateCell(CellSeed, Vitality, Channel, Tuning);
 
-		// Die Zellen kommen nicht gleichmäßig über den ganzen Eileiter verteilt an, sondern als Pulk
-		// von der Gebärmutter her: Der Zug, der es bis in die Ampulle geschafft hat, zieht gemeinsam
-		// flussaufwärts. Gleichverteilung über drei Millimeter sieht dagegen nach Einzelgängern aus.
-		// Im Rennen rückt das Feld als geschlossener Pulk an (siehe FGenesisRaceTuning)
+		// Die Zellen kommen von der Gebärmutter her, flussaufwärts. Im Rennen treffen sie nach und nach ein
+		// (Wilcox 1995, Docs/38): Das Feld beginnt hinter der eigenen Zelle und reicht weit zurück.
 		const float BandDistance = bRaceLayout ? RaceTuning.FieldDistanceUm : StartBandDistanceUm;
 		const float BandSpread = bRaceLayout ? RaceTuning.FieldSpreadUm : StartBandSpreadUm;
 		if (BandSpread > 0.0f)
@@ -134,7 +132,8 @@ void AGenesisSpermSwarm::RebuildSwarm()
 					/ GenesisMicroScale::UnitsPerMicrometer) - BandDistance
 				: 0.5f * Channel.LengthUm - BandDistance;
 
-			const float Offset = VitalityRandom.Gaussian(0.0f, BandSpread);
+			const float Spread = VitalityRandom.Gaussian(0.0f, BandSpread);
+			const float Offset = bRaceLayout ? -FMath::Abs(Spread) : Spread;
 			Cell.Position.X = FMath::Fmod(BandCenter + Offset + Channel.LengthUm, Channel.LengthUm);
 			if (Cell.Position.X < 0.0)
 			{
@@ -145,8 +144,10 @@ void AGenesisSpermSwarm::RebuildSwarm()
 		Cells.Add(MoveTemp(Cell));
 	}
 
-	// Die Zelle des Spielers: in der ersten Reihe, eine der stärksten, progressiv, Richtung Eizelle
+	// Die Zelle des Spielers: vorn, eine der stärksten, progressiv, Richtung Eizelle – und kapazitiert,
+	// also jetzt bereit. Ohne diesen Zustand könnte sie gar nicht befruchten (Docs/38).
 	PlayerCellIndex = INDEX_NONE;
+	PlayerAtEggSeconds = -1.0;
 	RaceOutcome = EGenesisRaceOutcome::None;
 	PlayerVigor = 0.0f;
 	PlayerPlace = 0;
@@ -155,6 +156,7 @@ void AGenesisSpermSwarm::RebuildSwarm()
 		const FVector EggLocal = GetActorTransform().InverseTransformPosition(Oocyte->GetActorLocation()) / GenesisMicroScale::UnitsPerMicrometer;
 		const uint64 PlayerSeed = GenesisHash::Combine(static_cast<uint64>(Seed), 0x91A7E5ull);
 		FGenesisSpermCell Mine = GenesisSpermSwimLogic::CreateCell(PlayerSeed, RaceTuning.Vitality, Channel, Tuning);
+		Mine.bCapacitated = true;
 		GenesisSpermSwimLogic::ApplyMotility(Mine, EGenesisSpermMotility::Progressive, Tuning);
 		Mine.Position = FVector(EggLocal.X - RaceTuning.StartDistanceUm, EggLocal.Y + 60.0, EggLocal.Z - 40.0);
 		Mine.Heading = FVector::ForwardVector;
@@ -199,6 +201,7 @@ void AGenesisSpermSwarm::StartRace(uint64 RunSeed)
 	Egg.CorticalReaction = 0.0f;
 	Egg.SecondsSinceFusion = 0.0f;
 	Egg.BoundCells = 0;
+	Egg.PerivitellineCells = 0;
 	FertilizationResult = FGenesisFertilizationResult();
 	EffectiveTimeScale = -1.0f;
 	RebuildSwarm();
@@ -229,6 +232,10 @@ void AGenesisSpermSwarm::ReportPlayerProgress()
 	if (Mine.Phase != LastReportedPhase)
 	{
 		LastReportedPhase = Mine.Phase;
+		if (PlayerAtEggSeconds < 0.0 && GenesisFertilizationLogic::IsAttached(Mine))
+		{
+			PlayerAtEggSeconds = SimulationSeconds;
+		}
 		UE_LOG(LogGenesis, Display, TEXT("Rennen: eigene Zelle %s nach %.1f s (Tiefe %.1f µm, Kraft %.2f)."),
 			*StaticEnum<EGenesisSpermPhase>()->GetNameStringByValue(Mine.Phase), SimulationSeconds, Mine.PenetrationDepthUm, PlayerVigor);
 	}
@@ -264,7 +271,29 @@ float AGenesisSpermSwarm::GetPlayerPenetrationUm() const
 
 float AGenesisSpermSwarm::GetZonaThicknessUm() const
 {
-	return Oocyte ? Oocyte->GetState().ZonaOuterRadiusUm - Oocyte->GetState().ZonaInnerRadiusUm : 14.0f;
+	return Oocyte ? Oocyte->GetState().ZonaOuterRadiusUm - Oocyte->GetState().ZonaInnerRadiusUm : 17.0f;
+}
+
+int32 AGenesisSpermSwarm::GetPerivitellineCells() const
+{
+	return Oocyte ? Oocyte->GetState().PerivitellineCells : 0;
+}
+
+bool AGenesisSpermSwarm::WantsTimeLapse() const
+{
+	const FGenesisOocyteState* Egg = Oocyte ? &Oocyte->GetState() : nullptr;
+	if (!Egg)
+	{
+		return false;
+	}
+	// Nach der Verschmelzung: Die Cortikalreaktion dauert Minuten – gerafft, bis sie durch ist
+	const bool bBlocking = Egg->IsFertilized() && Egg->CorticalReaction < 1.0f;
+	if (IsRacing())
+	{
+		// Im Rennen erst, wenn die eigene Zelle angekommen ist: Wer noch lenkt, braucht die Zeitlupe
+		return bBlocking || (Cells.IsValidIndex(PlayerCellIndex) && GenesisFertilizationLogic::IsAttached(Cells[PlayerCellIndex]));
+	}
+	return bBlocking || (!Egg->IsFertilized() && Egg->BoundCells + Egg->PerivitellineCells > 0);
 }
 
 void AGenesisSpermSwarm::Tick(float DeltaSeconds)
@@ -292,30 +321,32 @@ void AGenesisSpermSwarm::Tick(float DeltaSeconds)
 		RebuildSwarm();
 	}
 
-	// Solange gebohrt wird (Zellen an der Zona, noch keine Verschmelzung), darf die Zeitlupe nachlassen
-	const FGenesisOocyteState* Egg = Oocyte ? &Oocyte->GetState() : nullptr;
-	const bool bPenetrating = Egg && Egg->BoundCells > 0 && !Egg->IsFertilized();
-	const float Target = bPenetrating ? PenetrationTimeScale : TimeScale;
-	if (EffectiveTimeScale < 0.0f)
+	// An der Eizelle: sichtbarer Zeitraffer statt Zeitlupe. Die Rampe läuft gleichmäßig im Verhältnis
+	// (logarithmisch) – linear sähe der Weg von 0,3 auf 45 aus wie ein Sprung am Ende.
+	const float Target = FMath::Max(0.01f, WantsTimeLapse() ? TimeLapseScale : TimeScale);
+	if (EffectiveTimeScale <= 0.0f)
 	{
 		EffectiveTimeScale = Target;
 	}
-	const float RampRate = FMath::Abs(PenetrationTimeScale - TimeScale) / FMath::Max(0.1f, TimeScaleRampSeconds);
-	EffectiveTimeScale = FMath::FInterpConstantTo(EffectiveTimeScale, Target, DeltaSeconds, FMath::Max(RampRate, 0.01f));
-	SimulateFor(DeltaSeconds * EffectiveTimeScale);
+	const float LogSpan = FMath::Abs(FMath::Loge(FMath::Max(TimeLapseScale, 1.0f) / FMath::Max(TimeScale, 0.01f)));
+	const float LogRate = FMath::Max(LogSpan, 0.1f) / FMath::Max(0.1f, TimeScaleRampSeconds);
+	EffectiveTimeScale = FMath::Exp(FMath::FInterpConstantTo(FMath::Loge(EffectiveTimeScale), FMath::Loge(Target), DeltaSeconds, LogRate));
+	SimulateFor(DeltaSeconds * EffectiveTimeScale, IsTimeLapse() ? TimeLapseStepSeconds : Tuning.FixedStepSeconds);
 	PushInstances(false);
 
 	LastTickMs = static_cast<float>((FPlatformTime::Seconds() - Start) * 1000.0);
 }
 
-void AGenesisSpermSwarm::SimulateFor(float SimulationDelta)
+void AGenesisSpermSwarm::SimulateFor(float SimulationDelta, float RequestedStepSeconds)
 {
-	const float StepSeconds = FMath::Max(0.001f, Tuning.FixedStepSeconds);
+	const float StepSeconds = FMath::Max(0.001f, RequestedStepSeconds);
 	StepAccumulator += FMath::Max(0.0f, SimulationDelta);
 
-	// Begrenzung gegen Spiralen bei Rucklern (Hitch): höchstens 8 Schritte je Frame
-	int32 Steps = FMath::Min(FMath::FloorToInt(StepAccumulator / StepSeconds), 8);
-	if (Steps == 8)
+	// Begrenzung gegen Spiralen bei Rucklern (Hitch). Im Zeitraffer sind es bei 30 Bildern je Sekunde
+	// gut 45 Schritte – mit 150 Zellen günstig; 6.000 hätten das nicht erlaubt.
+	constexpr int32 MaxSteps = 64;
+	int32 Steps = FMath::Min(FMath::FloorToInt(StepAccumulator / StepSeconds), MaxSteps);
+	if (Steps == MaxSteps)
 	{
 		StepAccumulator = 0.0f;
 	}
@@ -396,7 +427,9 @@ void AGenesisSpermSwarm::PushInstances(bool bTeleport)
 		return;
 	}
 
-	const bool bHasPrevious = !bTeleport && PreviousTransformBuffer.Num() == Cells.Num();
+	// Im Zeitraffer ist jedes Bild eine eigene kurze Belichtung, wie bei einer echten Zeitrafferaufnahme:
+	// keine Bewegungsunschärfe über den Weg, den eine Zelle zwischen zwei Bildern zurücklegt (bis 30 µm)
+	const bool bHasPrevious = !bTeleport && !IsTimeLapse() && PreviousTransformBuffer.Num() == Cells.Num();
 	TransformBuffer.SetNum(Cells.Num());
 	PreviousTransformBuffer.SetNum(Cells.Num());
 	CustomDataBuffer.SetNum(Cells.Num() * MaterialDataCount);
@@ -404,8 +437,8 @@ void AGenesisSpermSwarm::PushInstances(bool bTeleport)
 	for (int32 Index = 0; Index < Cells.Num(); ++Index)
 	{
 		const FGenesisSpermCell& Cell = Cells[Index];
-		// Gebundene und bohrende Zellen stecken mit dem Kopf in der Zona – sie werden anders ausgerichtet als schwimmende
-		const bool bAttached = Oocyte && GenesisFertilizationLogic::GetPhase(Cell) != EGenesisSpermPhase::Swimming;
+		// Anhaftende Zellen stecken mit dem Kopf an oder in der Zona – sie werden anders ausgerichtet als schwimmende
+		const bool bAttached = Oocyte && GenesisFertilizationLogic::IsAttached(Cell);
 		const FTransform Current = bAttached
 			? GenesisFertilizationLogic::ComputeAttachedTransform(Cell, Oocyte->GetState())
 			: GenesisSpermSwimLogic::ComputeVisualTransform(Cell);
@@ -426,8 +459,8 @@ void AGenesisSpermSwarm::PushInstances(bool bTeleport)
 
 int32 AGenesisSpermSwarm::FindAttachedCell() const
 {
-	// Die verschmolzene Zelle zuerst – sie ist der Moment, um den es geht. Sonst die führende:
-	// die am tiefsten in der Zona steckt; bei Gleichstand (alle noch gebunden, keine bohrt) die erste.
+	// Die verschmolzene Zelle zuerst – sie ist der Moment, um den es geht. Sonst die führende: im Spalt
+	// unter der Zona, sonst die am tiefsten in der Zona steckt; bei Gleichstand (alle noch gebunden) die erste.
 	int32 Leader = INDEX_NONE;
 	float LeaderDepth = -1.0f;
 	for (int32 Index = 0; Index < Cells.Num(); ++Index)
@@ -437,9 +470,11 @@ int32 AGenesisSpermSwarm::FindAttachedCell() const
 		{
 			return Index;
 		}
-		if (Phase == EGenesisSpermPhase::Bound || Phase == EGenesisSpermPhase::Penetrating)
+		if (Phase == EGenesisSpermPhase::Bound || Phase == EGenesisSpermPhase::Penetrating || Phase == EGenesisSpermPhase::Perivitelline)
 		{
-			const float Depth = Phase == EGenesisSpermPhase::Penetrating ? Cells[Index].PenetrationDepthUm : 0.0f;
+			// Im Spalt: wer am kürzesten vor der Verschmelzung steht, führt
+			const float Depth = Phase == EGenesisSpermPhase::Perivitelline ? 1000.0f - Cells[Index].FusionTimer / 60.0f
+				: (Phase == EGenesisSpermPhase::Penetrating ? Cells[Index].PenetrationDepthUm : 0.0f);
 			if (Depth > LeaderDepth)
 			{
 				LeaderDepth = Depth;
@@ -481,6 +516,7 @@ void AGenesisSpermSwarm::RegisterDebugPage()
 			int32 Progressive = 0;
 			int32 Hyper = 0;
 			int32 Sluggish = 0;
+			int32 Capacitated = 0;
 			int32 NearWall = 0;
 			// Wer rückwärts schwimmt, treibt mit dem Strom zur Gebärmutter – für diesen Schwarm die falsche Richtung
 			int32 Backwards = 0;
@@ -491,20 +527,21 @@ void AGenesisSpermSwarm::RegisterDebugPage()
 				Progressive += Cell.Motility == EGenesisSpermMotility::Progressive ? 1 : 0;
 				Hyper += Cell.Motility == EGenesisSpermMotility::Hyperactivated ? 1 : 0;
 				Sluggish += Cell.Motility == EGenesisSpermMotility::Sluggish ? 1 : 0;
+				Capacitated += Cell.bCapacitated ? 1 : 0;
 				NearWall += Self->Channel.LumenRadiusUm - FVector2D(Cell.Position.Y, Cell.Position.Z).Size() < Self->Tuning.WallAttractionDistanceUm ? 1 : 0;
 				SpeedSum += Cell.Speed;
 				UpstreamSum += Cell.Heading.X;
 				Backwards += Cell.Heading.X < 0.0 ? 1 : 0;
 			}
 			const double Count = Self->Cells.Num();
-			OutLines.Add(FString::Printf(TEXT("Zellen %d | progressiv %d | hyperaktiviert %d | träge %d | Simulationszeit %.1f s (×%.2f)"),
-				Self->Cells.Num(), Progressive, Hyper, Sluggish, Self->SimulationSeconds, Self->TimeScale));
+			OutLines.Add(FString::Printf(TEXT("Zellen %d | kapazitiert %d | progressiv %d | hyperaktiviert %d | träge %d | Simulationszeit %.1f s (×%.2f)"),
+				Self->Cells.Num(), Capacitated, Progressive, Hyper, Sluggish, Self->SimulationSeconds, Self->GetEffectiveTimeScale()));
 			if (Self->Oocyte)
 			{
 				const FGenesisOocyteState& Egg = Self->Oocyte->GetState();
-				OutLines.Add(FString::Printf(TEXT("Eizelle: %s | an der Zona %d | Cortikalreaktion %.0f %%"),
+				OutLines.Add(FString::Printf(TEXT("Eizelle: %s | an der Zona %d | im Spalt %d | Cortikalreaktion %.0f %%"),
 					Egg.IsFertilized() ? *FString::Printf(TEXT("befruchtet von Zelle %d nach %.1f s"), Egg.FertilizedByCell, Self->FertilizationResult.SecondsToFusion) : TEXT("unbefruchtet"),
-					Egg.BoundCells, 100.0f * Egg.CorticalReaction));
+					Egg.BoundCells, Egg.PerivitellineCells, 100.0f * Egg.CorticalReaction));
 			}
 			OutLines.Add(FString::Printf(TEXT("Ø Vortrieb %.1f µm/s | an der Wand (<%.0f µm) %.0f %% | Ø Ausrichtung gegen den Strom %+.2f | rückwärts %.0f %% | CPU %.3f ms"),
 				SpeedSum / Count, Self->Tuning.WallAttractionDistanceUm, 100.0 * NearWall / Count, UpstreamSum / Count,

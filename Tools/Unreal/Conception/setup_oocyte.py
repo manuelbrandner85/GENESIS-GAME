@@ -570,6 +570,8 @@ def place_oocyte(meshes, materials):
         ("ooplasm", "cytoplasm", "ooplasm", True, True),
         ("zona", "zona", "zona", False, True),
         ("polar_body", "polar_body", "ooplasm", False, True),
+        # Der zweite Polkörper (GENESIS-047): dasselbe Bauteil, gedreht daneben; sichtbar erst nach der Verschmelzung
+        ("second_polar_body", "polar_body", "ooplasm", False, True),
         ("corona", "corona", "corona", True, True),
         # Die Fäden der Gallerte zwischen den Zellen. Sie werfen keine Schatten – ein 0,5 µm dünner
         # Faden aus Wasser wirft keinen, und die Schattenkarte würde ihn ohnehin nicht auflösen.

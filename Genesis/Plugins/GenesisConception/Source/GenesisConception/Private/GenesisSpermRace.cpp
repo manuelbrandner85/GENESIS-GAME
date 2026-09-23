@@ -38,6 +38,9 @@ int32 GenesisSpermRace::CountCellsAhead(const TArray<FGenesisSpermCell>& Cells, 
 		{
 		case EGenesisSpermPhase::Fused:
 			return -1000.0f;
+		case EGenesisSpermPhase::Perivitelline:
+			// Im Spalt unter der Zona: vor allen, die noch in ihr stecken
+			return -100.0f;
 		case EGenesisSpermPhase::Bound:
 		case EGenesisSpermPhase::Penetrating:
 			// Wer in der Zona steckt, ist vorn – je tiefer, desto weiter

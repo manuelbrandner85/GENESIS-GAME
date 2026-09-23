@@ -86,9 +86,25 @@ struct GENESISCONCEPTION_API FGenesisSpermCell
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
 	uint8 Phase = 0;
 
-	/** Restzeit der Akrosomreaktion (s), solange die Zelle gebunden ist. */
+	/**
+	 * Kapazitiert: Nur in diesem Reifezustand folgt eine Zelle dem Lockstoff, hyperaktiviert, bindet an der
+	 * Zona und kann befruchten. Jeweils nur 2–14 % einer Probe sind es, einmalig und für 50–240 Minuten
+	 * (Cohen-Dayag 1995, Docs/38). Nicht die schnellste befruchtet, sondern die, die zur richtigen Zeit bereit ist.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
+	bool bCapacitated = false;
+
+	/** Die Akrosomreaktion ist abgeschlossen (im Cumulus oder an der Zona). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
+	bool bAcrosomeReacted = false;
+
+	/** Restzeit der laufenden Akrosomreaktion (s); 0 = läuft nicht. */
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
 	float AcrosomeTimer = 0.0f;
+
+	/** Im perivitellinen Spalt: Restzeit bis die Membranen verschmelzen können (s). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
+	float FusionTimer = 0.0f;
 
 	/** Eingedrungene Tiefe in der Zona pellucida (µm). */
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
@@ -198,9 +214,14 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	UPROPERTY(EditAnywhere, Category = "Sluggish") float SluggishVitalityThreshold = 0.3f;
 
 	/**
-	 * Wechselraten zwischen progressiv und hyperaktiviert (je Sekunde).
-	 * In der Ampulle zum Zeitpunkt des Eisprungs sind die Zellen längst kapazitiert – sie haben sich
-	 * aus dem Reservoir im Isthmus gelöst. Deshalb liegt das Gleichgewicht hier bei gut der Hälfte.
+	 * Anteil kapazitierter Zellen. Gemessen sind jeweils nur 2–14 % einer Probe kapazitiert (Cohen-Dayag 1995);
+	 * vorher galten hier alle Zellen der Ampulle als kapazitiert, und gut die Hälfte schlug hyperaktiviert (Docs/38).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Transitions", meta = (ClampMin = "0", ClampMax = "1")) float CapacitatedFraction = 0.1f;
+
+	/**
+	 * Wechselraten zwischen progressiv und hyperaktiviert (je Sekunde) – nur für kapazitierte Zellen.
+	 * Unter ihnen liegt das Gleichgewicht bei gut der Hälfte; im ganzen Schwarm sind es so rund 5 %.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Transitions") float HyperactivationRate = 0.05f;
 	UPROPERTY(EditAnywhere, Category = "Transitions") float DeactivationRate = 0.045f;
