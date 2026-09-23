@@ -130,7 +130,7 @@ def noise3(p, freq, seed):
 # ------------------------------------------------------------------------------------------------
 
 def build_amnion(coll):
-    unit, faces = uv_sphere(200, 100)
+    unit, faces = uv_sphere(400, 200)   # fein genug für die Falten
     pts = unit * AMNION_SEMI
     # leichte Unregelmäßigkeit: eine Membran in Flüssigkeit ist nie eine perfekte Kugel
     pts *= (1.0 + 0.025 * noise3(unit, 3.0, 7))[:, None]
@@ -141,6 +141,13 @@ def build_amnion(coll):
     dist = np.linalg.norm(d, axis=1)
     pull = np.exp(-(dist / 1900.0) ** 2)
     pts = pts - d * (pull * 0.72)[:, None]
+    # Falten: Eine Membran in Flüssigkeit liegt nie glatt. Scharfe Knicke (aus dem Betrag einer Welle, zur Spitze
+    # geschärft) mit 20–45 µm Höhe, am Nabel, wo die Haut zusammengezogen ist, dichter und tiefer. Auf jedem Knick fängt
+    # sich das Licht als schmales Glanzlicht – daran erkennt man die echte Fruchtblase (Doc 36).
+    normal = (pts - AMNION_CENTER) / np.linalg.norm(pts - AMNION_CENTER, axis=1)[:, None]
+    crease = (1.0 - np.abs(noise3(unit, 7.0, 71))) ** 5 + 0.6 * (1.0 - np.abs(noise3(unit, 15.0, 72))) ** 6
+    gather = 1.0 + 2.5 * np.exp(-(dist / 1400.0) ** 2)
+    pts = pts + normal * (crease * 32.0 * gather)[:, None]
     return mesh_object(coll, "Amnion", pts * UM, faces)
 
 
@@ -427,27 +434,43 @@ def plate_vessels(seed=17, n_main=6):
     b = np.cross(n, a)
     paths = []
 
-    def grow(pos, heading, length, radius, depth):
+    def grow(pos, heading, radius, depth):
+        # Gefäße teilen sich ungleich (Murray: r³ = r1³ + r2³): Der kräftige Ast läuft fast gerade weiter, der dünne
+        # zweigt steil ab. Die Abschnittslänge folgt dem Radius und streut. So wird der Baum organisch statt
+        # spiegelbildlich gegabelt – eine erste Fassung gabelte symmetrisch und sah aus wie ein Diagramm (Doc 35).
+        length = radius * r.uniform(18.0, 38.0)
         pts = [pos]
-        steps = max(6, int(length / 60.0))
-        bend = r.uniform(-0.5, 0.5) / length          # Krümmung je µm: ruhige Bögen
+        steps = max(6, int(length / 45.0))
+        bend = r.uniform(-0.9, 0.9) / length
         h = heading
         for _ in range(steps):
-            h += bend * (length / steps) + r.normal(0.0, 0.03)
+            h += bend * (length / steps) + r.normal(0.0, 0.07)
             pos = pos + (math.cos(h) * a + math.sin(h) * b) * (length / steps)
             pts.append(pos)
-        paths.append((radius, radius * 0.8, pts))
-        if depth > 0 and radius * 0.72 > 3.0:
-            spread = r.uniform(0.35, 0.6)
-            for side in (-1.0, 1.0):
-                grow(pos, h + side * spread + r.normal(0.0, 0.08), length * r.uniform(0.62, 0.8),
-                     radius * r.uniform(0.66, 0.78), depth - 1)
+        paths.append((radius, radius * 0.92, pts))
+        # kleine Seitenzweige unterwegs
+        if radius > 8.0:
+            for _ in range(r.integers(0, 3)):
+                i = r.integers(2, len(pts) - 1)
+                side = r.choice([-1.0, 1.0])
+                twig_h = h + side * r.uniform(0.9, 1.5)
+                if depth > 1:
+                    grow(pts[i], twig_h, radius * r.uniform(0.25, 0.4), depth - 2)
+        if depth <= 0 or radius < 4.0:
+            return
+        if r.random() < 0.12:
+            grow(pos, h + r.normal(0.0, 0.15), radius * 0.93, depth - 1)   # läuft ungeteilt weiter
+            return
+        share = r.uniform(0.12, 0.45)
+        big, small = radius * (1.0 - share) ** (1.0 / 3.0), radius * share ** (1.0 / 3.0)
+        side = r.choice([-1.0, 1.0])
+        grow(pos, h + side * r.uniform(0.1, 0.35), big, depth - 1)
+        grow(pos, h - side * r.uniform(0.6, 1.1), small, depth - 1)
 
     start = PLACENTA_SITE - n * 40.0
     for k in range(n_main):
-        heading = 2 * math.pi * k / n_main + r.uniform(-0.25, 0.25)
-        grow(start + (math.cos(heading) * a + math.sin(heading) * b) * 180.0, heading,
-             r.uniform(900.0, 1500.0), r.uniform(34.0, 44.0), 4)
+        heading = 2 * math.pi * k / n_main + r.uniform(-0.35, 0.35)
+        grow(start + (math.cos(heading) * a + math.sin(heading) * b) * 180.0, heading, r.uniform(30.0, 46.0), 6)
     return paths
 
 

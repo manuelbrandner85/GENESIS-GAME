@@ -41,16 +41,18 @@ ENVIRONMENT = {
 # Weitere Gewebe als Instanzen des Organmaterials (Farbe, Durchschein, Rauheit, Streuung)
 ENV_LOOKS = {
     # Dottersack: eine dünne, gelblich-cremefarbene Blase; im Leben durchscheinend, nicht kreidig
-    "MI_GEN_Dottersack": ((0.21, 0.16, 0.105), (0.50, 0.30, 0.17), 0.40, 0.95),
+    "MI_GEN_Dottersack": ((0.20, 0.165, 0.13), (0.42, 0.30, 0.22), 0.40, 0.95),
     # Blutinseln: frühe Blutbildung – dunkelrote Zellhaufen auf dem Dottersack
     "MI_GEN_Blutinseln": ((0.13, 0.035, 0.03), (0.32, 0.07, 0.05), 0.45, 0.9),
     # Dottergefäße: Blut unter einer dünnen, gallertigen Wand – dunkler und stumpfer als das Blut im Herzen
     "MI_GEN_Dottergefaesse": ((0.07, 0.028, 0.026), (0.24, 0.07, 0.055), 0.42, 0.95),
     # Dottergang und Haftstiel: blasses, gallertiges Bindegewebe
-    "MI_GEN_Stielgewebe": ((0.30, 0.22, 0.21), (0.55, 0.30, 0.26), 0.45, 0.95),
+    "MI_GEN_Stielgewebe": ((0.28, 0.22, 0.21), (0.46, 0.30, 0.27), 0.40, 0.95),
     # Chorionplatte (werdende Plazenta), von innen: eine dünne, rosig-weißliche Haut über dem dunkelroten Zottengewebe
     # und den Bluträumen der Mutter in der Gebärmutterwand dahinter
-    "MI_GEN_Chorionplatte": ((0.24, 0.10, 0.085), (0.50, 0.13, 0.10), 0.50, 0.9),
+    # Nach den Referenzen (Doc 36): tiefrot, dunkel, nass – nicht hell-bunt. Vorher 0,24/0,10/0,085: Szene mit Sättigung
+    # 0,63 gemessen (Cover 0,25).
+    "MI_GEN_Chorionplatte": ((0.13, 0.075, 0.068), (0.30, 0.12, 0.10), 0.55, 0.9),
 }
 
 
@@ -72,6 +74,23 @@ def create_env_instances(parent):
     return instances
 
 
+def create_living_shell(shell):
+    """
+    Die Haut des lebenden Embryos. Das Lookdev (Teil 4) war gegen Blender abgeglichen; die Referenzen (Doc 36) zeigen
+    lebendes Gewebe aber rosiger und durchscheinender als jedes Präparat – ein frischer Fetus in intakter Fruchtblase
+    ist rosa, die Gefäße schimmern durch. Eigene Instanz, damit das Grundmaterial unverändert bleibt.
+    """
+    name = "MI_GEN_EmbryoHuelle_Lebend"
+    path = lib.MATERIALS + "/" + name
+    mi = eal.load_asset(path) if eal.does_asset_exist(path) else lib.asset_tools.create_asset(
+        name, lib.MATERIALS, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+    mel.set_material_instance_parent(mi, shell)
+    mel.set_material_instance_vector_parameter_value(mi, "Farbe", unreal.LinearColor(0.80, 0.61, 0.61, 1.0))
+    mel.set_material_instance_scalar_parameter_value(mi, "Weglaenge", 850.0)
+    eal.save_loaded_asset(mi)
+    return mi
+
+
 def create_amnion_material():
     """
     Das Amnion: eine Zellschicht dick, im Fruchtwasser fast unsichtbar (auf beiden Seiten Flüssigkeit, kaum ein
@@ -86,7 +105,7 @@ def create_amnion_material():
     fresnel = lib.expression(material, unreal.MaterialExpressionFresnel, -600, 200)
     fresnel.set_editor_property("exponent", 3.0)
     fresnel.set_editor_property("base_reflect_fraction", 0.0)
-    face = lib.scalar_param(material, "DeckungFlaeche", -600, 300, 0.025)
+    face = lib.scalar_param(material, "DeckungFlaeche", -600, 300, 0.02)
     edge = lib.scalar_param(material, "DeckungSaum", -600, 400, 0.45)
     lerp = lib.expression(material, unreal.MaterialExpressionLinearInterpolate, -300, 250)
     lib.link(face, lerp, "A")
@@ -94,8 +113,8 @@ def create_amnion_material():
     lib.link(fresnel, lerp, "Alpha")
     mel.connect_material_property(colour, "", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(lerp, "", unreal.MaterialProperty.MP_OPACITY)
-    mel.connect_material_property(lib.scalar_param(material, "Glanz", -600, 500, 0.05), "", unreal.MaterialProperty.MP_SPECULAR)
-    mel.connect_material_property(lib.scalar_param(material, "Rauheit", -600, 600, 0.35), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(lib.scalar_param(material, "Glanz", -600, 500, 0.2), "", unreal.MaterialProperty.MP_SPECULAR)
+    mel.connect_material_property(lib.scalar_param(material, "Rauheit", -600, 600, 0.25), "", unreal.MaterialProperty.MP_ROUGHNESS)
     mel.recompile_material(material)
     eal.save_loaded_asset(material)
     return material
@@ -171,6 +190,13 @@ def build_level(embryo_meshes, env_meshes, shell, organs, env_materials):
         ("vignette_intensity", 0.3),
         ("film_grain_intensity", 0.0),
         ("motion_blur_amount", 0.2),
+        # Farbabstimmung nach dem Cover (Doc 35: Szene 89 % warm, 0 % kalt, Sättigung 0,63 – Cover 26 / 33 / 0,25):
+        # insgesamt etwas weniger Sättigung, die Tiefen leicht kühl. Wie bei der Filmentwicklung – das Leben leuchtet
+        # warm von innen, das Dunkel um es herum wird blau-schwarz statt braun.
+        ("color_saturation", unreal.Vector4(1.0, 1.0, 1.0, 0.82)),
+        ("color_saturation_shadows", unreal.Vector4(1.0, 1.0, 1.0, 0.7)),
+        ("color_gain_shadows", unreal.Vector4(0.93, 0.98, 1.10, 1.0)),
+        ("color_offset_shadows", unreal.Vector4(0.0, 0.002, 0.006, 0.0)),
     ):
         settings.set_editor_property("override_" + name, True)
         settings.set_editor_property(name, value)
@@ -185,7 +211,7 @@ def main():
     unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous(["/Game/Genesis"], True)
     organ_parent = eal.load_asset(lib.MATERIALS + "/M_GEN_EmbryoOrgan") or lib.create_organ_material()
     organs = lib.create_organ_instances(organ_parent)
-    shell = eal.load_asset(lib.MATERIALS + "/M_GEN_EmbryoHuelle") or lib.create_shell_material()
+    shell = create_living_shell(eal.load_asset(lib.MATERIALS + "/M_GEN_EmbryoHuelle") or lib.create_shell_material())
     env_materials = dict(organs)
     env_materials.update(create_env_instances(organ_parent))
     env_materials["M_GEN_Amnion"] = create_amnion_material()

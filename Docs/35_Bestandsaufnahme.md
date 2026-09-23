@@ -126,3 +126,29 @@ Nach der Abhängigkeitsprüfung oben, 2026-09-23:
   (vorher `kie`), leere Fächer für die weiteren Boards; `ArtSource/Reference/README.md` beschreibt die Struktur, das
   Archiv selbst bleibt lokal.
 - Offen: MetaHuman-Kleidung (erst den Aufbau der Figuren prüfen), Sichtung der alten Lookdev-Bilder.
+
+## 7. Umgesetzt: Fruchthöhle verbessert (Maßnahme 2)
+
+| vorher | nachher |
+|---|---|
+| ![](Media/Audit/05b_Fruchthoehle_vorher.png) | ![](Media/Audit/05c_Fruchthoehle_nachher.png) |
+
+| | Leuchtdichte | warm | kalt | Tiefen | Sättigung |
+|---|---|---|---|---|---|
+| vorher | 0,23 | 88 % | 0 % | 11,6 % | 0,63 |
+| nachher | 0,23 | 75 % | 0 % | 13,6 % | **0,35** |
+| Cover | 0,28 | 26 % | 33 % | 5,7 % | 0,25 |
+
+- **Wand und Dottersack** nach den Referenzen dunkler und weniger bunt (Chorionplatte tiefrot statt hell-rot).
+- **Farbabstimmung** wie beim Cover: insgesamt weniger Sättigung, die Tiefen leicht kühl.
+- **Amnion** mit Falten (scharfe Knicke, am Nabel dichter) und etwas Glanz; feineres Netz.
+- **Gefäße der Chorionplatte** teilen sich jetzt ungleich wie echte Gefäße (Murray), mit Seitenzweigen – vorher
+  spiegelbildlich gegabelt wie ein Diagramm.
+- **Haut des lebenden Embryos** rosiger und durchscheinender (eigene Instanz `MI_GEN_EmbryoHuelle_Lebend`).
+- **Gefunden und behoben:** Eine nassere, glattere Wand (Rauheit 0,32) zeigte das Kugelnetz als gestrichelte
+  Glanzstreifen; bei 0,55 verschwunden.
+- **Kalt bleibt bei 0 % – bewusst:** Im Mutterleib gibt es kein blaues Licht, und ein aufgesetzter
+  Blau-Orange-Look wäre Game-Look. Der Gegenpol zum warmen Leben ist hier das tiefe Dunkel (13,6 %).
+- **Performance:** Grafikzeit 3,4 ms bei 1066 × 600, 76 Draw-Calls, 1,16 Mio. Dreiecke.
+- **Offen:** Die Wand ist noch zu glatt – die faserige, nasse Feinstruktur der Referenz fehlt; der Dottersack wirkt
+  etwas matt. Die Aortenbögen am Hals als roter Knoten (Doc 32).
