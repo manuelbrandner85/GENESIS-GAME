@@ -17,6 +17,7 @@ Hyperrealistische Cinematic-Lebenssimulation auf Basis von **Unreal Engine 5.8 (
 
 ## Dokumentation
 
+0. [Globaler Masterprompt – verbindliche Grundvision](Docs/00_Masterprompt.md)
 1. [Technische Architektur & Modulstruktur](Docs/01_Architektur.md)
 2. [Datenarchitektur & Save-/Persistence-Konzept](Docs/02_Daten_und_Persistenz.md)
 3. [Life Simulation Core](Docs/03_Life_Simulation_Core.md)
