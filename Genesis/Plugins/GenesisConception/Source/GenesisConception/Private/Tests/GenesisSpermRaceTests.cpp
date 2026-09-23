@@ -15,10 +15,10 @@ namespace GenesisSpermRaceTests
 	/** Im Zeitraffer an der Eizelle rechnet die Szene gröber (AGenesisSpermSwarm::TimeLapseStepSeconds). */
 	constexpr float TimeLapseStepSeconds = 1.0f / 30.0f;
 	/**
-	 * So viele Zellen wie im Spiel (150, Docs/38). Ein Test, der ein leichteres Rennen misst als das, das
+	 * So viele Zellen wie im Spiel (80, Docs/38). Ein Test, der ein leichteres Rennen misst als das, das
 	 * man spielt, beweist nichts – gelernt in GENESIS-037, als 2000 Testzellen ein anderes Rennen waren als 6000.
 	 */
-	constexpr int32 FieldSize = 150;
+	constexpr int32 FieldSize = 80;
 
 	enum class EDriver { Passive, Skilled };
 
@@ -48,7 +48,7 @@ namespace GenesisSpermRaceTests
 	FRace Run(uint64 Seed, EDriver Driver)
 	{
 		FGenesisOviductChannel Channel;
-		Channel.LumenRadiusUm = 450.0f;
+		Channel.LumenRadiusUm = 900.0f;
 		Channel.LengthUm = 3000.0f;
 		Channel.WallFlowSpeedUm = 25.0f;
 		const FGenesisSpermSwimTuning SwimTuning;
@@ -57,6 +57,7 @@ namespace GenesisSpermRaceTests
 
 		FGenesisOocyteState Oocyte;
 		Oocyte.Position = FVector(1500.0, 0.0, 0.0);
+		Oocyte.Cumulus = GenesisFertilizationLogic::BuildCumulus(Oocyte, FGenesisCumulusTuning());
 
 		// Das Feld wie im Schwarm-Actor: Vitalität normalverteilt, die vordersten hinter der eigenen Zelle,
 		// der Rest weit zurück – sie treffen nach und nach ein

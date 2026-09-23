@@ -37,6 +37,18 @@ namespace GenesisFertilizationLogic
 		const FGenesisSpermSwimTuning& SwimTuning, const FGenesisFertilizationTuning& Tuning, float DeltaSeconds,
 		FGenesisFertilizationResult& OutResult);
 
+	/**
+	 * Baut das Zellfeld des äußeren Cumulus (deterministisch aus dem Seed): zwischen der Corona und
+	 * CumulusRadiusUm, nach außen dünner, mit Mindestabstand. Bild (AGenesisOocyte) und Physik nutzen dasselbe Feld.
+	 */
+	GENESISCONCEPTION_API TSharedPtr<const FGenesisCumulusField> BuildCumulus(const FGenesisOocyteState& Oocyte, const FGenesisCumulusTuning& Tuning);
+
+	/**
+	 * Schiebt eine schwimmende Zelle aus den Cumuluszellen hinaus und lässt sie an ihnen entlanggleiten.
+	 * Liefert true, wenn sie eine Zelle berührt hat.
+	 */
+	GENESISCONCEPTION_API bool ResolveCumulusContact(FGenesisSpermCell& Cell, const FGenesisOocyteState& Oocyte);
+
 	/** Hängt die Zelle an oder in der Eizelle (gebunden, in der Zona, im Spalt, verschmolzen, in der Zona steckengeblieben)? */
 	GENESISCONCEPTION_API bool IsAttached(const FGenesisSpermCell& Cell);
 

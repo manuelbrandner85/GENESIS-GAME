@@ -306,6 +306,8 @@ public:
 private:
 	bool ComputeDesired(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const;
 	bool ComputeOocyteView(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const;
+	/** Rückt die Kamera vor Cumuluszellen, die zwischen ihr und dem Motiv stehen (wie ein Kamera-Federarm). */
+	FVector AvoidCumulus(const FVector& Subject, const FVector& Desired) const;
 
 	void UpdateBeatNormal(float DeltaSeconds);
 	/** Regelt das Endoskoplicht auf den Arbeitsabstand. */

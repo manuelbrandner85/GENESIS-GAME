@@ -2,6 +2,9 @@
 
 #include "GenesisOocyte.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "GenesisFertilizationLogic.h"
 #include "GenesisDebug.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
@@ -34,12 +37,93 @@ AGenesisOocyte::AGenesisOocyte()
 	// Die Fäden der Hyaluronsäure-Matrix zwischen den Zellen: Sie halten den expandierten Cumulus
 	// zusammen und bremsen die Spermien, bevor diese die Zona erreichen.
 	CumulusStrands = MakePart(TEXT("CumulusStrands"), false);
+
+	for (int32 Variant = 0; Variant < CumulusVariantCount; ++Variant)
+	{
+		UInstancedStaticMeshComponent* Cells = CreateDefaultSubobject<UInstancedStaticMeshComponent>(*FString::Printf(TEXT("CumulusCells%d"), Variant));
+		Cells->SetupAttachment(Root);
+		Cells->SetMobility(EComponentMobility::Movable);
+		Cells->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		// Ton je Zelle und Lage im Komplex (0 = an der Corona, 1 = außen)
+		Cells->SetNumCustomDataFloats(2);
+		// Kein Schatten: Eine 12 µm dünne, fast klare Zelle hält kaum Licht auf. Mit Schatten warfen die Zellen einander
+		// auf kurze Distanz fransige schwarze Sicheln (gesehen in GENESIS-047 Teil 2, mitten in der Wolke).
+		Cells->SetCastShadow(false);
+		Cells->bAffectDistanceFieldLighting = false;
+		// Wie beim Schwarm: Dreizehntausend 10-µm-Zellen spiegeln sich in nichts, kosten in der Strahlenszene aber Speicher
+		Cells->SetVisibleInRayTracing(false);
+		CumulusCells.Add(Cells);
+	}
+}
+
+void AGenesisOocyte::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	RebuildCumulus();
+}
+
+void AGenesisOocyte::RebuildCumulus()
+{
+	State.Cumulus = GenesisFertilizationLogic::BuildCumulus(State, CumulusTuning);
+	const int32 Variants = FMath::Min(CumulusCellMeshes.Num(), CumulusCells.Num());
+	for (int32 Variant = 0; Variant < CumulusCells.Num(); ++Variant)
+	{
+		UInstancedStaticMeshComponent* Cells = CumulusCells[Variant];
+		if (!Cells)
+		{
+			continue;
+		}
+		Cells->ClearInstances();
+		Cells->SetStaticMesh(Variant < Variants ? CumulusCellMeshes[Variant].Get() : nullptr);
+		if (CumulusCellMaterial)
+		{
+			Cells->SetMaterial(0, CumulusCellMaterial);
+		}
+		Cells->SetNumCustomDataFloats(2);
+		Cells->SetCastShadow(false);
+	}
+	if (Variants == 0 || !State.Cumulus.IsValid())
+	{
+		return;
+	}
+
+	// Das Feld liegt in Kanalachsen um die Eizellmitte; der Actor ist nicht gedreht (wie der Schwarm)
+	TArray<TArray<FTransform>> Transforms;
+	TArray<TArray<float>> Data;
+	Transforms.SetNum(Variants);
+	Data.SetNum(Variants);
+	const float Span = FMath::Max(1.0f, State.CumulusRadiusUm - State.CoronaRadiusUm);
+	const TArray<FGenesisCumulusCell>& Field = State.Cumulus->Cells;
+	for (int32 Index = 0; Index < Field.Num(); ++Index)
+	{
+		const FGenesisCumulusCell& Cell = Field[Index];
+		const int32 Variant = Index % Variants;
+		Transforms[Variant].Emplace(Cell.Rotation, Cell.Center * GenesisMicroScale::UnitsPerMicrometer, Cell.HalfAxes);
+		Data[Variant].Add(Cell.Tint);
+		Data[Variant].Add(FMath::Clamp((static_cast<float>(Cell.Center.Size()) - State.CoronaRadiusUm) / Span, 0.0f, 1.0f));
+	}
+	for (int32 Variant = 0; Variant < Variants; ++Variant)
+	{
+		UInstancedStaticMeshComponent* Cells = CumulusCells[Variant];
+		Cells->PreAllocateInstancesMemory(Transforms[Variant].Num());
+		Cells->AddInstances(Transforms[Variant], false, false, false);
+		for (int32 Instance = 0; Instance < Transforms[Variant].Num(); ++Instance)
+		{
+			Cells->SetCustomData(Instance, TArrayView<const float>(&Data[Variant][Instance * 2], 2), false);
+		}
+		Cells->MarkRenderStateDirty();
+	}
 }
 
 void AGenesisOocyte::BeginPlay()
 {
 	Super::BeginPlay();
 	State.Position = GetActorLocation();
+	// Der Zeiger auf das Zellfeld wird nicht gespeichert: Nach dem Laden neu bauen (deterministisch, dieselben Zellen)
+	if (!State.Cumulus.IsValid())
+	{
+		RebuildCumulus();
+	}
 
 	if (Zona && Zona->GetMaterial(0))
 	{

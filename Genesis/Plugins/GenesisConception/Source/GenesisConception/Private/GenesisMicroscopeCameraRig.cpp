@@ -331,7 +331,7 @@ bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat&
 	const FVector Up = SwarmTransform.GetUnitAxis(EAxis::Z);
 
 	// Leicht gegen die Schwimmrichtung: Die ankommenden Zellen kommen der Kamera entgegen, statt ihr davonzulaufen
-	// Überwiegend entlang der Kanalachse, denn quer ist im Lumen (Radius 450 µm) kein Platz für Abstand
+	// Überwiegend entlang der Kanalachse, denn quer ist im Lumen (Radius 900 µm) kein Platz für Abstand
 	FVector Direction = (-Axis * 1.15 + Side * FMath::Cos(OocyteOrbitPhase) * 0.45 + Up * FMath::Sin(OocyteOrbitPhase) * 0.30).GetSafeNormal();
 
 	// Während gebohrt wird: Blick auf die Eintrittsstelle der führenden Zelle, langsam heran
@@ -378,11 +378,11 @@ bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat&
 	FVector LookAt = Center;
 	if (!SmoothedLeaderDirection.IsNearlyZero())
 	{
-		const FVector Surface = Center + SmoothedLeaderDirection * Egg->GetState().CumulusRadiusUm * GenesisMicroScale::UnitsPerMicrometer;
+		const FVector Surface = Center + SmoothedLeaderDirection * Egg->GetState().CoronaRadiusUm * GenesisMicroScale::UnitsPerMicrometer;
 		LookAt = FMath::Lerp(Center, Surface, 0.6f * Approach);
 	}
 	OutRotation = FRotationMatrix::MakeFromXZ(LookAt - OutLocation, Up).ToQuat();
-	const float SurfaceDistance = static_cast<float>(FVector::Dist(OutLocation, Center)) - Egg->GetState().CumulusRadiusUm * GenesisMicroScale::UnitsPerMicrometer;
+	const float SurfaceDistance = static_cast<float>(FVector::Dist(OutLocation, Center)) - Egg->GetState().CoronaRadiusUm * GenesisMicroScale::UnitsPerMicrometer;
 	OutFocusDistance = FMath::Lerp(static_cast<float>(FVector::Dist(OutLocation, Center)), FMath::Max(10.0f, SurfaceDistance), Approach);
 	// Im Rennen steckt die eigene Zelle in der Zona oder liegt im Spalt darunter – 40 µm unter dem Rand des
 	// Cumulus. Die Schärfe gehört dorthin; auf dem Cumulusrand lag sie im Leeren, und das ganze Bild war
@@ -394,6 +394,100 @@ bool AGenesisMicroscopeCameraRig::ComputeOocyteView(FVector& OutLocation, FQuat&
 		OutFocusDistance = FMath::Lerp(OutFocusDistance, PlayerDistance, Approach);
 	}
 	return true;
+}
+
+FVector AGenesisMicroscopeCameraRig::AvoidCumulus(const FVector& Subject, const FVector& Desired) const
+{
+	const AGenesisOocyte* Egg = Swarm ? Swarm->GetOocyte() : nullptr;
+	const FGenesisCumulusField* Field = Egg ? Egg->GetState().Cumulus.Get() : nullptr;
+	if (!Field)
+	{
+		return Desired;
+	}
+	// Vom Motiv zur Kamera: die erste Zelle, die den Weg schneidet, bestimmt, wie weit die Kamera zurück darf.
+	// Kugeltest mit der längsten Halbachse und 2 µm Luft – lieber etwas zu nah als eine Zelle im Bild.
+	const FVector Center = Egg->GetActorLocation();
+	const FVector Ray = Desired - Subject;
+	const double Length = Ray.Size();
+	if (Length < UE_KINDA_SMALL_NUMBER)
+	{
+		return Desired;
+	}
+	const FVector Direction = Ray / Length;
+	double Allowed = Length;
+	TSet<int32> Seen;
+	for (double Along = 0.0; Along <= Length + Field->CellSizeUm; Along += 0.5 * Field->CellSizeUm)
+	{
+		const FIntVector Key = Field->Key((Subject + Direction * FMath::Min(Along, Length)) - Center);
+		for (int32 X = -1; X <= 1; ++X)
+		{
+			for (int32 Y = -1; Y <= 1; ++Y)
+			{
+				for (int32 Z = -1; Z <= 1; ++Z)
+				{
+					const TArray<int32>* Bucket = Field->Grid.Find(Key + FIntVector(X, Y, Z));
+					if (!Bucket)
+					{
+						continue;
+					}
+					for (const int32 Index : *Bucket)
+					{
+						bool bAlready = false;
+						Seen.Add(Index, &bAlready);
+						if (bAlready)
+						{
+							continue;
+						}
+						const FGenesisCumulusCell& Cell = Field->Cells[Index];
+						const double Radius = Cell.HalfAxes.GetMax() + 2.0;
+						const FVector ToCell = (Center + Cell.Center) - Subject;
+						const double Projection = FVector::DotProduct(ToCell, Direction);
+						const double Miss = (ToCell - Direction * Projection).SizeSquared();
+						if (Projection < 0.0 || Miss > Radius * Radius)
+						{
+							continue;
+						}
+						const double Entry = Projection - FMath::Sqrt(Radius * Radius - Miss);
+						Allowed = FMath::Min(Allowed, Entry);
+					}
+				}
+			}
+		}
+	}
+	// Auch seitlich darf keine Zelle an der Linse kleben: Eine Zelle 3 µm vor dem Glas füllt das halbe Bild.
+	// Die Kamera rückt so lange zum Motiv, bis 6 µm Luft zu jeder Membran bleiben.
+	constexpr double Clearance = 6.0;
+	auto Crowded = [Field, &Center](const FVector& Where)
+	{
+		const FIntVector Key = Field->Key(Where - Center);
+		for (int32 X = -1; X <= 1; ++X)
+		{
+			for (int32 Y = -1; Y <= 1; ++Y)
+			{
+				for (int32 Z = -1; Z <= 1; ++Z)
+				{
+					if (const TArray<int32>* Bucket = Field->Grid.Find(Key + FIntVector(X, Y, Z)))
+					{
+						for (const int32 Index : *Bucket)
+						{
+							const FGenesisCumulusCell& Cell = Field->Cells[Index];
+							if (FVector::DistSquared(Where, Center + Cell.Center) < FMath::Square(Cell.HalfAxes.GetMax() + Clearance))
+							{
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+		return false;
+	};
+	while (Allowed > 4.0 && Crowded(Subject + Direction * Allowed))
+	{
+		Allowed -= 1.0;
+	}
+	// Nie näher als 4 µm an die eigene Zelle: Dann ist sie noch zu sehen, auch wenn dahinter eine Zelle steht
+	return Subject + Direction * FMath::Max(4.0, Allowed);
 }
 
 bool AGenesisMicroscopeCameraRig::ComputeDesired(FVector& OutLocation, FQuat& OutRotation, float& OutFocusDistance) const
@@ -597,6 +691,14 @@ void AGenesisMicroscopeCameraRig::Tick(float DeltaSeconds)
 	if (!ComputeDesired(DesiredLocation, DesiredRotation, DesiredFocus))
 	{
 		return;
+	}
+	// Im Rennen hinter der eigenen Zelle: Keine Cumuluszelle darf sich vor die Linse schieben (GENESIS-047 Teil 2)
+	if (Swarm && Swarm->IsRacing() && !bWatchOocyte && FollowCellIndex == Swarm->GetPlayerCellIndex())
+	{
+		const FVector Subject = Swarm->GetCellHeadWorldPosition(FollowCellIndex);
+		const FVector Avoided = AvoidCumulus(Subject, DesiredLocation);
+		DesiredFocus = FMath::Max(1.0f, DesiredFocus - static_cast<float>(FVector::Dist(Avoided, DesiredLocation)));
+		DesiredLocation = Avoided;
 	}
 
 	// Umlauf am Abschnittsende: springen statt quer durch den Kanal zu fahren

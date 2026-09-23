@@ -10,7 +10,7 @@
 /**
  * Das Wettrennen zur Eizelle (GENESIS-037).
  *
- * Der Spieler führt eine einzige Zelle unter den rund 150, die es bis vor die Eizelle geschafft haben. Er lenkt
+ * Der Spieler führt eine einzige Zelle unter den rund 80, die es bis vor die Eizelle geschafft haben. Er lenkt
  * sie – innerhalb dessen, was ein Spermium kann – und er gibt beim Weg durch die Zona seine Kraft. Alles andere
  * entscheidet dieselbe Biologie, die für alle Zellen gilt: Strömung, Wand, Reifezustand, Lockstoff, Zufall.
  * Mehrere kommen an, nur eine verschmilzt (GENESIS-047, Docs/38). Ist es eine andere, beginnt dieses Leben
@@ -39,11 +39,11 @@ struct GENESISCONCEPTION_API FGenesisRaceTuning
 	 * Streuung weit zurück – die Zellen treffen nach und nach ein, nicht als Pulk (Wilcox 1995, Docs/38).
 	 * Liegen beim Start schon Zellen an der Eizelle, kann kein Spieler gewinnen (GENESIS-037: 0 von 5).
 	 */
-	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "150")) float FieldDistanceUm = 300.0f;
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "150")) float FieldDistanceUm = 950.0f;
 	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "10")) float FieldSpreadUm = 700.0f;
 
 	/** Startabstand der eigenen Zelle vor der Eizellmitte (µm): vor dem Feld. */
-	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "130")) float StartDistanceUm = 235.0f;
+	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "130")) float StartDistanceUm = 820.0f;
 
 	/** Vitalität der eigenen Zelle: eine der stärksten im Feld (Mittel 0,75 ± 0,18) – die Seele wählt keine schwache. */
 	UPROPERTY(EditAnywhere, Category = "Race", meta = (ClampMin = "0", ClampMax = "1")) float Vitality = 0.97f;

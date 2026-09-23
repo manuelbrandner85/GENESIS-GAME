@@ -33,6 +33,57 @@ enum class EGenesisSpermPhase : uint8
 	Perivitelline
 };
 
+/** Eine Zelle des äußeren Cumulus: frei in der Gallerte, nicht an Nachbarn gedrückt (GENESIS-047 Teil 2). */
+struct FGenesisCumulusCell
+{
+	/** Mittelpunkt relativ zur Eizellmitte (µm, Achsen wie der Kanal). */
+	FVector Center = FVector::ZeroVector;
+	/** Halbachsen des Ellipsoids (µm): Cumuluszellen messen 7–16 µm. */
+	FVector HalfAxes = FVector(5.0);
+	FQuat Rotation = FQuat::Identity;
+	/** Ton der Zelle (0..1) – keine zwei sind gleich. */
+	float Tint = 0.5f;
+};
+
+/**
+ * Der expandierte Cumulus als Zellfeld: dieselben Zellen für Bild und Physik. Die Spermien müssen sich zwischen
+ * ihnen hindurcharbeiten; ein Raster (Kantenlänge CellSizeUm) macht die Nachbarsuche billig.
+ */
+struct GENESISCONCEPTION_API FGenesisCumulusField
+{
+	TArray<FGenesisCumulusCell> Cells;
+	float CellSizeUm = 16.0f;
+	TMap<FIntVector, TArray<int32>> Grid;
+
+	FIntVector Key(const FVector& Local) const
+	{
+		return FIntVector(FMath::FloorToInt(Local.X / CellSizeUm), FMath::FloorToInt(Local.Y / CellSizeUm), FMath::FloorToInt(Local.Z / CellSizeUm));
+	}
+	void BuildGrid();
+};
+
+/**
+ * Aufbau des Cumulus (GENESIS-047 Teil 2, Docs/38). Menschliche Eizellen tragen im Mittel 13.600 Cumuluszellen,
+ * reife 16.100 ± 2.600 (PMC3955418; Ortiz 1982: ~20.000). Bei der Maus liegen 1.500 Zellen in einem expandierten
+ * Komplex von ~500 µm, umgeben von einer zellfreien Hyaluronsäure-Hülle bis 200 µm, im Körper doppelt so dick
+ * (Chen 2016, PMC4919561). Mit der Zelldichte der Maus ergeben 16.000 Zellen eine Wolke von gut 1,1 mm.
+ */
+USTRUCT(BlueprintType)
+struct GENESISCONCEPTION_API FGenesisCumulusTuning
+{
+	GENERATED_BODY()
+
+	/** Zellen außerhalb der dichten Corona (die innersten ~2.600 liegen in der Corona-Geometrie). */
+	UPROPERTY(EditAnywhere, Category = "Cumulus", meta = (ClampMin = "0", ClampMax = "40000")) int32 CellCount = 13400;
+	/** Die Dichte fällt nach außen ab: auf 1/e je so viele µm. */
+	UPROPERTY(EditAnywhere, Category = "Cumulus", meta = (ClampMin = "10")) float DensityFalloffUm = 180.0f;
+	/** Mindestabstand zweier Zellmitten (µm): Die Gallerte hält die Zellen auseinander. */
+	UPROPERTY(EditAnywhere, Category = "Cumulus", meta = (ClampMin = "4")) float MinSpacingUm = 13.0f;
+	/** Zellgröße: längste Achse 7,5–15,5 µm wie in der Corona. */
+	UPROPERTY(EditAnywhere, Category = "Cumulus") FFloatInterval LongAxisUm = FFloatInterval(7.5f, 15.5f);
+	UPROPERTY(EditAnywhere, Category = "Cumulus") int32 Seed = 2011;
+};
+
 /**
  * Reife Eizelle im Eileiter (Metaphase II), mit Hülle und Cumulus.
  * Alle Maße in µm, Ursprung = Mittelpunkt, Koordinaten wie im Kanal (X = Kanalachse).
@@ -56,9 +107,23 @@ struct GENESISCONCEPTION_API FGenesisOocyteState
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Conception")
 	float ZonaOuterRadiusUm = 75.0f;
 
-	/** Äußerer Rand des Cumulus (Corona radiata mit Gallerte) – dort werden Zellen langsamer. */
+	/** Äußerer Rand der dichten Corona radiata (2–5 Lagen gepackter Zellen um die Zona). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Conception")
-	float CumulusRadiusUm = 118.0f;
+	float CoronaRadiusUm = 118.0f;
+
+	/**
+	 * Äußerer Rand der Zellwolke des Cumulus. Bis GENESIS-047 Teil 2 endete der Cumulus bei 118 µm – zehnmal
+	 * zu klein (Docs/38). 16.000 Zellen in der Dichte eines expandierten Komplexes füllen gut 1,1 mm.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Conception")
+	float CumulusRadiusUm = 550.0f;
+
+	/** Äußerer Rand der Gallerte: Außerhalb der Zellen liegt eine zellfreie Hyaluronsäure-Hülle. Hier werden Spermien langsamer. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Conception")
+	float MatrixRadiusUm = 700.0f;
+
+	/** Die Zellen des äußeren Cumulus – Bild und Physik teilen sie. Leer = keine Hindernisse (reine Logiktests). */
+	TSharedPtr<const FGenesisCumulusField> Cumulus;
 
 	/** Nach der Verschmelzung: Die Cortikalreaktion härtet die Zona und sperrt alle weiteren Zellen aus. */
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
@@ -83,6 +148,10 @@ struct GENESISCONCEPTION_API FGenesisOocyteState
 	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
 	int32 PerivitellineCells = 0;
 
+	/** Wie lange die Membran dieser Eizelle braucht, bis sie verschmelzen kann (s; −1 = noch nicht gezogen). */
+	UPROPERTY(BlueprintReadOnly, Category = "Genesis|Conception")
+	float MembraneDelaySeconds = -1.0f;
+
 	bool IsFertilized() const { return FertilizedByCell != INDEX_NONE; }
 };
 
@@ -99,8 +168,10 @@ struct GENESISCONCEPTION_API FGenesisFertilizationTuning
 	/**
 	 * Reichweite der Lockwirkung (Progesteron aus dem Cumulus). Nur kapazitierte Zellen folgen ihr
 	 * (Cohen-Dayag 1995) – hyperaktivierte am stärksten, progressive träger, nicht kapazitierte gar nicht.
+	 * Gemessen von der Eizellmitte; das Progesteron stammt aus den Cumuluszellen, sein Gefälle reicht über die
+	 * Gallerte hinaus (die Gallerte endet bei 700 µm).
 	 */
-	UPROPERTY(EditAnywhere, Category = "Chemotaxis") float ChemotaxisRangeUm = 220.0f;
+	UPROPERTY(EditAnywhere, Category = "Chemotaxis") float ChemotaxisRangeUm = 900.0f;
 	UPROPERTY(EditAnywhere, Category = "Chemotaxis") float ChemotaxisTurnRate = 0.9f;
 
 	/**
@@ -115,9 +186,9 @@ struct GENESISCONCEPTION_API FGenesisFertilizationTuning
 	 * erfolgreichen Spermien sie schon vor der Zona hinter sich (Jin 2011). Beim Menschen ist das umstritten –
 	 * deshalb bleibt die Reaktion an der Zona möglich.
 	 */
-	UPROPERTY(EditAnywhere, Category = "Chemotaxis", meta = (ClampMin = "0")) float AcrosomeInCumulusPerSecond = 0.08f;
+	UPROPERTY(EditAnywhere, Category = "Chemotaxis", meta = (ClampMin = "0")) float AcrosomeInCumulusPerSecond = 0.02f;
 
-	/** Im Cumulus bremst die Gallerte; die Zellen müssen sich hindurcharbeiten. */
+	/** In der Gallerte (bis MatrixRadiusUm) bremst die Hyaluronsäure; die Zellen müssen sich hindurcharbeiten. */
 	UPROPERTY(EditAnywhere, Category = "Cumulus", meta = (ClampMin = "0.05", ClampMax = "1")) float CumulusSpeedFactor = 0.55f;
 
 	/**
@@ -154,9 +225,16 @@ struct GENESISCONCEPTION_API FGenesisFertilizationTuning
 	/**
 	 * Zeit im perivitellinen Spalt bis zur Verschmelzung (s): Maus, Lebendaufnahme 15,8 ± 5,7 min (Dubois 2025).
 	 * Die Membranen müssen sich finden (Izumo1 an Juno), verschmolzen wird seitlich am Kopf (Äquatorialsegment).
+	 *
+	 * Gemessen ist die Zeit der Zelle, die verschmolzen ist – nicht jeder Zelle für sich. Zieht jede Zelle im Spalt
+	 * ihre eigene Zeit aus 16 ± 6 min, gewinnt bei zehn Zellen fast immer irgendeine mit zufällig kurzer Zeit, und
+	 * die Siegerin bräuchte im Mittel nur 7 min (so in GENESIS-047 Teil 2 zuerst gebaut und gemessen). Der größte
+	 * Teil der Streuung liegt deshalb bei der Eizelle (Bereitschaft der Membran, einmal je Eizelle gezogen),
+	 * nur ein kleiner bei der einzelnen Zelle. Zusammen ergeben beide wieder 15,8 ± 5,6 min.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Fusion") float PerivitellineMeanSeconds = 948.0f;
-	UPROPERTY(EditAnywhere, Category = "Fusion") float PerivitellineSigmaSeconds = 342.0f;
+	UPROPERTY(EditAnywhere, Category = "Fusion") float PerivitellineOocyteSigmaSeconds = 325.0f;
+	UPROPERTY(EditAnywhere, Category = "Fusion") float PerivitellineCellSigmaSeconds = 100.0f;
 	UPROPERTY(EditAnywhere, Category = "Fusion") FFloatInterval PerivitellineClampSeconds = FFloatInterval(300.0f, 1800.0f);
 
 	/** Spalt zwischen Eizellmembran und Zona, in dem der Kopf flach liegt: Neigung gegen die Senkrechte (Grad). */

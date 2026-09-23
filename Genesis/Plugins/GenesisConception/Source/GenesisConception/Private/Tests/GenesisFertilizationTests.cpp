@@ -16,7 +16,7 @@ namespace GenesisFertilizationTests
 	FGenesisOviductChannel MakeChannel()
 	{
 		FGenesisOviductChannel Channel;
-		Channel.LumenRadiusUm = 450.0f;
+		Channel.LumenRadiusUm = 900.0f;
 		Channel.LengthUm = 3000.0f;
 		Channel.WallFlowSpeedUm = 25.0f;
 		return Channel;
@@ -26,6 +26,8 @@ namespace GenesisFertilizationTests
 	{
 		FGenesisOocyteState Oocyte;
 		Oocyte.Position = FVector(1500.0, 0.0, 0.0);
+		// Derselbe Cumulus wie im Spiel: 13.400 Zellen als Hindernisse (GENESIS-047 Teil 2)
+		Oocyte.Cumulus = GenesisFertilizationLogic::BuildCumulus(Oocyte, FGenesisCumulusTuning());
 		return Oocyte;
 	}
 
@@ -42,7 +44,7 @@ namespace GenesisFertilizationTests
 			const double CosTheta = 2.0 * Placement.NextDouble() - 1.0;
 			const double SinTheta = FMath::Sqrt(FMath::Max(0.0, 1.0 - CosTheta * CosTheta));
 			const double Phi = 2.0 * UE_DOUBLE_PI * Placement.NextDouble();
-			const double Radius = Oocyte.CumulusRadiusUm + 20.0 + Placement.NextDouble() * SpreadUm;
+			const double Radius = Oocyte.MatrixRadiusUm + 20.0 + Placement.NextDouble() * SpreadUm;
 			Cell.Position = Oocyte.Position + FVector(CosTheta, SinTheta * FMath::Cos(Phi), SinTheta * FMath::Sin(Phi)) * Radius;
 			if (bForceCapacitated)
 			{
@@ -356,6 +358,95 @@ bool FGenesisFertilizationTimelineTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Eine verschmilzt"), Fused, 1);
 		TestEqual(TEXT("Die andere bleibt im Spalt liegen"), Waiting, 1);
 	}
+	return true;
+}
+
+/**
+ * Der Cumulus in echter Größe (GENESIS-047 Teil 2): gut 13.000 Zellen zwischen Corona und 550 µm, innen dicht, außen
+ * locker; eine Zelle, die hindurchschwimmt, steckt nie in einer Cumuluszelle und braucht dafür Zeit.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGenesisFertilizationCumulusTest, "Genesis.Conception.Fertilization.CumulusField", GenesisFertilizationTests::Flags)
+bool FGenesisFertilizationCumulusTest::RunTest(const FString& Parameters)
+{
+	using namespace GenesisFertilizationTests;
+	const FGenesisOviductChannel Channel = MakeChannel();
+	const FGenesisCumulusTuning CumulusTuning;
+	const FGenesisOocyteState Egg = MakeOocyte();
+	const FGenesisCumulusField& Field = *Egg.Cumulus;
+
+	// 1. Aufbau: Zahl, Grenzen, Abstand, Dichte innen gegen außen, Determinismus
+	int32 Inner = 0;
+	int32 Outer = 0;
+	bool bInside = true;
+	float Nearest = TNumericLimits<float>::Max();
+	for (int32 Index = 0; Index < Field.Cells.Num(); ++Index)
+	{
+		const float Radius = static_cast<float>(Field.Cells[Index].Center.Size());
+		bInside &= Radius >= Egg.CoronaRadiusUm && Radius <= Egg.CumulusRadiusUm;
+		Inner += Radius < 250.0f ? 1 : 0;
+		Outer += Radius > 450.0f ? 1 : 0;
+		if (Index < 400)
+		{
+			for (int32 Other = Index + 1; Other < Field.Cells.Num(); ++Other)
+			{
+				Nearest = FMath::Min(Nearest, static_cast<float>(FVector::Dist(Field.Cells[Index].Center, Field.Cells[Other].Center)));
+			}
+		}
+	}
+	// Zellen je Volumen: Schale 118–250 µm gegen 450–550 µm
+	const double InnerDensity = Inner / (4.0 / 3.0 * UE_DOUBLE_PI * (FMath::Pow(250.0, 3.0) - FMath::Pow(118.0, 3.0)));
+	const double OuterDensity = Outer / (4.0 / 3.0 * UE_DOUBLE_PI * (FMath::Pow(550.0, 3.0) - FMath::Pow(450.0, 3.0)));
+	const TSharedPtr<const FGenesisCumulusField> Again = GenesisFertilizationLogic::BuildCumulus(Egg, CumulusTuning);
+	AddInfo(FString::Printf(TEXT("Cumuluszellen %d (mit Corona gut %d) | innen %.0f, außen %.0f je Kubikmillimeter | engster Abstand %.1f µm"),
+		Field.Cells.Num(), Field.Cells.Num() + 2600, InnerDensity * 1.0e9, OuterDensity * 1.0e9, Nearest));
+	TestTrue(TEXT("Zahl wie beim Menschen (mit Corona 13.600–20.000)"), Field.Cells.Num() + 2600 >= 13600 && Field.Cells.Num() + 2600 <= 20000);
+	TestTrue(TEXT("Alle zwischen Corona und Rand"), bInside);
+	TestTrue(TEXT("Innen dichter als außen"), InnerDensity > 3.0 * OuterDensity);
+	TestTrue(TEXT("Mindestabstand eingehalten"), Nearest >= CumulusTuning.MinSpacingUm - 0.01f);
+	TestTrue(TEXT("Deterministisch"), Again->Cells.Num() == Field.Cells.Num() && Again->Cells.Last().Center.Equals(Field.Cells.Last().Center));
+
+	// 2. Hindurch: kapazitierte Zellen von außen auf die Eizelle zu – keine steckt je in einer Zelle
+	FGenesisSpermSwimTuning SwimTuning;
+	SwimTuning.CapacitatedFraction = 1.0f;
+	FGenesisFertilizationTuning Tuning;
+	FGenesisOocyteState Oocyte = MakeOocyte();
+	TArray<FGenesisSpermCell> Cells = MakeCellsAround(40, Oocyte, Channel, SwimTuning, 7000, 40.0f, nullptr, true);
+	TArray<float> Reached;
+	Reached.Init(-1.0f, Cells.Num());
+	int32 Penetrations = 0;
+	FGenesisFertilizationResult Result;
+	for (float Time = 0.0f; Time < 60.0f; Time += StepSeconds)
+	{
+		for (FGenesisSpermCell& Cell : Cells)
+		{
+			Cell.SteerDirection = (Oocyte.Position - Cell.Position).GetSafeNormal();
+		}
+		GenesisFertilizationLogic::Step(Cells, Oocyte, Channel, SwimTuning, Tuning, StepSeconds, Result);
+		for (int32 Index = 0; Index < Cells.Num(); ++Index)
+		{
+			const FGenesisSpermCell& Cell = Cells[Index];
+			if (GenesisFertilizationLogic::GetPhase(Cell) != EGenesisSpermPhase::Swimming)
+			{
+				Reached[Index] = Reached[Index] < 0.0f ? Time : Reached[Index];
+				continue;
+			}
+			// Steckte die Spitze nach dem Schritt noch in einer Zelle, müsste die Auflösung sie merklich verschieben
+			FGenesisSpermCell Probe = Cell;
+			GenesisFertilizationLogic::ResolveCumulusContact(Probe, Oocyte);
+			Penetrations += FVector::Dist(Probe.Position, Cell.Position) > 0.3 ? 1 : 0;
+		}
+	}
+	int32 Arrived = 0;
+	float Fastest = TNumericLimits<float>::Max();
+	for (const float Arrival : Reached)
+	{
+		Arrived += Arrival >= 0.0f ? 1 : 0;
+		Fastest = Arrival >= 0.0f ? FMath::Min(Fastest, Arrival) : Fastest;
+	}
+	AddInfo(FString::Printf(TEXT("Durch den Cumulus: %d von %d an der Zona binnen 60 s, schnellste nach %.0f s | Kopf in einer Zelle: %d Schritte"),
+		Arrived, Cells.Num(), Arrived > 0 ? Fastest : -1.0f, Penetrations));
+	TestEqual(TEXT("Keine Spermienspitze steckt in einer Cumuluszelle"), Penetrations, 0);
+	TestTrue(TEXT("Der Weg durch die Gallerte braucht Zeit (keine in unter 20 s)"), Arrived == 0 || Fastest > 20.0f);
 	return true;
 }
 

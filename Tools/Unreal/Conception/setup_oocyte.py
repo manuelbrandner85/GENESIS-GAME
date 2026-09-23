@@ -4,7 +4,7 @@
 #   UnrealEditor-Cmd.exe Genesis.uproject -run=pythonscript -script="Tools/Unreal/Conception/setup_oocyte.py" -unattended
 #
 # Maßstab: 1 µm = 1 Unreal-Einheit. Maße aus Tools/Blender/Conception/build_oocyte.py
-# (Zellleib r = 55 µm, Zona 58–72 µm, Cumulus bis 118 µm).
+# (Zellleib r = 55 µm, Zona 58–75 µm, Corona bis 118 µm; äußerer Cumulus bis 550 µm als Instanzen, GENESIS-047 Teil 2).
 
 import os
 
@@ -400,9 +400,11 @@ return lerp(1.0, 1.04, smoothstep(0.0, 0.12, edge));
     return material
 
 
-def create_corona_material():
+def create_corona_material(name="M_GEN_Oocyte_Corona", instanced=False):
     """Corona radiata: Kranz lebender Zellen, die die Eizelle versorgen – innen streuend, an den Rändern durchscheinend."""
-    material = load_or_create_material("M_GEN_Oocyte_Corona")
+    material = load_or_create_material(name)
+    if instanced:
+        material.set_editor_property("used_with_instanced_static_meshes", True)
     # Zweiseitiges Laub-Modell: Eine Cumuluszelle ist nur ~12 µm dick, Licht geht hindurch und tritt hinten wieder aus.
     # Mit dem Streu-Modell (undurchsichtig) bleiben harte Silhouetten – die Zellen sahen aus wie Reiskörner.
     material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_TWO_SIDED_FOLIAGE)
@@ -416,9 +418,15 @@ def create_corona_material():
 
     # Jede Coronazelle trägt ihre eigene Tönung (Vertex-Farbe "Cell": R = Zufallswert je Zelle aus dem Blender-Aufbau)
     vertex = expression(material, unreal.MaterialExpressionVertexColor, -1200, 300)
-    cell_tint = multiply(material, -950, 240, vertex, grain, "R")
+    # Instanzierte Cumuluszellen (GENESIS-047 Teil 2): Der Ton kommt je Instanz aus den Instanzdaten (Index 0),
+    # nicht aus der Vertexfarbe – vier Formvarianten teilen sich ein Netz, 13.400 Zellen aber keinen Ton.
+    tint_node, tint_out = vertex, "R"
+    if instanced:
+        tint_node = expression(material, unreal.MaterialExpressionPerInstanceCustomData, -1200, 220, data_index=0)
+        tint_out = ""
+    cell_tint = multiply(material, -950, 240, tint_node, grain, tint_out)
     # Der Zufallswert bestimmt den Ton, das Korn moduliert ihn nur leicht
-    variation = add(material, -800, 280, multiply(material, -950, 380, vertex, constant(material, -1150, 430, 0.75), "R"),
+    variation = add(material, -800, 280, multiply(material, -950, 380, tint_node, constant(material, -1150, 430, 0.75), tint_out),
                     multiply(material, -950, 470, cell_tint, constant(material, -1150, 520, 0.25)))
 
     # Berührungstiefe aus dem Blender-Aufbau (Vertexfarbe B): 1 = freie Oberfläche, kleiner = an den
@@ -429,7 +437,8 @@ def create_corona_material():
     # Zehntel 0,956 – seit die Zellen einander umschließen statt sich an Ebenen zu schneiden, ist
     # nur noch ein schmaler Saum wirklich gedrückt. Die Schwellen liegen deshalb eng beieinander;
     # mit den alten (0,70/0,95) wäre die ganze Zellwolke eine einzige Fuge gewesen.
-    crease = smoothstep(material, -950, 620, vertex, "B", 0.90, 1.0)
+    # Freie Zellen in der Gallerte liegen an niemandem an: keine Fuge
+    crease = constant(material, -950, 620, 1.0) if instanced else smoothstep(material, -950, 620, vertex, "B", 0.90, 1.0)
 
     # Deutlich dunkler als Papier: Eine Zellwolke unter dem Endoskoplicht ist keine weiße Wand.
     # Mit hellem Grundton frisst das nahe Licht jede Zeichnung weg (gemessen: Median 0,87 bei 0,04 Tonumfang).
@@ -437,7 +446,9 @@ def create_corona_material():
     # die Zellen aus der Nähe (Ich-Perspektive, GENESIS-038) zu glatten Plastikeiern.
     dark = color(material, -900, -200, 0.050, 0.041, 0.035)
     # Heller als zuvor: Die zweite Fassung wirkte wie Kieselsteine – lebende Zellen sind durchscheinend und licht
-    light = color(material, -900, -60, 0.28, 0.25, 0.215)
+    # Die freien Zellen des äußeren Cumulus (GENESIS-047 Teil 2) sieht man von ganz nah, mitten in der Wolke:
+    # Dort wirkten sie im hellen Ton wie glatte Eier. Etwas dunkler, mit mehr Korn und Kern (unten).
+    light = color(material, -900, -60, 0.235, 0.21, 0.18) if instanced else color(material, -900, -60, 0.28, 0.25, 0.215)
     base_tone = lerp3(material, -650, -120, dark, light, variation)
     # Die Fuge behält ein Viertel ihrer Helligkeit: Sie ist dunkel, aber nicht schwarz
     creased = multiply(material, -450, -120, base_tone, add(material, -600, -40, constant(material, -750, -20, 0.25),
@@ -467,12 +478,13 @@ float rim = pow(1.0 - facing, 3.0);
 // Kern nur angedeutet: Er ist fast so klar wie das Zytoplasma (erster Versuch mit 0,86/0,35: Spiegeleier)
 // Weiches Rauschen statt Würfel-Zufall: Die erste Fassung zeigte sichtbare Voxel
 float granules = Fine;
-float grain = lerp(0.84, 1.08, granules) * (1.0 - nucleus * 0.1);
-return float2(lerp(1.0, 0.95, nucleus) * (1.0 - 0.12 * envelope) * grain, rim);
-""", ["N", "V", "Cell", "Fine"], unreal.CustomMaterialOutputType.CMOT_FLOAT2)
+float grain = lerp(GrainLow, 1.08, granules) * (1.0 - nucleus * 0.1);
+return float2(lerp(1.0, NucleusShade, nucleus) * (1.0 - EnvelopeShade * envelope) * grain, rim);
+""".replace("GrainLow", "0.76" if instanced else "0.84").replace("NucleusShade", "0.90" if instanced else "0.95")
+       .replace("EnvelopeShade", "0.2" if instanced else "0.12"), ["N", "V", "Cell", "Fine"], unreal.CustomMaterialOutputType.CMOT_FLOAT2)
     connect(normal, "", cell, ["N"])
     connect(camera, "", cell, ["V"])
-    connect(vertex, "R", cell, ["Cell"])
+    connect(tint_node, tint_out, cell, ["Cell"])
     fine = custom(material, -1200, 900, "Granula", FBM_CODE, ["P", "Freq"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     connect(position, "", fine, ["P"])
     connect(constant(material, -1400, 960, 1.1), "", fine, ["Freq"])
@@ -508,7 +520,7 @@ return float2(lerp(1.0, 0.95, nucleus) * (1.0 - 0.12 * envelope) * grain, rim);
 
     mel.recompile_material(material)
     eal.save_loaded_asset(material)
-    log("Material M_GEN_Oocyte_Corona gebaut")
+    log("Material %s gebaut" % name)
     return material
 
 
@@ -592,6 +604,16 @@ def place_oocyte(meshes, materials):
         component.set_editor_property("affect_distance_field_lighting", False)
         component.set_editor_property("visible_in_ray_tracing", ray_tracing)
 
+    # Der äußere Cumulus: 13.400 Zellen, die der Actor selbst verteilt – dieselben, die die Spermien aufhalten
+    cumulus_meshes = [m for m in meshes.get("cumulus", []) if m]
+    if len(cumulus_meshes) == 4:
+        oocyte.set_editor_property("cumulus_cell_meshes", cumulus_meshes)
+        oocyte.set_editor_property("cumulus_cell_material", materials["cumulus"])
+        oocyte.rebuild_cumulus()
+        log("Äußerer Cumulus gesetzt")
+    else:
+        unreal.log_error("GENESIS: Cumuluszellen fehlen")
+
     # Cumulus-Gallerte: Als lokales Nebelvolumen (LocalFogVolume) getestet und wieder entfernt – zwischen
     # Extinktion 3,5 und 45 war im gemessenen Bild kein Unterschied (Median 0,310 gegen 0,309).
     # Ein Objekt, das nichts tut, bleibt nicht in der Szene. Der Cumulus entsteht aus den Zellen selbst.
@@ -647,11 +669,17 @@ else:
         # Fäden: Nanite aus, weil sie durchscheinend gerendert werden
         "strands": import_mesh("SM_GEN_OocyteStrands.fbx", "SM_GEN_OocyteStrands", nanite=False, compute_normals=True),
     }
+if os.environ.get("GENESIS_SKIP_OOCYTE_IMPORT") and not os.environ.get("GENESIS_IMPORT_CUMULUS"):
+    mesh_assets["cumulus"] = [eal.load_asset(OOCYTE + "/SM_GEN_CumulusCell_%d" % i) for i in range(4)]
+else:
+    # Die Zellen des äußeren Cumulus: vier Formvarianten zum Instanzieren (GENESIS-047 Teil 2)
+    mesh_assets["cumulus"] = [import_mesh("SM_GEN_CumulusCell_%d.fbx" % i, "SM_GEN_CumulusCell_%d" % i, nanite=True) for i in range(4)]
 
 material_assets = {
     "ooplasm": create_ooplasm_material(),
     "zona": create_zona_material(),
     "corona": create_corona_material(),
+    "cumulus": create_corona_material("M_GEN_Oocyte_CumulusCell", instanced=True),
     "strands": create_strands_material(),
 }
 

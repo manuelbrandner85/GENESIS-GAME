@@ -3,6 +3,15 @@
 #include "GenesisFertilizationLogic.h"
 #include "GenesisSpermSwimLogic.h"
 
+void FGenesisCumulusField::BuildGrid()
+{
+	Grid.Reset();
+	for (int32 Index = 0; Index < Cells.Num(); ++Index)
+	{
+		Grid.FindOrAdd(Key(Cells[Index].Center)).Add(Index);
+	}
+}
+
 namespace GenesisFertilizationLogic
 {
 	namespace
@@ -51,8 +60,13 @@ namespace GenesisFertilizationLogic
 			}
 		}
 
-		void EnterPerivitelline(FGenesisSpermCell& Cell, const FGenesisOocyteState& Oocyte, const FGenesisFertilizationTuning& Tuning)
+		void EnterPerivitelline(FGenesisSpermCell& Cell, FGenesisOocyteState& Oocyte, const FGenesisFertilizationTuning& Tuning)
 		{
+			// Die Bereitschaft der Membran zieht die Eizelle einmal – aus dem Strom der ersten Zelle, die ankommt (deterministisch)
+			if (Oocyte.MembraneDelaySeconds < 0.0f)
+			{
+				Oocyte.MembraneDelaySeconds = FMath::Max(0.0f, Cell.Random.Gaussian(Tuning.PerivitellineMeanSeconds, Tuning.PerivitellineOocyteSigmaSeconds));
+			}
 			double Distance = 0.0;
 			const FVector Inward = DirectionToOocyte(Cell, Oocyte, Distance);
 			SetPhase(Cell, EGenesisSpermPhase::Perivitelline);
@@ -60,9 +74,133 @@ namespace GenesisFertilizationLogic
 			Cell.Heading = Tilted(Inward, TangentAt(Cell.Heading, Inward), Tuning.PerivitellineTiltDegrees);
 			Cell.Position = Oocyte.Position - Inward * (0.5f * (Oocyte.ZonaInnerRadiusUm + Oocyte.OoplasmRadiusUm));
 			Cell.PenetrationDepthUm = Oocyte.ZonaOuterRadiusUm - Oocyte.ZonaInnerRadiusUm;
-			Cell.FusionTimer = FMath::Clamp(Cell.Random.Gaussian(Tuning.PerivitellineMeanSeconds, Tuning.PerivitellineSigmaSeconds),
+			Cell.FusionTimer = FMath::Clamp(Cell.Random.Gaussian(Oocyte.MembraneDelaySeconds, Tuning.PerivitellineCellSigmaSeconds),
 				Tuning.PerivitellineClampSeconds.Min, Tuning.PerivitellineClampSeconds.Max);
 		}
+	}
+
+	TSharedPtr<const FGenesisCumulusField> BuildCumulus(const FGenesisOocyteState& Oocyte, const FGenesisCumulusTuning& Tuning)
+	{
+		TSharedPtr<FGenesisCumulusField> Field = MakeShared<FGenesisCumulusField>();
+		const float Inner = Oocyte.CoronaRadiusUm;
+		const float Outer = FMath::Max(Inner + 1.0f, Oocyte.CumulusRadiusUm);
+		Field->CellSizeUm = FMath::Max(Tuning.MinSpacingUm, 2.0f * Tuning.LongAxisUm.Max * 0.5f + 1.0f);
+		Field->Cells.Reserve(Tuning.CellCount);
+
+		// Gleichverteilt im Volumen ziehen, nach außen mit exp(−Abstand/Falloff) seltener annehmen. Der Mindestabstand
+		// hält die Zellen auseinander; die Gallerte zwischen ihnen ist in echt fast unsichtbar.
+		FGenesisRandomStream Random(static_cast<uint64>(Tuning.Seed));
+		const int32 MaxAttempts = Tuning.CellCount * 60;
+		for (int32 Attempt = 0; Attempt < MaxAttempts && Field->Cells.Num() < Tuning.CellCount; ++Attempt)
+		{
+			const FVector Candidate(Random.FRandRange(-Outer, Outer), Random.FRandRange(-Outer, Outer), Random.FRandRange(-Outer, Outer));
+			const float Radius = static_cast<float>(Candidate.Size());
+			if (Radius < Inner || Radius > Outer || !Random.Bernoulli(FMath::Exp(-(Radius - Inner) / FMath::Max(1.0f, Tuning.DensityFalloffUm))))
+			{
+				continue;
+			}
+			// Größe zuerst: Zwei Zellen dürfen sich nie durchdringen – der Abstand richtet sich nach beiden
+			const float Long = Random.FRandRange(Tuning.LongAxisUm.Min, Tuning.LongAxisUm.Max);
+			bool bFree = true;
+			const FIntVector Key = Field->Key(Candidate);
+			for (int32 X = -1; X <= 1 && bFree; ++X)
+			{
+				for (int32 Y = -1; Y <= 1 && bFree; ++Y)
+				{
+					for (int32 Z = -1; Z <= 1 && bFree; ++Z)
+					{
+						if (const TArray<int32>* Bucket = Field->Grid.Find(Key + FIntVector(X, Y, Z)))
+						{
+							for (const int32 Other : *Bucket)
+							{
+								const FGenesisCumulusCell& Neighbour = Field->Cells[Other];
+								const float Needed = FMath::Max(Tuning.MinSpacingUm, 0.5f * Long + Neighbour.HalfAxes.X + 1.0f);
+								if (FVector::DistSquared(Neighbour.Center, Candidate) < FMath::Square(Needed))
+								{
+									bFree = false;
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+			if (!bFree)
+			{
+				continue;
+			}
+			FGenesisCumulusCell Cell;
+			Cell.Center = Candidate;
+			const float Cross = Long * Random.FRandRange(0.62f, 0.92f);
+			Cell.HalfAxes = 0.5f * FVector(Long, Cross, Cross * Random.FRandRange(0.82f, 1.08f));
+			// Außen liegen die Zellen ungeordnet in der Gallerte, nahe der Corona noch etwas radial gestreckt
+			const FVector Radial = Candidate / FMath::Max(Radius, 1.0f);
+			const FVector RandomAxis = FVector(Random.Gaussian(0.0f, 1.0f), Random.Gaussian(0.0f, 1.0f), Random.Gaussian(0.0f, 1.0f)).GetSafeNormal();
+			const float Order = FMath::Clamp(1.0f - (Radius - Inner) / 150.0f, 0.0f, 0.7f);
+			const FVector LongAxis = (Radial * Order + RandomAxis * (1.0f - Order)).GetSafeNormal(UE_SMALL_NUMBER, Radial);
+			const FQuat Align = FQuat::FindBetweenNormals(FVector::ForwardVector, LongAxis);
+			Cell.Rotation = FQuat(LongAxis, Random.FRandRange(0.0f, 2.0f * PI)) * Align;
+			Cell.Tint = Random.FRandRange(0.15f, 1.0f);
+			const int32 Index = Field->Cells.Add(Cell);
+			Field->Grid.FindOrAdd(Key).Add(Index);
+		}
+		return Field;
+	}
+
+	bool ResolveCumulusContact(FGenesisSpermCell& Cell, const FGenesisOocyteState& Oocyte)
+	{
+		const FGenesisCumulusField* Field = Oocyte.Cumulus.Get();
+		if (!Field || Field->Cells.Num() == 0)
+		{
+			return false;
+		}
+		const FVector Local = Cell.Position - Oocyte.Position;
+		if (Local.SizeSquared() > FMath::Square(Oocyte.CumulusRadiusUm + Field->CellSizeUm))
+		{
+			return false;
+		}
+		// Die Kopfspitze gleitet an der Zellmembran entlang: hinausschieben, den Anteil in die Zelle hinein wegnehmen.
+		// Ein kleiner Saum (0,5 µm) steht für die Mikrovilli – die Spitze berührt, sie steckt nicht drin.
+		constexpr float Margin = 0.5f;
+		bool bTouched = false;
+		const FIntVector Key = Field->Key(Local);
+		for (int32 X = -1; X <= 1; ++X)
+		{
+			for (int32 Y = -1; Y <= 1; ++Y)
+			{
+				for (int32 Z = -1; Z <= 1; ++Z)
+				{
+					const TArray<int32>* Bucket = Field->Grid.Find(Key + FIntVector(X, Y, Z));
+					if (!Bucket)
+					{
+						continue;
+					}
+					for (const int32 Other : *Bucket)
+					{
+						const FGenesisCumulusCell& Obstacle = Field->Cells[Other];
+						const FVector Padded = Obstacle.HalfAxes + FVector(Margin);
+						const FVector Relative = Obstacle.Rotation.UnrotateVector((Cell.Position - Oocyte.Position) - Obstacle.Center);
+						const FVector Scaled = Relative / Padded;
+						const double Depth = Scaled.Size();
+						if (Depth >= 1.0 || Depth < UE_KINDA_SMALL_NUMBER)
+						{
+							continue;
+						}
+						bTouched = true;
+						const FVector Surface = Obstacle.Center + Obstacle.Rotation.RotateVector(Relative / Depth);
+						Cell.Position = Oocyte.Position + Surface;
+						// Außennormale des Ellipsoids
+						const FVector Normal = Obstacle.Rotation.RotateVector(Scaled / (Padded * Depth)).GetSafeNormal();
+						const double Into = FVector::DotProduct(Cell.Heading, Normal);
+						if (Into < 0.0)
+						{
+							Cell.Heading = (Cell.Heading - Normal * Into).GetSafeNormal(UE_SMALL_NUMBER, Cell.Heading);
+						}
+					}
+				}
+			}
+		}
+		return bTouched;
 	}
 
 	EGenesisSpermPhase GetPhase(const FGenesisSpermCell& Cell)
@@ -180,12 +318,12 @@ namespace GenesisFertilizationLogic
 
 				// 2. Cumulus: Die Gallerte bremst – die Zelle muss sich hindurcharbeiten
 				const float OriginalSpeed = Cell.Speed;
-				const bool bInCumulus = Distance < Oocyte.CumulusRadiusUm;
+				const bool bInCumulus = Distance < Oocyte.MatrixRadiusUm;
 				if (bInCumulus)
 				{
 					Cell.Speed *= Tuning.CumulusSpeedFactor;
-					// Die Akrosomreaktion kann schon hier beginnen (Maus: bei 12 von 13 erfolgreichen Zellen, Jin 2011)
-					if (Cell.bCapacitated && !Cell.bAcrosomeReacted && Cell.AcrosomeTimer <= 0.0f
+					// Die Akrosomreaktion kann schon zwischen den Cumuluszellen beginnen (Maus: bei 12 von 13 erfolgreichen Zellen, Jin 2011)
+					if (Distance < Oocyte.CumulusRadiusUm && Cell.bCapacitated && !Cell.bAcrosomeReacted && Cell.AcrosomeTimer <= 0.0f
 						&& Cell.Random.Bernoulli(Tuning.AcrosomeInCumulusPerSecond * Dt))
 					{
 						Cell.AcrosomeTimer = Pick(Tuning.AcrosomeReactionSeconds, Cell.Random.NextFloat());
@@ -206,6 +344,9 @@ namespace GenesisFertilizationLogic
 					GenesisSpermSwimLogic::Step(Cell, Channel, SwimTuning, Dt);
 				}
 				Cell.Speed = OriginalSpeed;
+
+				// 2a. Zwischen den Cumuluszellen: Sie sind Hindernisse, keine Kulisse
+				ResolveCumulusContact(Cell, Oocyte);
 
 				// 2b. Die Zona ist ohne Bindung undurchdringlich: Eine Zelle, die auf sie trifft, bleibt auf
 				// ihr liegen und gleitet an ihr entlang. Vorher schwammen ungebundene Zellen durch die Hülle

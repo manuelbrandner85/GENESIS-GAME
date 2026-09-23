@@ -49,7 +49,7 @@ Drobnis 1988 (DOI 10.1016/0012-1606(88)90437-x), Bedford 1998 (DOI 10.1095/biolr
 |---|---|---|
 | Zahl der Zellen | 150 im Abschnitt, Feld reicht weit zurück, Ankunft nach und nach | je Rennen 4–10 an der Zona, 1–8 im Spalt |
 | Kapazitation | eigener Zustand (`bCapacitated`, 10 %); nur diese folgen dem Lockstoff, hyperaktivieren, binden | 8,9 % im Schwarm; ohne Kapazitation keine Bindung |
-| Akrosomreaktion | kann im Cumulus beginnen (0,08 je s), sonst an der Zona | – |
+| Akrosomreaktion | kann im Cumulus beginnen (Teil 1: 0,08 je s; seit Teil 2a 0,02 je s über den längeren Weg), sonst an der Zona | – |
 | Zona | 17 µm, schräg (40°) und mechanisch, 0,015–0,035 µm/s | im Mittel 12,7 min |
 | Perivitelliner Spalt | neuer Zustand `Perivitelline`, Kopf flach an der Membran, 15,8 ± 5,7 min | im Mittel 15,6 min; kürzester Weg Zona → Verschmelzung 17 min |
 | Schutz | Cortikalreaktion 20 min, Zona bindet nach 5 min nicht mehr; Gebundene lösen sich, Steckende bleiben, Überzählige bleiben im Spalt | Zona-Block nach 5,0 min; zwei im Spalt → eine verschmilzt, eine bleibt liegen |
@@ -60,3 +60,33 @@ Drobnis 1988 (DOI 10.1016/0012-1606(88)90437-x), Bedford 1998 (DOI 10.1095/biolr
 Offen für Teil 2: Cumulus in echter Größe (Millimeter) und Eileiter-Geometrie; dabei der Blick auf Zona und Spalt
 (im Zeitraffer verdeckt ihn heute der dichte Zellkranz – geplant ist ein optischer Schnitt wie bei der Blastozyste);
 Kapazitation als zeitlich begrenzter Zustand; der Satz im Vorfilm.
+
+## Umsetzung GENESIS-047 Teil 2a: Cumulus und Eileiter in echter Größe (2026-09-23)
+
+Recherche:
+- Menschliche Eizellen tragen im Mittel 13.583 Cumuluszellen, reife 16.073 ± 2.595; zum Eisprung bilden rund 20.000 Zellen
+  eine Masse von mehreren Millimetern (Ortiz 1982). Quelle: [PMC3955418](https://pmc.ncbi.nlm.nih.gov/articles/PMC3955418/)
+- Maus: Der expandierte Komplex ist ein Sphäroid von ~500 µm mit ~1.500 Zellen; außen eine zellfreie Hyaluronsäure-Hülle
+  bis 200 µm, im Körper doppelt so dick; die Gallerte ist extrem weich (~1 Pa). Quelle: Chen 2016,
+  [PMC4919561](https://pmc.ncbi.nlm.nih.gov/articles/PMC4919561/)
+- Ampulle: außen 4–10 mm, das Lumen durch Primär- und Sekundärfalten labyrinthisch (Histologie-Lehrbücher; 3D-Rekonstruktion
+  Castro 2019, DOI 10.5114/pjr.2019.86824).
+- Die meisten befruchtenden Mausspermien beginnen die Akrosomreaktion schon im Cumulus (Jin 2011, DOI 10.1073/pnas.1018202108).
+
+Umgesetzt:
+
+| Punkt | Vorher | Jetzt |
+|---|---|---|
+| Cumulus | dichte Corona bis 118 µm (2.600 Zellen) | Corona bis 118 µm + 13.400 freie Zellen bis 550 µm (zusammen ~16.000), Dichte fällt nach außen (gemessen innen 49.000, außen 11.000 je mm³), zellfreie Gallerte bis 700 µm |
+| Zellen als Hindernis | Spermien schwammen durch Zellen | dieselben Zellen für Bild und Physik; die Spitze gleitet an der Membran entlang (Test: 0 Schritte in einer Zelle) |
+| Eileiter | freier Kanal 0,9 mm, Wand 2,3 mm | freier Kanal 1,8 mm, Wand 4 mm, 14 Hauptfalten mit Seitenfalten (Blender, neu gebaut) |
+| Zellen im Abschnitt | 150 | 80 – mit 150 fanden 10–14 den Spalt, mehr als bei der Maus im Reagenzglas (2–9) |
+| Kapazitiert | 10 % | 8 % (Mitte von 2–14 %) |
+| Zeit im Spalt | jede Zelle 16 ± 6 min für sich | Bereitschaft der Membran je Eizelle (± 5,4 min), je Zelle ± 1,7 min – so gilt 15,8 ± 5,7 min für die Siegerin, wie gemessen |
+| Zeitlupe in der Gallerte | – | 0,5 statt 0,3 (hyperaktiviert 9–15 Hz, weiter ≥ 8 Bilder je Schlag) |
+
+Rennen neu gemessen: gut gelenkt 4 von 5, ohne Führung 0 von 5; je Rennen 4–8 Zellen an der Zona, 2–7 im Spalt.
+
+Offen (Teil 2b): Blick auf Zona und Spalt im Zeitraffer (optischer Schnitt durch Corona und Cumulus); die Eileiterwand liegt
+jetzt 0,9 mm entfernt und bleibt im Endoskoplicht fast dunkel – Licht und Kamera auf den weiteren Raum abstimmen; Fäden der
+Matrix im äußeren Cumulus.

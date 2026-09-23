@@ -202,6 +202,7 @@ void AGenesisSpermSwarm::StartRace(uint64 RunSeed)
 	Egg.SecondsSinceFusion = 0.0f;
 	Egg.BoundCells = 0;
 	Egg.PerivitellineCells = 0;
+	Egg.MembraneDelaySeconds = -1.0f;
 	FertilizationResult = FGenesisFertilizationResult();
 	EffectiveTimeScale = -1.0f;
 	RebuildSwarm();
@@ -323,7 +324,14 @@ void AGenesisSpermSwarm::Tick(float DeltaSeconds)
 
 	// An der Eizelle: sichtbarer Zeitraffer statt Zeitlupe. Die Rampe läuft gleichmäßig im Verhältnis
 	// (logarithmisch) – linear sähe der Weg von 0,3 auf 45 aus wie ein Sprung am Ende.
-	const float Target = FMath::Max(0.01f, WantsTimeLapse() ? TimeLapseScale : TimeScale);
+	bool bPlayerInGel = false;
+	if (IsRacing() && Oocyte && Cells.IsValidIndex(PlayerCellIndex))
+	{
+		const FGenesisSpermCell& Mine = Cells[PlayerCellIndex];
+		bPlayerInGel = GenesisFertilizationLogic::GetPhase(Mine) == EGenesisSpermPhase::Swimming
+			&& FVector::Dist(Mine.Position, Oocyte->GetState().Position) < Oocyte->GetState().MatrixRadiusUm;
+	}
+	const float Target = FMath::Max(0.01f, WantsTimeLapse() ? TimeLapseScale : (bPlayerInGel ? FMath::Max(TimeScale, CumulusTimeScale) : TimeScale));
 	if (EffectiveTimeScale <= 0.0f)
 	{
 		EffectiveTimeScale = Target;

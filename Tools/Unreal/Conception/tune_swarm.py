@@ -2,7 +2,7 @@
 #
 # Setzt die Zahl der Zellen im Schwarm der Eileiter-Ampulle.
 #
-# Seit GENESIS-047 sind es 150: Rund 18 Stunden nach der Besamung finden sich in beiden Eileitern
+# Seit GENESIS-047 sind es 80 (Teil 1: 150): Rund 18 Stunden nach der Besamung finden sich in beiden Eileitern
 # zusammen im Median 251 Spermien (Williams 1993, Docs/38). Die 6 000 davor sahen nach Schwarm aus
 # und waren falsch. Die Messwerte unten stammen aus der Zeit mit 6 000 Zellen.
 #
@@ -23,7 +23,7 @@ import os
 import unreal
 
 MAP_PATH = "/Game/Genesis/Conception/Maps/L_GEN_OviductAmpulla"
-CELL_COUNT = int(os.environ.get("GENESIS_CELL_COUNT", "150"))
+CELL_COUNT = int(os.environ.get("GENESIS_CELL_COUNT", "80"))
 
 
 def log(message):

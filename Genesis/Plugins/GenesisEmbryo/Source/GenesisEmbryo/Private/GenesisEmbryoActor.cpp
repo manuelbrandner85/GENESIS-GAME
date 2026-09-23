@@ -274,7 +274,13 @@ void AGenesisEmbryo::UpdateOocyteRemains(const FGenesisEmbryoState& State)
 	// Der Cumulus löst sich in den Stunden nach der Befruchtung auf – Zellkranz, Gallerte und ihre Fäden.
 	// Vorher blieben Gallerte und Fäden die ganze Woche stehen und verdeckten den Keim (gesehen bei 90 hpi).
 	const float Dispersal = FMath::Clamp(static_cast<float>(State.HoursSinceFusion) / FMath::Max(1.0f, CoronaDispersalHours), 0.0f, 1.0f);
-	for (UStaticMeshComponent* Part : { Oocyte->Corona.Get(), Oocyte->CumulusMatrix.Get(), Oocyte->CumulusStrands.Get() })
+	TArray<UStaticMeshComponent*> Parts = { Oocyte->Corona.Get(), Oocyte->CumulusMatrix.Get(), Oocyte->CumulusStrands.Get() };
+	// Der äußere Cumulus (GENESIS-047 Teil 2) löst sich mit auf
+	for (UInstancedStaticMeshComponent* Cells : Oocyte->CumulusCells)
+	{
+		Parts.Add(Cells);
+	}
+	for (UStaticMeshComponent* Part : Parts)
 	{
 		if (Part)
 		{

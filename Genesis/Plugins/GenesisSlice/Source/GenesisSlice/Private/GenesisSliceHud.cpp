@@ -697,13 +697,24 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 		// Keine Platzierung: Es ist kein Wettlauf um Tempo (Docs/38)
 		Status = FString::Printf(TEXT("Abstand zur Eizelle %.0f µm · %s"),
 			Swarm->GetPlayerDistanceToZonaUm(), Swarm->IsPlayerHyperactivated() ? TEXT("hyperaktiviert") : TEXT("progressiv"));
+		// In der Wolke des Cumulus (GENESIS-047 Teil 2): Dort bremst die Gallerte, und die Zellen stehen im Weg
+		if (const AGenesisOocyte* Egg = Swarm->GetOocyte())
+		{
+			const float FromCenter = Swarm->GetPlayerDistanceToZonaUm() + Egg->GetState().ZonaOuterRadiusUm;
+			if (FromCenter < Egg->GetState().MatrixRadiusUm)
+			{
+				Status += FromCenter < Egg->GetState().CumulusRadiusUm ? TEXT(" · zwischen den Cumuluszellen") : TEXT(" · in der Gallerte");
+			}
+		}
 		break;
 	}
 	if (Director.GetRaceAttempts() > 0)
 	{
 		Status += FString::Printf(TEXT(" · Versuch %d"), Director.GetRaceAttempts() + 1);
 	}
-	DrawCentered(Status, Canvas->SizeY - 110.0f * Scale, Scale * 1.15f, 0.85f, false);
+	// Ganz unten, unter den Tastenhinweisen: Die liegen in festen Bildpunkten (DrawLine), der Zustand wächst mit der
+	// Schriftgröße – bei 900 Zeilen lagen beide genau übereinander (gesehen in GENESIS-047 Teil 2)
+	DrawCentered(Status, Canvas->SizeY - 40.0f * Scale, Scale * 1.15f, 0.85f, false);
 
 	// Zeitraffer mit Uhr, wie der Zeitstempel oben auf einer Zeitrafferaufnahme am Mikroskop: Die Zeit an
 	// der Eizelle wird sichtbar gerafft statt heimlich (Docs/38) – eine halbe Stunde Biologie in gut vierzig
@@ -732,7 +743,7 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 		const float Width = 260.0f * Scale;
 		const float Height = 6.0f * Scale;
 		const float X = 0.5f * (Canvas->SizeX - Width);
-		const float Y = Canvas->SizeY - 80.0f * Scale;
+		const float Y = Canvas->SizeY - 52.0f * Scale;
 		FCanvasTileItem Back(FVector2D(X, Y), FVector2D(Width, Height), FLinearColor(1.0f, 1.0f, 1.0f, 0.15f));
 		Back.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(Back);

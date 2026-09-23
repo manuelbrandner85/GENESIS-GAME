@@ -133,9 +133,13 @@ struct GENESISCONCEPTION_API FGenesisOviductChannel
 {
 	GENERATED_BODY()
 
-	/** Freier Radius bis zu den Faltenspitzen (µm). */
+	/**
+	 * Freier Radius bis zu den Faltenspitzen (µm). Die Ampulle misst außen 4–10 mm; ihr Lumen ist fast ganz von
+	 * Falten ausgefüllt. Frei bleiben hier 1,8 mm – genug für den expandierten Cumulus (1,4 mm mit Gallerte).
+	 * Bis GENESIS-047 Teil 2 waren es 0,9 mm, und der Cumulus war zehnmal zu klein, damit er hineinpasste.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Channel", meta = (ClampMin = "50"))
-	float LumenRadiusUm = 450.0f;
+	float LumenRadiusUm = 900.0f;
 
 	/** Simulierte Länge; Zellen laufen an den Enden um (µm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Channel", meta = (ClampMin = "100"))
@@ -217,7 +221,7 @@ struct GENESISCONCEPTION_API FGenesisSpermSwimTuning
 	 * Anteil kapazitierter Zellen. Gemessen sind jeweils nur 2–14 % einer Probe kapazitiert (Cohen-Dayag 1995);
 	 * vorher galten hier alle Zellen der Ampulle als kapazitiert, und gut die Hälfte schlug hyperaktiviert (Docs/38).
 	 */
-	UPROPERTY(EditAnywhere, Category = "Transitions", meta = (ClampMin = "0", ClampMax = "1")) float CapacitatedFraction = 0.1f;
+	UPROPERTY(EditAnywhere, Category = "Transitions", meta = (ClampMin = "0", ClampMax = "1")) float CapacitatedFraction = 0.08f;
 
 	/**
 	 * Wechselraten zwischen progressiv und hyperaktiviert (je Sekunde) – nur für kapazitierte Zellen.

@@ -8,6 +8,9 @@
 #include "GenesisOocyte.generated.h"
 
 class UStaticMeshComponent;
+class UInstancedStaticMeshComponent;
+class UStaticMesh;
+class UMaterialInterface;
 class UMaterialInstanceDynamic;
 
 /**
@@ -24,6 +27,7 @@ class GENESISCONCEPTION_API AGenesisOocyte : public AActor
 public:
 	AGenesisOocyte();
 
+	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -64,6 +68,29 @@ public:
 	/** Fäden der Gallerte zwischen den Zellen – erst sie machen aus dem Kranz eine Wolke. */
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> CumulusStrands;
+
+	/**
+	 * Der äußere Cumulus (GENESIS-047 Teil 2): gut 13.000 Zellen frei in der Gallerte, als Instanzen. Mehrere
+	 * Formvarianten, damit keine zwei Nachbarn gleich aussehen. Dieselben Zellen sind Hindernisse für die Spermien.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TArray<TObjectPtr<UInstancedStaticMeshComponent>> CumulusCells;
+
+	UPROPERTY(EditAnywhere, Category = "Cumulus")
+	FGenesisCumulusTuning CumulusTuning;
+
+	/** Formvarianten einer Cumuluszelle (Einheitsgröße: Radius 1 µm; die Instanz trägt die Halbachsen). */
+	UPROPERTY(EditAnywhere, Category = "Cumulus")
+	TArray<TObjectPtr<UStaticMesh>> CumulusCellMeshes;
+
+	UPROPERTY(EditAnywhere, Category = "Cumulus")
+	TObjectPtr<UMaterialInterface> CumulusCellMaterial;
+
+	/** Baut Zellfeld und Instanzen neu (deterministisch aus CumulusTuning.Seed). */
+	UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cumulus")
+	void RebuildCumulus();
+
+	static constexpr int32 CumulusVariantCount = 4;
 
 private:
 	void RegisterDebugPage();

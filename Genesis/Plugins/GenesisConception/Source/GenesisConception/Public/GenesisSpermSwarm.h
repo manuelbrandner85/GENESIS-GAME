@@ -100,10 +100,11 @@ public:
 	/**
 	 * Zellen im Abschnitt. Rund 18 Stunden nach der Besamung finden sich in beiden Eileitern zusammen im
 	 * Median 251 Spermien (79–1.386; Williams 1993). Vorher standen hier 6.000 – ein Bild, das nach Schwarm
-	 * aussah und falsch war (Docs/38). In diesen 3 mm vor der Eizelle sind es 150.
+	 * aussah und falsch war (Docs/38). In diesen 3 mm vor der Eizelle sind es 80 – mit 150 fanden
+	 * zehn und mehr den Spalt unter der Zona, mehr als bei der Maus im Reagenzglas (2–9, Dubois 2025).
 	 */
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "1", ClampMax = "20000"))
-	int32 CellCount = 150;
+	int32 CellCount = 80;
 
 	UPROPERTY(EditAnywhere, Category = "Swarm")
 	int32 Seed = 1;
@@ -113,11 +114,11 @@ public:
 	 * Die Zellen ziehen von dort flussaufwärts – so, wie sie tatsächlich ankommen.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Swarm")
-	float StartBandDistanceUm = 320.0f;
+	float StartBandDistanceUm = 1000.0f;
 
 	/** Streuung des Pulks entlang des Kanals (µm). 0 = gleichmäßig über den ganzen Abschnitt verteilt. */
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0"))
-	float StartBandSpreadUm = 220.0f;
+	float StartBandSpreadUm = 350.0f;
 
 	/** Vitalität des Ejakulats (0..1); einzelne Zellen streuen darum. */
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0", ClampMax = "1"))
@@ -132,6 +133,14 @@ public:
 	/** Simulationszeit je Echtzeitsekunde (0,25 = Hochgeschwindigkeitsaufnahme 4× verlangsamt). */
 	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0", ClampMax = "4"))
 	float TimeScale = 0.25f;
+
+	/**
+	 * Zeitlupe, solange die eigene Zelle in der Gallerte des Cumulus schwimmt (GENESIS-047 Teil 2). Der Weg durch
+	 * die 1,4 mm große Wolke dauert eine Minute; mit der Zeitlupe des freien Kanals (0,3) wären das über drei Minuten.
+	 * In der Gallerte schlägt die Zelle hyperaktiviert mit 9–15 Hz – bei 0,5 bleiben auch dann acht Bilder je Schlag.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Swarm", meta = (ClampMin = "0", ClampMax = "4"))
+	float CumulusTimeScale = 0.5f;
 
 	/**
 	 * Zeitraffer an der Eizelle (Simulationssekunden je Echtzeitsekunde, GENESIS-047).

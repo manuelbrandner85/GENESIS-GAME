@@ -6,10 +6,10 @@
 #
 # Anatomie (menschliche Ampulla tubae uterinae, Histologie-Referenzwerte):
 #   - Lumen der Ampulle mehrere mm, fast vollständig von hohen, verzweigten Schleimhautfalten (Plicae tubariae) ausgefüllt
-#   - 8–10 Primärfalten entlang der Längsachse, bis ~0,6 mm hoch, blattartig dünn (~50–120 µm), leicht wellig
+#   - Primärfalten entlang der Längsachse (hier 14), bis ~1,1 mm hoch, blattartig dünn (~50–120 µm), leicht wellig
 #   - Sekundär- und Tertiärfalten zweigen seitlich ab → labyrinthische Spalträume
 #   - Epithel (einschichtig, ~20–30 µm hoch, Flimmer- und sekretorische Zellen) als Oberflächen-Detail im Material
-# Maßstab: 1 µm = 0,01 m (Blender) = 1 cm (Unreal). Kanalachse = X. Die Faltenspitzen lassen einen freien Kanal (Radius 450 µm),
+# Maßstab: 1 µm = 0,01 m (Blender) = 1 cm (Unreal). Kanalachse = X. Die Faltenspitzen lassen einen freien Kanal (Radius 900 µm),
 # passend zum Schwimmmodell (FGenesisOviductChannel.LumenRadiusUm).
 #
 # Aufbau: Faltenblätter als geschlossene Loft-Körper → Vereinigung über OpenVDB (Mesh to Volume, 4 µm Voxel) → Volume to Mesh →
@@ -28,10 +28,12 @@ import numpy as np
 from mathutils import Vector
 
 SEGMENT_LENGTH = 1500.0
-WALL_RADIUS = 1150.0
+# GENESIS-047 Teil 2: doppelt so weit wie zuvor (1150 / 450). Die Ampulle misst außen 4–10 mm, ihr Lumen ist fast
+# ganz von Falten ausgefüllt; der expandierte Cumulus (1,4 mm mit Gallerte) passte in 0,9 mm freien Kanal nicht hinein.
+WALL_RADIUS = 2000.0
 WALL_THICKNESS = 140.0
-CHANNEL_RADIUS = 450.0
-PRIMARY_FOLDS = 9
+CHANNEL_RADIUS = 900.0
+PRIMARY_FOLDS = 14
 VOXEL_UM = 5.0
 EXTEND = 40.0  # Überstand vor dem exakten Schnitt
 
@@ -126,11 +128,11 @@ def build_secondary_folds(primary_index, base_angle, lean, wave):
     """Seitliche Abzweigungen: kürzere Blätter, die schräg aus der Primärfalte wachsen."""
     folds = []
     wave_cycles, wave_amp, wave_phase = wave
-    for branch in range(int(rng.integers(2, 5))):
+    for branch in range(int(rng.integers(3, 6))):
         u_start = rng.uniform(0.25, 0.6)
         side = rng.choice([-1.0, 1.0])
         spread = side * rng.uniform(0.35, 0.7)
-        length = rng.uniform(140.0, 320.0)
+        length = rng.uniform(220.0, 520.0)
         thickness = rng.uniform(40.0, 60.0)
         branch_cycles = int(rng.integers(1, 3))
         branch_phase = rng.uniform(0.0, 2.0 * math.pi)

@@ -459,6 +459,30 @@ def build_matrix():
     return obj
 
 
+def build_cumulus_cells(variants=4):
+    """
+    Zellen des äußeren Cumulus (GENESIS-047 Teil 2) als Formvarianten zum Instanzieren: frei in der Gallerte,
+    an niemandem gedrückt. Einheitsgröße (Radius 1 µm) – die Instanz in Unreal trägt die Halbachsen (7–16 µm lang),
+    die Lage und den Ton (AGenesisOocyte::RebuildCumulus). 13.400 Zellen als ein Netz wären 17 Millionen Flächen
+    in einer Datei; als Instanzen teilen sie sich vier Netze.
+
+    Vertexfarbe wie bei der Corona: R = Ton (hier nur Vorgabe, im Spiel je Instanz), G = Lage, B = 1 (freie Oberfläche).
+    """
+    cells = []
+    for variant in range(variants):
+        obj = sphere("SM_GEN_CumulusCell_%d" % variant, 1.0, 4)
+        unit = read_vertices(obj) / np.linalg.norm(read_vertices(obj), axis=1, keepdims=True)
+        # Dieselbe Unregelmäßigkeit wie bei den Coronazellen: keine Kugel, keine zwei gleich
+        bumps = 1.0 + 0.24 * value_noise(unit, 0.7, 300 + variant) + 0.05 * value_noise(unit, 3.0, 400 + variant)
+        write_vertices(obj, unit * bumps[:, None])
+        for polygon in obj.data.polygons:
+            polygon.use_smooth = True
+        count = len(obj.data.vertices)
+        add_uv_and_attribute(obj, np.ones(count), tint=np.full(count, 0.5), contact=np.ones(count))
+        cells.append(obj)
+    return cells
+
+
 def export_fbx(obj, path):
     bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
@@ -556,6 +580,13 @@ def main():
     args = script_args()
     out_dir = ensure_dir(os.path.abspath(args.get("out", "ArtSource/Generated/Conception")))
     reset_scene()
+
+    # Nur die Cumuluszellen (GENESIS-047 Teil 2) – ohne die Corona neu zu packen (112 MB, mehrere Minuten)
+    if args.get("cumulus_only"):
+        for cell in build_cumulus_cells():
+            if args.get("export"):
+                export_fbx(cell, os.path.join(out_dir, cell.name + ".fbx"))
+        return
 
     ooplasm = build_ooplasm()
     zona = build_zona()
