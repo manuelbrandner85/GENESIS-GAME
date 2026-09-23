@@ -628,8 +628,17 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 	}
 	if (!bEgoView)
 	{
-		const FVector Head = Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex());
-		if (TrackSampleSeconds <= Now)
+		// Im Zeitraffer steht der schlagende Kopf in jedem Bild woanders (±5 µm): Die Bahn wurde zum Zickzack und der
+		// Kreis sprang. Dort markiert der Kreis die Zellmitte, und eine Bahn gibt es nicht – die Zelle steckt ja fest.
+		const FGenesisSpermCell* Mine = Swarm->GetCell(Swarm->GetPlayerCellIndex());
+		const bool bTimeLapse = Swarm->IsTimeLapse() && Mine;
+		const FVector Head = bTimeLapse ? Swarm->GetActorTransform().TransformPosition(Mine->Position * GenesisMicroScale::UnitsPerMicrometer)
+			: Swarm->GetCellHeadWorldPosition(Swarm->GetPlayerCellIndex());
+		if (bTimeLapse)
+		{
+			PlayerTrack.Reset();
+		}
+		else if (TrackSampleSeconds <= Now)
 		{
 			TrackSampleSeconds = Now + 0.1f;
 			PlayerTrack.Add(Head);

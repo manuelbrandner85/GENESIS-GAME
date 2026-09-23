@@ -98,3 +98,11 @@ Relief-Kontrast (Hoffman/DIC). So jetzt auch das Spiel im Zeitraffer: dünne Sch
 Profilansicht quer zur Zelle, eigene Optik, Relief-Kontrast an den Spermien. Bilder: Docs/Media/GENESIS-047_Schnitt_*.png.
 Die Fortsätze der Coronazellen (transzonale Fortsätze) sind in echt feine Fäden unter 1 µm, im Modell noch 3 µm dicke
 Kegel – der nächste Schritt für dieses Bild.
+
+## GENESIS-047 Teil 2c: Transzonale Fortsätze (2026-09-23)
+
+Die Coronazellen sind vor dem Eisprung über transzonale Fortsätze mit der Eizelle verbunden. Nach dem LH-Anstieg ziehen
+sie sich zurück (Maus: 4–8 h danach vollständig; ERK-/Calpain-abhängig) – die Trennung ist Voraussetzung für die
+Wiederaufnahme der Meiose (Amargant 2023, DOI 10.1093/humrep/dead162; Xie 2023, DOI 10.3389/fcell.2023.1087612). Beim
+Menschen liegt der Eisprung ~36 h nach dem Anstieg. Die ovulierte Eizelle hat also keine Fortsätze mehr; im Spiel
+standen bis hierhin 3 µm dicke Kegel bis in die Zona. Entfernt.

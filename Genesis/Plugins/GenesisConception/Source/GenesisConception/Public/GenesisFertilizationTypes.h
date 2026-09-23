@@ -238,7 +238,10 @@ struct GENESISCONCEPTION_API FGenesisFertilizationTuning
 	UPROPERTY(EditAnywhere, Category = "Fusion") FFloatInterval PerivitellineClampSeconds = FFloatInterval(300.0f, 1800.0f);
 
 	/** Spalt zwischen Eizellmembran und Zona, in dem der Kopf flach liegt: Neigung gegen die Senkrechte (Grad). */
-	UPROPERTY(EditAnywhere, Category = "Fusion", meta = (ClampMin = "0", ClampMax = "90")) float PerivitellineTiltDegrees = 70.0f;
+	UPROPERTY(EditAnywhere, Category = "Fusion", meta = (ClampMin = "0", ClampMax = "90")) float PerivitellineTiltDegrees = 80.0f;
+
+	/** Höhe der Kopfspitze über der Zellmembran im Spalt (µm): halbe Kopfdicke plus Welligkeit der Membran. */
+	UPROPERTY(EditAnywhere, Category = "Fusion", meta = (ClampMin = "0")) float PerivitellineHeadLiftUm = 2.3f;
 
 	/**
 	 * Cortikalreaktion nach der Verschmelzung bis zum Ende (s). Die Granula geben Ovastacin frei, das ZP2

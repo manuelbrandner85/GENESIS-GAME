@@ -72,7 +72,9 @@ namespace GenesisFertilizationLogic
 			SetPhase(Cell, EGenesisSpermPhase::Perivitelline);
 			// Der Kopf legt sich flach in den Spalt, die Spitze an der Membran; die Geißel folgt durch den Schlitz in der Zona
 			Cell.Heading = Tilted(Inward, TangentAt(Cell.Heading, Inward), Tuning.PerivitellineTiltDegrees);
-			Cell.Position = Oocyte.Position - Inward * (0.5f * (Oocyte.ZonaInnerRadiusUm + Oocyte.OoplasmRadiusUm));
+			// Der Kopf liegt auf der Membran, nicht mitten im Spalt: Der Spalt misst 3 µm, der Kopf 2,9 µm, und die Membran ist
+			// um ±1 µm wellig. Mittig lag er zur Hälfte im Zellleib und war nicht zu sehen (GENESIS-047 Teil 2c).
+			Cell.Position = Oocyte.Position - Inward * (Oocyte.OoplasmRadiusUm + Tuning.PerivitellineHeadLiftUm);
 			Cell.PenetrationDepthUm = Oocyte.ZonaOuterRadiusUm - Oocyte.ZonaInnerRadiusUm;
 			Cell.FusionTimer = FMath::Clamp(Cell.Random.Gaussian(Oocyte.MembraneDelaySeconds, Tuning.PerivitellineCellSigmaSeconds),
 				Tuning.PerivitellineClampSeconds.Min, Tuning.PerivitellineClampSeconds.Max);

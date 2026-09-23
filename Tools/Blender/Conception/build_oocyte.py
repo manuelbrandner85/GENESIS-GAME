@@ -9,7 +9,7 @@
 #   - Perivitelliner Spalt 1–5 µm mit dem ersten Polkörper (~10 µm)
 #   - Zona pellucida 17 µm dick (16,7–17,7 µm, Valeri 2011), gallertig, aus Glykoproteinfasern – daran binden die Spermien
 #   - Corona radiata: 2–3 Lagen radial gestreckter Cumuluszellen (10–20 µm) in einer Hyaluronsäure-Matrix,
-#     mit Zellfortsätzen, die bis an die Zona reichen
+#     deren Fortsätze zur Eizelle beim Eisprung schon zurückgezogen sind (GENESIS-047 Teil 2c)
 #   - Der gesamte Cumulus-Oozyten-Komplex misst mehrere hundert µm
 #
 # Maßstab: 1 µm = 0,01 m in Blender = 1 Unreal-Einheit. Ursprung = Mittelpunkt der Eizelle.
@@ -31,6 +31,8 @@ PERIVITELLINE = 3.0
 ZONA_INNER = OOPLASM_RADIUS + PERIVITELLINE
 ZONA_THICKNESS = 17.0  # 16,7–17,7 µm (Valeri 2011, Docs/38)
 POLAR_BODY_RADIUS = 5.0
+# Transzonale Fortsätze (Coronazellen → Eizelle): zum Eisprung zurückgezogen, siehe build_corona
+WITH_TRANSZONAL_PROJECTIONS = False
 CORONA_LAYERS = 3
 
 rng = np.random.default_rng(190619)
@@ -203,7 +205,7 @@ def build_corona():
         cross = long_axis * rng.uniform(0.62, 0.92)
         third = cross * rng.uniform(0.82, 1.08)
 
-        # Nur die innerste Lage richtet sich radial aus (ihre Fortsätze reichen zur Zona)
+        # Nur die innerste Lage richtet sich radial aus (Corona radiata: die Zellen stehen strahlig um die Zona)
         jitter = rng.normal(size=3) * (0.35 + 0.45 * layer)
         x_axis = direction + jitter
         x_axis /= np.linalg.norm(x_axis)
@@ -302,8 +304,11 @@ def build_corona():
         cells.from_mesh(mesh_temp)
         bpy.data.meshes.remove(mesh_temp)
 
-        # Fortsatz der innersten Lage zur Zona: dünner Kegel
-        if layer == 0 and rng.random() < 0.75:
+        # Transzonale Fortsätze der innersten Lage: beim Eisprung nicht mehr vorhanden. Nach dem LH-Anstieg ziehen sie
+        # sich zurück (Maus: 4–8 h danach ganz, Voraussetzung für die Reifeteilung; Amargant 2023, DOI
+        # 10.1093/humrep/dead162); der Eisprung folgt beim Menschen nach ~36 h. Bis GENESIS-047 Teil 2c standen hier
+        # 3 µm dicke Kegel bis in die Zona. Der Zufallszug bleibt, damit alle Zellen ihre Form behalten.
+        if layer == 0 and rng.random() < 0.75 and WITH_TRANSZONAL_PROJECTIONS:
             direction = position / np.linalg.norm(position)
             y_axis, z_axis = basis[1], basis[2]
             process = bmesh.new()
