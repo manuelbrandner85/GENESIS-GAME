@@ -398,8 +398,10 @@ def build(week):
         r = math.sqrt(1.0 - zc * zc)
         d = np.array([math.cos(golden * i) * r, math.sin(golden * i) * r, zc])
         hull.append([float(x) / CM for x in local[np.argmax(local @ d)]])
+    # Halber Augenabstand (cm): Die Augen liegen im Netz bei (0, ±eye_half, 0) – das Material legt dort die Pigmentflecke hin
+    eye_half = (eye_l - eye_r).length / 2.0 / CM
     info = dict(navel=[float(x) / CM for x in navel], center=[float(x) / CM for x in local.mean(axis=0)],
-                crl=WEEKS[week]["CRL"], scales=scales, base=base, hull=hull)
+                crl=WEEKS[week]["CRL"], scales=scales, base=base, hull=hull, eye_half_cm=float(eye_half))
     print("GENESIS: Fetus SSW %d – %d Flächen, Grundmodell %s, Skalen %s" % (week, len(obj.data.polygons),
           {k: round(v, 1) for k, v in base.items()}, {k: round(v, 3) for k, v in scales.items()}))
     return obj, info

@@ -89,6 +89,8 @@ struct GENESISSLICE_API FGenesisFetusStage
 	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") float CrownRumpCm = 16.0f;
 	/** Äußerste Punkte des Körpers (cm, relativ zu den Augen) – damit das Kind ganz in der Fruchtblase liegt. */
 	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") TArray<FVector> Hull;
+	/** Halber Augenabstand (cm): Die Augen liegen im Netz bei (0, ±EyeHalfSpacingCm, 0) – für die Pigmentflecke. */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") float EyeHalfSpacingCm = 0.0f;
 };
 
 /** Eine Handlung, die der Spieler in dieser Woche kann – für die Hinweise im Bild. */

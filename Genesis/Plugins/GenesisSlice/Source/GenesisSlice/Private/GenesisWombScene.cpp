@@ -980,6 +980,13 @@ void AGenesisWombScene::UpdateCamera(float DeltaSeconds, const TArray<EGenesisFe
 		}
 		Fetus->SetRelativeLocationAndRotation((Head + Jolt + Pushed) * WorldScale, BodyLook);
 		Fetus->SetRelativeScale3D(FVector(FetusScale * WorldScale));
+		// Die Augen scheinen durch die dünnen, verklebten Lider dunkel durch (Pigment der Netzhaut ab Woche ~6 nach der
+		// Befruchtung, Lider zu von SSW ~10 bis 26, Moore „The Developing Human“) – mit dickerer Haut verblasst es
+		if (FetusMaterial)
+		{
+			FetusMaterial->SetScalarParameterValue(TEXT("AugenAbstand"), Stage->EyeHalfSpacingCm);
+			FetusMaterial->SetScalarParameterValue(TEXT("Augenpigment"), 1.0f - FMath::SmoothStep(12.0f, 22.0f, Weeks));
+		}
 		NavelWorld = Fetus->GetComponentTransform().TransformPosition(Stage->Navel);
 		bHasNavel = true;
 	}
@@ -1170,7 +1177,11 @@ void AGenesisWombScene::UpdateExterior(float DeltaSeconds, const FVector& FirstP
 	const float Orbit = FMath::Clamp(ExteriorAge / (bStay ? ExteriorStaySeconds : ExteriorSeconds - 2.5f), 0.0f, 1.0f);
 	const FRotator Gaze = Fetus->GetRelativeRotation();
 	// vorn-seitlich vor dem Kind, das Gesicht im Blick; innerhalb der Höhle
-	const FVector Around = Gaze.RotateVector(FVector(1.0f, 0.0f, 0.25f)).RotateAngleAxis(-45.0f + (25.0f + 20.0f * ExteriorSpin) * Orbit, FVector::UpVector).GetSafeNormal();
+	// Draußen bleibend von der anderen Seite: Die Schlinge der Nabelschnur liegt (für die Ich-Sicht) vor dem Gesicht und
+	// verdeckte es sonst in den frühen Wochen
+	const float Start = bStay ? 50.0f : -45.0f;
+	const float Sweep = (bStay ? -1.0f : 1.0f) * (25.0f + 20.0f * ExteriorSpin) * Orbit;
+	const FVector Around = Gaze.RotateVector(FVector(1.0f, 0.0f, 0.25f)).RotateAngleAxis(Start + Sweep, FVector::UpVector).GetSafeNormal();
 	// Wie ein 3D-Ultraschall: Der Blick geht von außen durch die Wand (sie ist nur von innen sichtbar) auf das ganze Kind,
 	// langsam näher an sein Gesicht
 	const float Distance = FMath::Lerp(1.6f, 0.9f, Orbit) * Size;

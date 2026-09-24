@@ -61,10 +61,18 @@ float cranial = saturate(0.5 + 0.5 * n.z);           // Kopf zuerst
 float threshold = 1.0 - Vernix * (0.45 + 0.35 * dorsal + 0.2 * cranial);
 float cover = Vernix > 0.001 ? smoothstep(threshold - 0.15, threshold + 0.15, Patch) : 0.0;
 float3 color = lerp(Base, float3(0.86, 0.82, 0.74), 0.9 * cover);
+// Augen: dunkles Pigment der Netzhaut scheint durch die dünnen, verklebten Lider (Netz: Augen bei (0, ±EyeHalf, 0) cm).
+// Nur auf der Gesichtsseite (x > −0,3 · Abstand), weicher Rand – ein Fleck unter der Haut, kein aufgemaltes Auge.
+float eyeRadius = 0.42 * EyeHalf;
+float dl = length(float2(P.y - EyeHalf, P.z));
+float dr = length(float2(P.y + EyeHalf, P.z));
+float front = smoothstep(-0.3 * EyeHalf, 0.1 * EyeHalf, P.x);
+float eye = EyeHalf > 0.0 ? (1.0 - smoothstep(0.45 * eyeRadius, eyeRadius, min(dl, dr))) * front * Pigment : 0.0;
+color = lerp(color, float3(0.035, 0.03, 0.045), 0.95 * eye);
 Roughness = lerp(Rough, 0.68, cover);
 float3 V = normalize(Camera);
 float rim = pow(1.0 - saturate(abs(dot(normalize(NWorld), V))), 3.0);
-Emission = Emit * (1.0 - 0.3 * cover) + Light * rim * Lanugo * 0.45;   // dünne Schicht: nimmt wenig Durchlicht
+Emission = (Emit * (1.0 - 0.3 * cover) + Light * rim * Lanugo * 0.45) * (1.0 - 0.8 * eye);   // Käseschmiere: dünne Schicht
 color = lerp(color, float3(0.78, 0.72, 0.66), Lanugo * rim * 0.2);
 return color;
 """
@@ -274,7 +282,8 @@ def create_tissue_material():
     body.set_editor_property("code", BODY_SKIN_CODE)
     body.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     entries = []
-    for input_name in ("Base", "Rough", "Emit", "NLocal", "NWorld", "Camera", "Light", "Patch", "Body", "Vernix", "Lanugo"):
+    for input_name in ("Base", "Rough", "Emit", "NLocal", "NWorld", "Camera", "Light", "Patch", "Body", "Vernix", "Lanugo",
+                       "P", "EyeHalf", "Pigment"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         entries.append(entry)
@@ -305,7 +314,10 @@ def create_tissue_material():
                       (camera, "Camera"), (light, "Light"), (patch, "Patch"),
                       (lib.scalar_param(material, "Koerper", -550, 160, 0.0), "Body"),
                       (lib.scalar_param(material, "Kaeseschmiere", -550, 220, 0.0), "Vernix"),
-                      (lib.scalar_param(material, "Lanugo", -550, 280, 0.0), "Lanugo")):
+                      (lib.scalar_param(material, "Lanugo", -550, 280, 0.0), "Lanugo"),
+                      (lib.expression(material, unreal.MaterialExpressionLocalPosition, -550, 340), "P"),
+                      (lib.scalar_param(material, "AugenAbstand", -550, 400, 0.0), "EyeHalf"),
+                      (lib.scalar_param(material, "Augenpigment", -550, 460, 0.0), "Pigment")):
         lib.link(node, body, pin)
     mel.connect_material_property(body, "", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(body, "Roughness", unreal.MaterialProperty.MP_ROUGHNESS)
@@ -476,6 +488,7 @@ def import_fetuses():
         stage.set_editor_property("center", unreal.Vector(c[0], -c[1], c[2]))
         stage.set_editor_property("navel", unreal.Vector(n[0], -n[1], n[2]))
         stage.set_editor_property("crown_rump_cm", float(info["crl"]))
+        stage.set_editor_property("eye_half_spacing_cm", float(info.get("eye_half_cm", 0.0)))
         stage.set_editor_property("hull", [unreal.Vector(h[0], -h[1], h[2]) for h in info.get("hull", [])])
         stages.append(stage)
     lib.log("Fetus: %d Alter" % len(stages))

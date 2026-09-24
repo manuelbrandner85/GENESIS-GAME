@@ -226,8 +226,14 @@ eine Hand am Mund, durchscheinend rosige Haut ohne Fett.
 - Das Kind hockte: Hüfte 95° gegen einen um ~50° vorgebeugten Oberkörper. Jetzt 115° (Knie am Bauch) und Knie 138°
   (Unterschenkel an den Oberschenkeln) – die fetale Haltung als Walze.
 
+**Nachtrag – die Augen:** Das Pigment der Netzhaut bildet sich ab Woche ~6 nach der Befruchtung; die Lider verkleben um
+SSW 10–12 und öffnen sich erst um SSW 26–28 (Moore, *The Developing Human*). Durch die dünnen Lider scheinen die Augen
+als dunkle Flecke durch – so auf allen Referenzen von SSW 9–12. Im Material jetzt ein weicher dunkler Fleck an der Lage
+der Augen (halber Augenabstand je Woche aus Blender, `fetus_eyes.py`), voll bis SSW 12, verblassend bis SSW 22.
+Die Kamera kreist in den frühen Momenten von der anderen Seite – die Schlinge der Nabelschnur verdeckte sonst das Gesicht.
+
 **Noch offen:** SSW 8 braucht ein eigenes Embryo-Modell (Carnegie ~17: Fingerstrahlen, Schwanzrest) – das MakeHuman-Baby
-taugt dafür nicht. Augen als Pigmentflecke, physiologischer Nabelbruch bis SSW ~12 und die Fruchtblase mit Dottersack
-fehlen im Modell. Das Kind ist starr: Bewegungen zeigt es von außen nur als Ganzkörper-Ruck (Schreck, Strecken).
+taugt dafür nicht. Physiologischer Nabelbruch bis SSW ~12 und die Fruchtblase mit Dottersack fehlen im Modell. Das Kind
+ist starr: Bewegungen zeigt es von außen nur als Ganzkörper-Ruck (Schreck, Strecken).
 
 ![SSW 12 von außen, im Kaltlicht – gebautes Spiel](Media/GENESIS-044_2c_SSW12_aussen.png)
