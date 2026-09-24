@@ -176,6 +176,16 @@ return saturate(v);
 """
 
 
+CANAL_RELIEF_CODE = """
+// build_birth_canal.py: canal_radius(s) und relief = 0,5 + (Radius − Sollradius) / 6 mm
+float s = saturate(P.x / 140.0);
+float r;
+if (s < 0.45) { float t = s / 0.45; r = 58.0 - 6.0 * (3.0 * t * t - 2.0 * t * t * t); }
+else { float t = (s - 0.45) / 0.55; r = 52.0 + 20.0 * pow(t, 2.2); }
+return saturate(0.5 + (length(P.yz) - r) / 6.0);
+"""
+
+
 def create_canal_material():
     """
     Schleimhaut des Geburtskanals: feuchtes, durchblutetes Gewebe. Anders als im Mikrokosmos gibt es hier
@@ -195,11 +205,14 @@ def create_canal_material():
     connect(uv, "", coarse, ["UV"])
     connect(constant(material, -1800, 380, 12.0), "", coarse, ["Freq"])
 
-    # Farbattribut aus Blender: R = Weg durch den Kanal, G = Faltenrelief
-    vertex = expression(material, unreal.MaterialExpressionVertexColor, -1500, 560)
+    # Faltenrelief: Blender schreibt es als Farbattribut (G), das in Unreal 5.8 aber nicht ankommt (Vertexfarben aus FBX
+    # fehlen, gemessen in GENESIS-047) – das Material sah überall 1, die Täler waren nicht dunkler als die Kuppen.
+    # Dieselbe Rechnung wie build_birth_canal.py aus der Lage im Netz (1 mm = 1 Einheit, Kanal entlang X).
+    place = custom(material, -1500, 560, "Faltenrelief", CANAL_RELIEF_CODE, ["P"], unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    connect(expression(material, unreal.MaterialExpressionLocalPosition, -1750, 560), "", place, ["P"])
 
     # Faltentäler sind dunkler und stärker durchblutet als die Kuppen
-    relief = multiply(material, -1200, 420, vertex, coarse, "G")
+    relief = multiply(material, -1200, 420, place, coarse)
     structure = add(material, -1000, 200,
                     multiply(material, -1200, 120, fine, constant(material, -1400, 180, 0.35)),
                     multiply(material, -1200, 500, relief, constant(material, -1400, 560, 0.65)))
@@ -297,6 +310,11 @@ def build_level(canal_mesh, canal_material):
 ensure_folders()
 unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous(["/Game/Genesis"], True)
 
-mesh = eal.load_asset(MESHES + "/SM_GEN_BirthCanal") if os.environ.get("GENESIS_SKIP_CANAL_IMPORT") \
-    else import_mesh("SM_GEN_BirthCanal.fbx", "SM_GEN_BirthCanal")
-build_level(mesh, create_canal_material())
+if os.environ.get("GENESIS_MATERIAL_ONLY"):
+    # Nur das Material neu bauen: build_level legt die Karte neu an und verlöre alles, was spätere Blöcke
+    # (Mutter, Hebamme, Kreißsaal) dort eingerichtet haben
+    create_canal_material()
+else:
+    mesh = eal.load_asset(MESHES + "/SM_GEN_BirthCanal") if os.environ.get("GENESIS_SKIP_CANAL_IMPORT") \
+        else import_mesh("SM_GEN_BirthCanal.fbx", "SM_GEN_BirthCanal")
+    build_level(mesh, create_canal_material())
