@@ -986,6 +986,10 @@ void AGenesisWombScene::UpdateCamera(float DeltaSeconds, const TArray<EGenesisFe
 		{
 			FetusMaterial->SetScalarParameterValue(TEXT("AugenAbstand"), Stage->EyeHalfSpacingCm);
 			FetusMaterial->SetScalarParameterValue(TEXT("AugenSeitlich"), Stage->EyeSideways);
+			FetusMaterial->SetVectorParameterValue(TEXT("Herz"), FLinearColor(Stage->HeartCm.X, Stage->HeartCm.Y, Stage->HeartCm.Z));
+			FetusMaterial->SetScalarParameterValue(TEXT("HerzRadius"), Stage->HeartCm.W);
+			FetusMaterial->SetVectorParameterValue(TEXT("Leber"), FLinearColor(Stage->LiverCm.X, Stage->LiverCm.Y, Stage->LiverCm.Z));
+			FetusMaterial->SetScalarParameterValue(TEXT("LeberRadius"), Stage->LiverCm.W);
 			FetusMaterial->SetScalarParameterValue(TEXT("Augenpigment"), 1.0f - FMath::SmoothStep(12.0f, 22.0f, Weeks));
 		}
 		NavelWorld = Fetus->GetComponentTransform().TransformPosition(Stage->Navel);
@@ -1005,7 +1009,9 @@ void AGenesisWombScene::UpdateCamera(float DeltaSeconds, const TArray<EGenesisFe
 		// Mit Kaltlicht belichtet der Beobachter auf dessen Licht, nicht auf das (fast fehlende) Licht durch den Bauch
 		const float Observed = ExteriorStaySeconds > 0.0f ? -FMath::Log2(FMath::Max(Mother.WombLux, ScopeLux) / ReferenceLux) : Adapted;
 		// +1,8 EV gilt für das schwache Durchlicht des Bauchs; unter Kaltlicht brannte damit die Haut weiß aus (P90 0,94)
-		const float Lift = ExteriorStaySeconds > 0.0f ? 0.3f : 1.8f;
+		// Eine kleine Höhle wirft das Kaltlicht vielfach zurück (wie eine Ulbrichtkugel): SSW 8 (1,5 cm) gemessen Haut-Median
+		// 0,86 gegen 0,80–0,83 bei SSW 12 und den Referenzfotos – dort bis 0,4 EV weniger
+		const float Lift = ExteriorStaySeconds > 0.0f ? 0.3f - 0.4f * (1.0f - FMath::SmoothStep(1.5f, 3.5f, Perception.CavityRadiusCm)) : 1.8f;
 		Camera->PostProcessSettings.AutoExposureBias = ExposureBias + Observed + FMath::Lerp(Lift, Felt - 2.0f * (1.0f - Perception.Presence), Inside);
 		Camera->PostProcessSettings.bOverride_ColorOffset = true;
 		Camera->PostProcessSettings.ColorOffset = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -1180,7 +1186,9 @@ void AGenesisWombScene::UpdateExterior(float DeltaSeconds, const FVector& FirstP
 	// vorn-seitlich vor dem Kind, das Gesicht im Blick; innerhalb der Höhle
 	// Draußen bleibend von der anderen Seite: Die Schlinge der Nabelschnur liegt (für die Ich-Sicht) vor dem Gesicht und
 	// verdeckte es sonst in den frühen Wochen
-	const float Start = bStay ? 50.0f : -45.0f;
+	// Beim Embryo (Augen seitlich) von der Seite wie auf den Referenzfotos: Von vorn lag der Nabelstrang genau vor der
+	// Herz-Leber-Wölbung und dem halben Körper
+	const float Start = bStay ? FMath::Lerp(50.0f, 100.0f, Stage->EyeSideways) : -45.0f;
 	const float Sweep = (bStay ? -1.0f : 1.0f) * (25.0f + 20.0f * ExteriorSpin) * Orbit;
 	const FVector Around = Gaze.RotateVector(FVector(1.0f, 0.0f, 0.25f)).RotateAngleAxis(Start + Sweep, FVector::UpVector).GetSafeNormal();
 	// Wie ein 3D-Ultraschall: Der Blick geht von außen durch die Wand (sie ist nur von innen sichtbar) auf das ganze Kind,

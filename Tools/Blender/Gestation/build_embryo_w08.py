@@ -32,6 +32,9 @@ PX_CM = CRL_CM / 694.0
 EYE_PX = (475.0, 365.0)
 GAZE_TO_PX = (585.0, 330.0)             # Schnauze: dorthin „blickt“ das Gesicht
 NAVEL_PX = (905.0, 350.0)
+# Mitte x, y und Radius (px): Mitte der Herz- bzw. Leberwölbung, Radius bis zur Haut der Wölbung (das Material zeigt die
+# volle Farbe bis 0,9 × Radius und blendet bis 1,6 × aus – so erreicht der Schatten die Flanke, gemessen)
+ORGANS_PX = {"heart": (750.0, 412.0, 90.0), "liver": (838.0, 408.0, 90.0)}
 SINGLE_GAIN = 0.575                     # Metaball-Ellipsoid sichtbar ~0,58 × eingestellt (gemessen, build_embryo_day28.py)
 CHAIN_GAIN = 0.80
 TRIANGLES = 200000
@@ -228,8 +231,14 @@ def build():
         r = math.sqrt(1.0 - zc * zc)
         d = np.array([math.cos(golden * i) * r, math.sin(golden * i) * r, zc])
         hull.append([float(x) / CM for x in local[np.argmax(local @ d)]])
+    # Herz und Leber unter der Herz-Leber-Wölbung, etwas zur Körperachse hin; der Radius reicht bis knapp unter die Haut
+    # der Wölbung (das Material zeigt sie dort als dunkelroten Schatten, Referenzen SSW 7 und 9)
+    organs = {}
+    for key, (x, y, r) in (("heart", ORGANS_PX["heart"]), ("liver", ORGANS_PX["liver"])):
+        c = np.array(basis) @ (np.array(v3(x, y)[:]) - np.array(eye[:])) * TO_REAL / CM
+        organs[key] = [float(c[0]), float(c[1]), float(c[2]), r * PX_CM]
     info = dict(navel=[float(x) / CM for x in navel], center=[float(x) / CM for x in local.mean(axis=0)], crl=CRL_CM,
-                hull=hull, eye_half_cm=104 * PX_CM, eye_sideways=1.0, source="build_embryo_w08.py")
+                hull=hull, eye_half_cm=104 * PX_CM, eye_sideways=1.0, organs=organs, source="build_embryo_w08.py")
     print("GENESIS: Embryo SSW 8 – %d Punkte, Ausdehnung %s cm" % (len(obj.data.vertices), [round(v / CM, 2) for v in obj.dimensions]))
     return obj, info
 

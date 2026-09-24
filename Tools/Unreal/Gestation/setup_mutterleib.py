@@ -54,6 +54,7 @@ BODY_SKIN_CODE = """
 // Lanugo: feine Härchen ab SSW ~20, zum Termin größtenteils abgestoßen – im Gegenlicht ein weicher Saum am Umriss.
 Roughness = Rough;
 Emission = Emit;
+Scatter = Through;
 if (Body < 0.5) return Base;
 float3 n = normalize(NLocal);                        // Netz: +X Blickrichtung (Gesicht), +Z Scheitel
 float dorsal = saturate(0.35 - 0.8 * n.x);           // Rücken zuerst
@@ -61,6 +62,20 @@ float cranial = saturate(0.5 + 0.5 * n.z);           // Kopf zuerst
 float threshold = 1.0 - Vernix * (0.45 + 0.35 * dorsal + 0.2 * cranial);
 float cover = Vernix > 0.001 ? smoothstep(threshold - 0.15, threshold + 0.15, Patch) : 0.0;
 float3 color = lerp(Base, float3(0.86, 0.82, 0.74), 0.9 * cover);
+// Organe durch die dünne Bauchwand (Embryo, SSW 8): Herz und Leber schimmern dunkelrot durch (Referenzen SSW 7 und 9:
+// frisch eine dunkle Masse unter der Herz-Leber-Wölbung). Lage und Radius (cm im Netz) je Alter; Radius 0 = keine.
+// Von vorn gesehen ist der Weg durch die Haut kürzer – dort deutlicher als am Umriss.
+float facing = 0.55 + 0.45 * saturate(abs(dot(normalize(NWorld), normalize(Camera))));
+float heart = HeartR > 0.0 ? 1.0 - smoothstep(0.9 * HeartR, 1.6 * HeartR, length(P - Heart)) : 0.0;
+float liver = LiverR > 0.0 ? 1.0 - smoothstep(0.9 * LiverR, 1.6 * LiverR, length(P - Liver)) : 0.0;
+float heartA = 0.8 * heart * facing;
+float liverA = 0.9 * liver * facing;
+color = lerp(color, float3(0.42, 0.07, 0.07), heartA);
+color = lerp(color, float3(0.28, 0.06, 0.06), liverA);
+// Blut schluckt auch das Durchlicht (Emission) und das im Gewebe gestreute Licht (Subsurface-Farbe) – die Streufarbe
+// leuchtet unabhängig von der Grundfarbe und hatte die dunklere Farbe fast ganz überdeckt (gemessen: 244/213 statt dunkelrot)
+float3 organPass = lerp(float3(1.0, 1.0, 1.0), float3(0.75, 0.25, 0.22), saturate(heartA + liverA));
+Scatter = lerp(Through, float3(0.3, 0.04, 0.04), saturate(heartA + liverA));
 // Augen: dunkles Pigment der Netzhaut scheint durch die dünnen, verklebten Lider (Netz: Augen bei (0, ±EyeHalf, 0) cm).
 // Nur auf der Gesichtsseite (x > −0,3 · Abstand), weicher Rand – ein Fleck unter der Haut, kein aufgemaltes Auge.
 // Side (AugenSeitlich) dreht die Blickachse der Augen von vorn (+X, Kind ab SSW 10) zur Seite (±Y): Beim Embryo in SSW 8
@@ -81,7 +96,7 @@ color = lerp(color, float3(0.035, 0.03, 0.045), 0.95 * eye);
 Roughness = lerp(Rough, 0.68, cover);
 float3 V = normalize(Camera);
 float rim = pow(1.0 - saturate(abs(dot(normalize(NWorld), V))), 3.0);
-Emission = (Emit * (1.0 - 0.3 * cover) + Light * rim * Lanugo * 0.45) * (1.0 - 0.8 * eye);   // Käseschmiere: dünne Schicht
+Emission = (Emit * (1.0 - 0.3 * cover) * organPass + Light * rim * Lanugo * 0.45) * (1.0 - 0.8 * eye);   // Käseschmiere: dünne Schicht
 color = lerp(color, float3(0.78, 0.72, 0.66), Lanugo * rim * 0.2);
 return color;
 """
@@ -240,7 +255,8 @@ def create_tissue_material():
     lib.link(nail, rough, "Alpha")
     mel.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
     mel.connect_material_property(lib.scalar_param(material, "Glanz", -900, 0, 0.3), "", unreal.MaterialProperty.MP_SPECULAR)
-    mel.connect_material_property(lib.vector_param(material, "Durchschein", -900, 100, (0.5, 0.3, 0.3)), "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
+    through_colour = lib.vector_param(material, "Durchschein", -900, 100, (0.5, 0.3, 0.3))
+    mel.connect_material_property(through_colour, "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
     mel.connect_material_property(lib.scalar_param(material, "Streuung", -900, 200, 0.9), "", unreal.MaterialProperty.MP_OPACITY)
 
     # Blickrichtung (vom Auge weg): Steht das Gewebe vor der Bauchwand, kommt ihr Licht hindurch
@@ -292,13 +308,14 @@ def create_tissue_material():
     body.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     entries = []
     for input_name in ("Base", "Rough", "Emit", "NLocal", "NWorld", "Camera", "Light", "Patch", "Body", "Vernix", "Lanugo",
-                       "P", "EyeHalf", "Pigment", "Side"):
+                       "P", "EyeHalf", "Pigment", "Side", "Heart", "HeartR", "Liver", "LiverR", "Through"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         entries.append(entry)
     body.set_editor_property("inputs", entries)
     extra = []
-    for output_name, output_type in (("Roughness", unreal.CustomMaterialOutputType.CMOT_FLOAT1), ("Emission", unreal.CustomMaterialOutputType.CMOT_FLOAT3)):
+    for output_name, output_type in (("Roughness", unreal.CustomMaterialOutputType.CMOT_FLOAT1), ("Emission", unreal.CustomMaterialOutputType.CMOT_FLOAT3),
+                                     ("Scatter", unreal.CustomMaterialOutputType.CMOT_FLOAT3)):
         output = unreal.CustomOutput()
         output.set_editor_property("output_name", output_name)
         output.set_editor_property("output_type", output_type)
@@ -327,11 +344,17 @@ def create_tissue_material():
                       (lib.expression(material, unreal.MaterialExpressionLocalPosition, -550, 340), "P"),
                       (lib.scalar_param(material, "AugenAbstand", -550, 400, 0.0), "EyeHalf"),
                       (lib.scalar_param(material, "Augenpigment", -550, 460, 0.0), "Pigment"),
-                      (lib.scalar_param(material, "AugenSeitlich", -550, 520, 0.0), "Side")):
+                      (lib.scalar_param(material, "AugenSeitlich", -550, 520, 0.0), "Side"),
+                      (lib.vector_param(material, "Herz", -550, 580, (0.0, 0.0, 0.0)), "Heart"),
+                      (lib.scalar_param(material, "HerzRadius", -550, 640, 0.0), "HeartR"),
+                      (lib.vector_param(material, "Leber", -550, 700, (0.0, 0.0, 0.0)), "Liver"),
+                      (lib.scalar_param(material, "LeberRadius", -550, 760, 0.0), "LiverR"),
+                      (through_colour, "Through")):
         lib.link(node, body, pin)
     mel.connect_material_property(body, "", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(body, "Roughness", unreal.MaterialProperty.MP_ROUGHNESS)
     mel.connect_material_property(body, "Emission", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.connect_material_property(body, "Scatter", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
 
     # Delle: Wo ein Finger drückt, gibt die Wharton-Sulze nach – die Oberfläche weicht weich zurück, ringsum wölbt sie sich
     # leicht (das Volumen bleibt). Die Szene setzt bis zu vier Kontakte (Welt: Lage, Tiefe) und den Einflussradius.
@@ -500,6 +523,10 @@ def import_fetuses():
         stage.set_editor_property("crown_rump_cm", float(info["crl"]))
         stage.set_editor_property("eye_half_spacing_cm", float(info.get("eye_half_cm", 0.0)))
         stage.set_editor_property("eye_sideways", float(info.get("eye_sideways", 0.0)))
+        # Organe unter der Haut (nur der Embryo): Mitte (cm, Y gespiegelt) und Radius
+        for key, prop in (("heart", "heart_cm"), ("liver", "liver_cm")):
+            o = info.get("organs", {}).get(key, [0.0, 0.0, 0.0, 0.0])
+            stage.set_editor_property(prop, unreal.Vector4(o[0], -o[1], o[2], o[3]))
         stage.set_editor_property("hull", [unreal.Vector(h[0], -h[1], h[2]) for h in info.get("hull", [])])
         stages.append(stage)
     lib.log("Fetus: %d Alter" % len(stages))

@@ -93,6 +93,9 @@ struct GENESISSLICE_API FGenesisFetusStage
 	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") float EyeHalfSpacingCm = 0.0f;
 	/** 0 = Augen blicken nach vorn (+X), 1 = seitlich (±Y) wie beim Embryo in SSW 8 – Achse der Pigmentflecke. */
 	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") float EyeSideways = 0.0f;
+	/** Herz und Leber unter der dünnen Haut (Embryo): Mitte im Netz (cm) und Radius in W; W = 0 = nicht sichtbar. */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") FVector4 HeartCm = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") FVector4 LiverCm = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
 };
 
 /** Eine Handlung, die der Spieler in dieser Woche kann – für die Hinweise im Bild. */

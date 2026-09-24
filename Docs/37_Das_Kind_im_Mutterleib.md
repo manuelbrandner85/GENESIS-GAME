@@ -254,8 +254,20 @@ je Alter eine eigene Blickachse (`EyeSideways`): beim Embryo seitlich, kleiner u
 schließt die Blende mit der Größe des Kindes und wirkt draußen bleibend wie ein Fetoskop (kleiner Sensor, große
 Schärfentiefe) – vorher war beim Embryo nur das Auge scharf.
 
-**Noch offen:** Die Haut des Embryos wirkt gleichmäßig; lebend ist sie durchscheinend (Leber und Herz dunkel darunter,
-Gefäße am Kopf). Die Nabelschnur ist deckend weiß statt durchscheinend mit Gefäßen. Physiologischer Nabelbruch bei
-SSW 10–12 und der Dottersack fehlen. Das Kind ist starr: Bewegungen zeigt es von außen nur als Ganzkörper-Ruck.
+**Herz und Leber scheinen durch (Nachtrag):** Frisch ist der Embryo durchscheinend – beim Embryo der 7. Woche liegt eine
+dunkle Masse unter der Herz-Leber-Wölbung, in der 9. Woche ist der Bauch rosig-rot, Kopf und Glieder bleiben blass
+(Referenzen Ed Uthman, CC BY 2.0). Im Material jetzt je Alter Lage und Radius von Herz und Leber (aus dem Modell,
+`organs` in fetus_weeks.json → `HeartCm`/`LiverCm`): dunkelrot in der Grundfarbe, und Blut schluckt auch das
+Durchlicht und das im Gewebe gestreute Licht. Drei Messfehler auf dem Weg: (1) Die Streufarbe des Subsurface-Modells
+leuchtet unabhängig von der Grundfarbe und hatte die Organe fast ganz überdeckt. (2) Ein beleuchteter Maskentest
+täuscht: Bei hellem Kaltlicht erscheinen schon 10 % Maske als volles Rot – die Maske erreichte die Haut kaum. Die Organe
+liegen jetzt mitten unter den Wölbungen, voll bis 0,9 × Radius. (3) Die kleine Höhle (1,5 cm) wirft das Kaltlicht wie
+eine Ulbrichtkugel zurück: Haut-Median 0,86 statt 0,80–0,83 (SSW 12, Referenzfotos) – die Belichtung nimmt dort bis
+0,4 EV zurück. Die Kamera kreist beim Embryo von der Seite (wie auf den Referenzen); von vorn verdeckte der Nabelstrang
+die Wölbung.
+
+**Noch offen:** Gefäße am Kopf; die Nabelschnur ist deckend weiß statt durchscheinend mit Gefäßen. Physiologischer
+Nabelbruch bei SSW 10–12 und der Dottersack fehlen. Das Kind ist starr: Bewegungen zeigt es von außen nur als
+Ganzkörper-Ruck.
 
 ![SSW 8 von außen, im Kaltlicht – gebautes Spiel](Media/GENESIS-044_2c_SSW08_aussen.png)
