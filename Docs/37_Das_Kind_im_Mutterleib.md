@@ -266,8 +266,14 @@ eine Ulbrichtkugel zurück: Haut-Median 0,86 statt 0,80–0,83 (SSW 12, Referenz
 0,4 EV zurück. Die Kamera kreist beim Embryo von der Seite (wie auf den Referenzen); von vorn verdeckte der Nabelstrang
 die Wölbung.
 
-**Noch offen:** Gefäße am Kopf; die Nabelschnur ist deckend weiß statt durchscheinend mit Gefäßen. Physiologischer
-Nabelbruch bei SSW 10–12 und der Dottersack fehlen. Das Kind ist starr: Bewegungen zeigt es von außen nur als
-Ganzkörper-Ruck.
+**Die Gefäße der Nabelschnur von vorn (Nachtrag):** Frisch (Referenz SSW 10, drsuparna, CC BY-SA 2.0) liegen die zwei
+Arterien und die Vene als rötliche Schlingen in der durchscheinenden Wharton-Sulze. Bisher schluckten sie nur das
+Durchlicht von hinten (Ich-Sicht); unter Licht von vorn – Kaltlicht in der Außenansicht – war die Schnur deckend weiß.
+Jetzt färben sie auch Grund- und Streufarbe, weich und gedämpft violett-rot (tief in der Gallerte), die Sulze etwas
+weniger weiß. Ein erster Versuch mit voller Stärke sah aus wie eine Zuckerstange – zurückgenommen.
+
+**Noch offen:** Gefäße am Kopf. Physiologischer Nabelbruch bei SSW 10–12 und der Dottersack fehlen. Das Kind ist
+starr: Bewegungen zeigt es von außen nur als Ganzkörper-Ruck. Frisch ist das frühe Kind deutlich rosiger als unsere
+Haut (Referenz SSW 10 frisch gegen die Präparate in Alkohol).
 
 ![SSW 8 von außen, im Kaltlicht – gebautes Spiel](Media/GENESIS-044_2c_SSW08_aussen.png)

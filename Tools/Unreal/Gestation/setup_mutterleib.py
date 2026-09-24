@@ -54,14 +54,21 @@ BODY_SKIN_CODE = """
 // Lanugo: feine Härchen ab SSW ~20, zum Termin größtenteils abgestoßen – im Gegenlicht ein weicher Saum am Umriss.
 Roughness = Rough;
 Emission = Emit;
-Scatter = Through;
-if (Body < 0.5) return Base;
+// Nabelschnur (Gefaessmuster > 0): Die zwei Arterien und die Vene liegen als dunkelrote Spiralen in der durchscheinenden
+// Wharton-Sulze (Referenz SSW 10 frisch: rötliche Schlingen). Bisher schluckten sie nur das Durchlicht von hinten –
+// unter Licht von vorn (Kaltlicht, Außenansicht) war die Schnur deckend weiß.
+// Vessel = Muster × Gefaessmuster (0,5 an der Schnur): für die Farbe auf volle Stärke gebracht, sonst blieben die Gefäße grau
+float vessel = saturate(2.0 * Vessel);
+// Tief in der Sulze: weich und gedämpft violett-rot (Blut hinter ~1 mm Gallerte), keine scharfen Streifen
+float3 B = lerp(Base, float3(0.24, 0.06, 0.10), 0.55 * vessel * vessel * (3.0 - 2.0 * vessel));
+Scatter = lerp(Through, float3(0.35, 0.07, 0.12), 0.7 * vessel);
+if (Body < 0.5) return B;
 float3 n = normalize(NLocal);                        // Netz: +X Blickrichtung (Gesicht), +Z Scheitel
 float dorsal = saturate(0.35 - 0.8 * n.x);           // Rücken zuerst
 float cranial = saturate(0.5 + 0.5 * n.z);           // Kopf zuerst
 float threshold = 1.0 - Vernix * (0.45 + 0.35 * dorsal + 0.2 * cranial);
 float cover = Vernix > 0.001 ? smoothstep(threshold - 0.15, threshold + 0.15, Patch) : 0.0;
-float3 color = lerp(Base, float3(0.86, 0.82, 0.74), 0.9 * cover);
+float3 color = lerp(B, float3(0.86, 0.82, 0.74), 0.9 * cover);
 // Organe durch die dünne Bauchwand (Embryo, SSW 8): Herz und Leber schimmern dunkelrot durch (Referenzen SSW 7 und 9:
 // frisch eine dunkle Masse unter der Herz-Leber-Wölbung). Lage und Radius (cm im Netz) je Alter; Radius 0 = keine.
 // Von vorn gesehen ist der Weg durch die Haut kürzer – dort deutlicher als am Umriss.
@@ -134,7 +141,7 @@ LOOKS = {
     # die großen Gefäße darauf: dunkles Blau-Violett, Blut schluckt das Licht
     "MI_GEN_Womb_PlacentaVessels": ((0.07, 0.03, 0.07), (0.20, 0.05, 0.10), 0.25, 0.9, 0.01, 0.0),
     # Nabelschnur: weißlich-bläulich, die Wharton-Sulze gallertig durchscheinend, die Gefäße als dunkle Spirale darin
-    "MI_GEN_Womb_Cord": ((0.42, 0.42, 0.48), (0.55, 0.45, 0.50), 0.22, 0.95, 0.45, 0.5),
+    "MI_GEN_Womb_Cord": ((0.34, 0.33, 0.38), (0.52, 0.42, 0.48), 0.22, 0.95, 0.45, 0.5),
     # Haut des Kindes (die eigene Hand, Teil 2a): dünn, rosig über dem Blut darunter – im Gegenlicht leuchten die
     # Finger rot durch wie eine Hand vor einer Taschenlampe
     "MI_GEN_Womb_Skin": ((0.55, 0.33, 0.30), (0.85, 0.25, 0.18), 0.35, 0.95, 0.6, 0.0),
@@ -308,7 +315,7 @@ def create_tissue_material():
     body.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     entries = []
     for input_name in ("Base", "Rough", "Emit", "NLocal", "NWorld", "Camera", "Light", "Patch", "Body", "Vernix", "Lanugo",
-                       "P", "EyeHalf", "Pigment", "Side", "Heart", "HeartR", "Liver", "LiverR", "Through"):
+                       "P", "EyeHalf", "Pigment", "Side", "Heart", "HeartR", "Liver", "LiverR", "Through", "Vessel"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         entries.append(entry)
@@ -349,7 +356,7 @@ def create_tissue_material():
                       (lib.scalar_param(material, "HerzRadius", -550, 640, 0.0), "HeartR"),
                       (lib.vector_param(material, "Leber", -550, 700, (0.0, 0.0, 0.0)), "Liver"),
                       (lib.scalar_param(material, "LeberRadius", -550, 760, 0.0), "LiverR"),
-                      (through_colour, "Through")):
+                      (through_colour, "Through"), (shade, "Vessel")):
         lib.link(node, body, pin)
     mel.connect_material_property(body, "", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(body, "Roughness", unreal.MaterialProperty.MP_ROUGHNESS)
