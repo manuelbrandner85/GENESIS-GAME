@@ -197,6 +197,9 @@ namespace GenesisSliceLogic
 			// Was das Kind in diesen Wochen tut, nach Ultraschall-Beobachtungen (de Vries, Visser & Prechtl 1982): ab
 			// SSW ~8 allgemeine Bewegungen und Schreck, ab 9–10 Schluckauf, Arme und Beine einzeln, Hand zum Gesicht,
 			// ab 11 Gähnen, ab 12–13 Saugen und Schlucken. Die Mutter spürt davon erst ab SSW 18–20 etwas.
+			// SSW 8 (6 Wochen nach der Befruchtung, Carnegie 17–18): 1,5 cm, noch ein Embryo – an den Handplatten zeichnen
+			// sich die Fingerstrahlen ab, die Augen stehen seitlich (Moore, „The Developing Human“, Kap. 5).
+			Moment(8.0f, 9.0f, 18.0f, TEXT("Woche 8"), TEXT("Anderthalb Zentimeter – die Finger zeichnen sich ab")),
 			Moment(10.0f, 11.0f, 20.0f, TEXT("Woche 10"), TEXT("Es bewegt sich – und niemand spürt es")),
 			Moment(12.0f, 15.0f, 20.0f, TEXT("Woche 12"), TEXT("Es gähnt, schluckt, legt die Hand ans Gesicht")),
 			Moment(16.0f, 21.0f, 24.0f, TEXT("Woche 16"), TEXT("Sie spricht mit ihm – hören kann es sie noch nicht"),

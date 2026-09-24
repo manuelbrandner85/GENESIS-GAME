@@ -63,11 +63,20 @@ float cover = Vernix > 0.001 ? smoothstep(threshold - 0.15, threshold + 0.15, Pa
 float3 color = lerp(Base, float3(0.86, 0.82, 0.74), 0.9 * cover);
 // Augen: dunkles Pigment der Netzhaut scheint durch die dünnen, verklebten Lider (Netz: Augen bei (0, ±EyeHalf, 0) cm).
 // Nur auf der Gesichtsseite (x > −0,3 · Abstand), weicher Rand – ein Fleck unter der Haut, kein aufgemaltes Auge.
-float eyeRadius = 0.42 * EyeHalf;
-float dl = length(float2(P.y - EyeHalf, P.z));
-float dr = length(float2(P.y + EyeHalf, P.z));
-float front = smoothstep(-0.3 * EyeHalf, 0.1 * EyeHalf, P.x);
-float eye = EyeHalf > 0.0 ? (1.0 - smoothstep(0.45 * eyeRadius, eyeRadius, min(dl, dr))) * front * Pigment : 0.0;
+// Side (AugenSeitlich) dreht die Blickachse der Augen von vorn (+X, Kind ab SSW 10) zur Seite (±Y): Beim Embryo in SSW 8
+// stehen die Augen noch seitlich und haben keine Lider – eine kleinere, scharf begrenzte Scheibe (Referenz SSW 8).
+float eyeRadius = lerp(0.42, 0.2, Side) * EyeHalf;
+float eye = 0.0;
+for (int k = 0; k < 2; ++k)
+{
+    float s = k == 0 ? 1.0 : -1.0;
+    float3 A = normalize(float3(1.0 - Side, s * Side, 0.0));
+    float3 D = P - float3(0.0, s * EyeHalf, 0.0);
+    float along = dot(D, A);
+    float front = smoothstep(-0.3 * EyeHalf, 0.1 * EyeHalf, along);
+    eye = max(eye, (1.0 - smoothstep(lerp(0.45, 0.75, Side) * eyeRadius, eyeRadius, length(D - along * A))) * front);
+}
+eye = EyeHalf > 0.0 ? eye * Pigment : 0.0;
 color = lerp(color, float3(0.035, 0.03, 0.045), 0.95 * eye);
 Roughness = lerp(Rough, 0.68, cover);
 float3 V = normalize(Camera);
@@ -119,7 +128,7 @@ LOOKS = {
 }
 
 # SSW 10 für den frühen Moment von außen (Docs/37 Teil 2c); SSW 8 ist noch ein Embryo – eigenes Modell, folgt
-FETUS_WEEKS = (10, 12, 16, 20, 24, 28, 32, 36, 40)
+FETUS_WEEKS = (8, 10, 12, 16, 20, 24, 28, 32, 36, 40)   # SSW 8: Embryo (build_embryo_w08.py), ab 10: build_fetus.py
 
 
 def ensure_folders():
@@ -283,7 +292,7 @@ def create_tissue_material():
     body.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     entries = []
     for input_name in ("Base", "Rough", "Emit", "NLocal", "NWorld", "Camera", "Light", "Patch", "Body", "Vernix", "Lanugo",
-                       "P", "EyeHalf", "Pigment"):
+                       "P", "EyeHalf", "Pigment", "Side"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         entries.append(entry)
@@ -317,7 +326,8 @@ def create_tissue_material():
                       (lib.scalar_param(material, "Lanugo", -550, 280, 0.0), "Lanugo"),
                       (lib.expression(material, unreal.MaterialExpressionLocalPosition, -550, 340), "P"),
                       (lib.scalar_param(material, "AugenAbstand", -550, 400, 0.0), "EyeHalf"),
-                      (lib.scalar_param(material, "Augenpigment", -550, 460, 0.0), "Pigment")):
+                      (lib.scalar_param(material, "Augenpigment", -550, 460, 0.0), "Pigment"),
+                      (lib.scalar_param(material, "AugenSeitlich", -550, 520, 0.0), "Side")):
         lib.link(node, body, pin)
     mel.connect_material_property(body, "", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(body, "Roughness", unreal.MaterialProperty.MP_ROUGHNESS)
@@ -489,6 +499,7 @@ def import_fetuses():
         stage.set_editor_property("navel", unreal.Vector(n[0], -n[1], n[2]))
         stage.set_editor_property("crown_rump_cm", float(info["crl"]))
         stage.set_editor_property("eye_half_spacing_cm", float(info.get("eye_half_cm", 0.0)))
+        stage.set_editor_property("eye_sideways", float(info.get("eye_sideways", 0.0)))
         stage.set_editor_property("hull", [unreal.Vector(h[0], -h[1], h[2]) for h in info.get("hull", [])])
         stages.append(stage)
     lib.log("Fetus: %d Alter" % len(stages))

@@ -91,6 +91,8 @@ struct GENESISSLICE_API FGenesisFetusStage
 	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") TArray<FVector> Hull;
 	/** Halber Augenabstand (cm): Die Augen liegen im Netz bei (0, ±EyeHalfSpacingCm, 0) – für die Pigmentflecke. */
 	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") float EyeHalfSpacingCm = 0.0f;
+	/** 0 = Augen blicken nach vorn (+X), 1 = seitlich (±Y) wie beim Embryo in SSW 8 – Achse der Pigmentflecke. */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") float EyeSideways = 0.0f;
 };
 
 /** Eine Handlung, die der Spieler in dieser Woche kann – für die Hinweise im Bild. */

@@ -232,8 +232,30 @@ als dunkle Flecke durch – so auf allen Referenzen von SSW 9–12. Im Material 
 der Augen (halber Augenabstand je Woche aus Blender, `fetus_eyes.py`), voll bis SSW 12, verblassend bis SSW 22.
 Die Kamera kreist in den frühen Momenten von der anderen Seite – die Schlinge der Nabelschnur verdeckte sonst das Gesicht.
 
-**Noch offen:** SSW 8 braucht ein eigenes Embryo-Modell (Carnegie ~17: Fingerstrahlen, Schwanzrest) – das MakeHuman-Baby
-taugt dafür nicht. Physiologischer Nabelbruch bis SSW ~12 und die Fruchtblase mit Dottersack fehlen im Modell. Das Kind
-ist starr: Bewegungen zeigt es von außen nur als Ganzkörper-Ruck (Schreck, Strecken).
-
 ![SSW 12 von außen, im Kaltlicht – gebautes Spiel](Media/GENESIS-044_2c_SSW12_aussen.png)
+
+### SSW 8 – der Embryo (Nachtrag 2026-09-24, ALPHA)
+
+Das MakeHuman-Baby taugt für SSW 8 (6 Wochen nach der Befruchtung, Carnegie 17–18) nicht: In dieser Woche hat das Kind
+einen Kopf fast so groß wie der Rumpf, seitlich stehende Augen mit dunklem Pigment und noch ohne Lider, Ohrhöcker statt
+Ohrmuscheln, Hand- und Fußplatten mit Fingerstrahlen, einen Schwanzrest und eine große Herz-Leber-Wölbung; der Darm
+tritt in den Nabelstrang aus (Moore, *The Developing Human*, Kap. 5). Eigenes Modell: `Tools/Blender/Gestation/build_embryo_w08.py`
+(Metaballs, groß gebaut und auf 1,55 cm verkleinert, Voxel-Remesh, auf 200 000 Dreiecke ausgedünnt).
+
+**Nachgezeichnet und deckungsgleich geprüft:** Landmarken aus der Seitenansicht „Human Embryo – approximately 8 weeks“
+(lunar caustic, CC BY 2.0; lokal in `ArtSource/Reference/Fetus`). Blender rendert das Modell orthografisch im Pixelraum
+des Fotos und legt beide übereinander (Umriss in Cyan). Gefunden und behoben: Kopf oben und vorn ~20 px zu groß,
+Herz-Leber-Wölbung ~50 px zu hoch, Nacken mit Stufe, Schwanzrest zu lang. Danach liegt der Umriss auf ~10 px (0,2 mm).
+Von vorn standen Arme und Beine erst als flache Flügel ab, dann verschwanden die Hände im Rumpf – jetzt liegen die
+Handplatten flach an der Flanke vor der Brust, die Fußsohlen einander zugewandt.
+
+**Im Spiel:** Moment „Woche 8 – Anderthalb Zentimeter, die Finger zeichnen sich ab“, nur von außen. Das Augenpigment hat
+je Alter eine eigene Blickachse (`EyeSideways`): beim Embryo seitlich, kleiner und scharf begrenzt. Die Außenkamera
+schließt die Blende mit der Größe des Kindes und wirkt draußen bleibend wie ein Fetoskop (kleiner Sensor, große
+Schärfentiefe) – vorher war beim Embryo nur das Auge scharf.
+
+**Noch offen:** Die Haut des Embryos wirkt gleichmäßig; lebend ist sie durchscheinend (Leber und Herz dunkel darunter,
+Gefäße am Kopf). Die Nabelschnur ist deckend weiß statt durchscheinend mit Gefäßen. Physiologischer Nabelbruch bei
+SSW 10–12 und der Dottersack fehlen. Das Kind ist starr: Bewegungen zeigt es von außen nur als Ganzkörper-Ruck.
+
+![SSW 8 von außen, im Kaltlicht – gebautes Spiel](Media/GENESIS-044_2c_SSW08_aussen.png)

@@ -985,6 +985,7 @@ void AGenesisWombScene::UpdateCamera(float DeltaSeconds, const TArray<EGenesisFe
 		if (FetusMaterial)
 		{
 			FetusMaterial->SetScalarParameterValue(TEXT("AugenAbstand"), Stage->EyeHalfSpacingCm);
+			FetusMaterial->SetScalarParameterValue(TEXT("AugenSeitlich"), Stage->EyeSideways);
 			FetusMaterial->SetScalarParameterValue(TEXT("Augenpigment"), 1.0f - FMath::SmoothStep(12.0f, 22.0f, Weeks));
 		}
 		NavelWorld = Fetus->GetComponentTransform().TransformPosition(Stage->Navel);
@@ -1198,7 +1199,13 @@ void AGenesisWombScene::UpdateExterior(float DeltaSeconds, const FVector& FirstP
 	FCameraFocusSettings Focus = Camera->FocusSettings;
 	Focus.ManualFocusDistance = FMath::Max(0.5f * WorldScale, FVector::Dist(FinalLocation, Face * WorldScale));
 	Camera->SetFocusSettings(Focus);
-	Camera->SetCurrentAperture(2.8f / FMath::Max(1.0f, WorldScale));
+	// Die Kamera kreist im Abstand der Körperlänge: Der Schärfebereich schrumpft mit dem Abstand im Quadrat, bezogen auf
+	// das Kind also linear mit seiner Größe. Blende daher unter 5 cm (SSW 12, dort geprüft: Gesicht scharf, Körper weich)
+	// mit der Größe schließen – sonst ist beim Embryo (SSW 8: 1,5 cm) nur noch das Auge scharf. Bleibt die Kamera draußen,
+	// ist sie ein Fetoskop: winziger Sensor, kurze Brennweite – umgerechnet auf Kleinbild eine sehr kleine Blende (f/8 hier
+	// ist eher noch knapp), das ganze Kind ist scharf.
+	const float FStop = (bStay ? 8.0f : 2.8f) * FMath::Max(1.0f, 5.0f / FMath::Max(0.1f, Size));
+	Camera->SetCurrentAperture(FStop / FMath::Max(1.0f, WorldScale));
 	// Kaltlicht: gleiche Beleuchtungsstärke am Gesicht, egal wie nah die Kamera kreist (I = E · d², d in m)
 	if (ScopeLight)
 	{

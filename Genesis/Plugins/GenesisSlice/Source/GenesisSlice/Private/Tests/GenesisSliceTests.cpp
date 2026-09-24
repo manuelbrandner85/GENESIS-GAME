@@ -402,8 +402,8 @@ bool FGenesisSliceGestationPlanTest::RunTest(const FString& Parameters)
 		// Vor dem Hören (SSW 19) erlebt das Kind nichts bewusst: Die Kamera bleibt draußen (Docs/37 Teil 2c)
 		TestEqual(FString::Printf(TEXT("%s: nur von außen genau vor SSW 19"), *Moment.Title), Moment.bOnlyFromOutside, Moment.GestationalWeeks < 19.0f);
 	}
-	// Die frühe Entwicklung ist zu sehen: Momente in SSW 10, 12 und 16 (vorher sprang das Bild von Tag 28 auf SSW 19)
-	for (const float Early : { 10.0f, 12.0f, 16.0f })
+	// Die frühe Entwicklung ist zu sehen: Momente in SSW 8, 10, 12 und 16 (vorher sprang das Bild von Tag 28 auf SSW 19)
+	for (const float Early : { 8.0f, 10.0f, 12.0f, 16.0f })
 	{
 		TestTrue(FString::Printf(TEXT("Moment in SSW %.0f"), Early), Tuning.GestationMoments.ContainsByPredicate([Early](const FGenesisGestationMoment& M)
 			{ return FMath::IsNearlyEqual(M.GestationalWeeks, Early); }));
