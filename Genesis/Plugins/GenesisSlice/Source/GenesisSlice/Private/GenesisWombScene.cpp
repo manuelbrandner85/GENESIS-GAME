@@ -145,7 +145,7 @@ AGenesisWombScene::AGenesisWombScene()
 	ScopeLight->SetMobility(EComponentMobility::Movable);
 	ScopeLight->bUseTemperature = true;
 	ScopeLight->SetTemperature(5600.0f);
-	ScopeLight->SetCastShadows(false);
+	ScopeLight->SetCastShadows(true);
 	ScopeLight->SetIntensityUnits(ELightUnits::Candelas);
 	ScopeLight->SetIntensity(0.0f);
 	ScopeLight->SetVisibility(false);
@@ -182,6 +182,12 @@ void AGenesisWombScene::BeginPlay()
 		}
 	}
 	CordMaterial = LitMaterials.Num() > 3 ? LitMaterials[3] : nullptr;
+	// Wand und Plazenta werfen keine Schatten: Sie umschließen alles, ihr Schatten verdunkelte das Kaltlicht, sobald die
+	// Kamera nah an der Wand kreiste (Bild schwarz). Kind und Nabelschnur werfen weiter Schatten auf die Wand.
+	for (UStaticMeshComponent* Shell : { Wall.Get(), Placenta.Get(), PlacentaVessels.Get() })
+	{
+		if (Shell) { Shell->SetCastShadow(false); }
+	}
 	if (Fetus && Fetus->GetMaterial(0))
 	{
 		FetusMaterial = Fetus->CreateAndSetMaterialInstanceDynamic(0);
@@ -990,6 +996,7 @@ void AGenesisWombScene::UpdateCamera(float DeltaSeconds, const TArray<EGenesisFe
 			FetusMaterial->SetScalarParameterValue(TEXT("HerzRadius"), Stage->HeartCm.W);
 			FetusMaterial->SetVectorParameterValue(TEXT("Leber"), FLinearColor(Stage->LiverCm.X, Stage->LiverCm.Y, Stage->LiverCm.Z));
 			FetusMaterial->SetScalarParameterValue(TEXT("LeberRadius"), Stage->LiverCm.W);
+			FetusMaterial->SetScalarParameterValue(TEXT("GliedMaske"), Stage->LimbMaskUV);
 			FetusMaterial->SetScalarParameterValue(TEXT("Augenpigment"), 1.0f - FMath::SmoothStep(12.0f, 22.0f, Weeks));
 		}
 		NavelWorld = Fetus->GetComponentTransform().TransformPosition(Stage->Navel);
@@ -1217,10 +1224,22 @@ void AGenesisWombScene::UpdateExterior(float DeltaSeconds, const FVector& FirstP
 	// Kaltlicht: gleiche Beleuchtungsstärke am Gesicht, egal wie nah die Kamera kreist (I = E · d², d in m)
 	if (ScopeLight)
 	{
-		const float DistanceMeters = FVector::Dist(FinalLocation, Face * WorldScale) / 100.0f;
+		// Das Licht kommt durch einen zweiten Zugang schräg von oben links (~25° zur Blickachse), weich und mit Schatten –
+		// wie die Blitze auf den Referenzfotos. Direkt an der Optik und ohne Schatten war das Kind flach wie Kunststoff.
+		const float CameraToFace = FVector::Dist(FinalLocation, Face * WorldScale);
+		// Der Lichtzugang bleibt in der Höhle: nahe an der Wand lag der Punkt sonst dahinter und das Bild wurde schwarz
+		FVector Offset(0.0f, -0.3f * CameraToFace, 0.32f * CameraToFace);
+		const float Inside = 0.85f * Radius * WorldScale;
+		for (int32 Step = 0; Step < 8 && (FinalLocation + FinalRotation.RotateVector(Offset)).Size() > Inside; ++Step)
+		{
+			Offset *= 0.7f;
+		}
+		ScopeLight->SetRelativeLocation(Offset);
+		const float DistanceMeters = FVector::Dist(ScopeLight->GetComponentLocation(), GetActorTransform().TransformPosition(Face * WorldScale)) / 100.0f;
 		ScopeLight->SetVisibility(bStay);
 		ScopeLight->SetIntensity(bStay ? ScopeLux * DistanceMeters * DistanceMeters : 0.0f);
 		ScopeLight->SetAttenuationRadius(FMath::Max(10.0f, 4.0f * DistanceMeters * 100.0f));
+		ScopeLight->SetSourceRadius(0.22f * CameraToFace);
 	}
 	Fetus->SetVisibility(Dive < 0.92f);
 	if (OwnHand) { OwnHand->SetVisibility(false); }

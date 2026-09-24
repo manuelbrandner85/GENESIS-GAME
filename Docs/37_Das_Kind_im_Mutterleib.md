@@ -272,6 +272,32 @@ Durchlicht von hinten (Ich-Sicht); unter Licht von vorn – Kaltlicht in der Au�
 Jetzt färben sie auch Grund- und Streufarbe, weich und gedämpft violett-rot (tief in der Gallerte), die Sulze etwas
 weniger weiß. Ein erster Versuch mit voller Stärke sah aus wie eine Zuckerstange – zurückgenommen.
 
+**Lookdev gegen das Foto (Nachtrag, Game Director: „alles hyperrealistisch, wie die Referenzbilder, immer Blender und
+Unreal“):** Neues Werkzeug `Tools/Blender/Gestation/lookdev_embryo_w08.py` rendert den Embryo in Cycles mit derselben
+Kamera wie Referenz 11 und zwei Blitzen wie bei der Aufnahme, links das Foto, rechts der Render; dazu vergrößerte
+Ausschnitte von Kopf und Gliedern. Zwölf Durchgänge, gefunden und behoben:
+- Licht streute 1,2 mm tief in einem 1,5-cm-Körper – alles weiß, keine Form. Jetzt 0,7 mm (Rot), Haut matt (Rauheit
+  0,42–0,62, schwacher Glanz in Flüssigkeit), leichte Fleckigkeit, feine helle Pünktchen.
+- Hand, Unterarm, Oberschenkel und Fußplatte standen nicht vom Körper ab – im Foto dicke weiße Platten mit Schatten.
+  Jetzt eine Pfote mit fünf kurzen Fingerstrahlen und Kerben (erst zu lang: „Seestern“), dicke gebeugte Beine, nicht
+  spiegelgleich. Glieder heller über eine Gliedmaske, die das Modell in UV-Kanal 0 mitbringt (Vertexfarben kommen in
+  Unreal nicht an).
+- Auge: im Foto ein dunkler grau-blauer Ring um die hellere Linse (noch keine Lider) – nicht eine volle Scheibe.
+- Ohrhöcker als erhabener Ring; Wangen-Kiefer-Wölbung; weiche Halsfalte; Oberkiefer steht über dem zurückliegenden
+  Unterkiefer, dazwischen der Mund. Negative Metaballs schnitten dreimal Löcher bis zum Tunnel quer durch den Kopf –
+  jetzt nur flach und vorn.
+- Umriss danach erneut über das Foto gelegt: Hand, Fuß und Bein deckungsgleich.
+
+**In Unreal übernommen:** Gliedmaske, Linse im Auge, Fleckigkeit, matte Haut (`GliedMaske` je Alter). Das Kaltlicht
+saß direkt an der Optik und warf keine Schatten – das Kind wirkte flach wie Kunststoff. Jetzt kommt es durch einen
+zweiten Zugang schräg von oben links (~25°), weich, mit Schatten; es bleibt in der Höhle (nahe der Wand lag es sonst
+dahinter: Bild schwarz), Wand und Plazenta werfen keinen Schatten.
+
+**Ehrlicher Abgleich danach:** Der Embryo kommt dem Foto nahe. Die **Umgebung** verrät das Bild aber noch: In SSW 8
+schwimmt der Embryo in der dünnen, durchsichtigen Amnionblase, daneben der Dottersack, ringsum die Chorionhöhle mit
+Zotten – bei uns eine glatte rote Wand und eine Plazentascheibe mit Röhrengefäßen wie am Termin. Das ist der nächste
+Block.
+
 **Noch offen:** Gefäße am Kopf. Physiologischer Nabelbruch bei SSW 10–12 und der Dottersack fehlen. Das Kind ist
 starr: Bewegungen zeigt es von außen nur als Ganzkörper-Ruck. Frisch ist das frühe Kind deutlich rosiger als unsere
 Haut (Referenz SSW 10 frisch gegen die Präparate in Alkohol).

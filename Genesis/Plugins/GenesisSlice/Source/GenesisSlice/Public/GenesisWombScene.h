@@ -96,6 +96,8 @@ struct GENESISSLICE_API FGenesisFetusStage
 	/** Herz und Leber unter der dünnen Haut (Embryo): Mitte im Netz (cm) und Radius in W; W = 0 = nicht sichtbar. */
 	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") FVector4 HeartCm = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
 	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") FVector4 LiverCm = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
+	/** 1 = das Netz trägt in UV-Kanal 0 (x) die Gliedmaske (Embryo: Hände, Füße heller, Haut matter). */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Womb") float LimbMaskUV = 0.0f;
 };
 
 /** Eine Handlung, die der Spieler in dieser Woche kann – für die Hinweise im Bild. */

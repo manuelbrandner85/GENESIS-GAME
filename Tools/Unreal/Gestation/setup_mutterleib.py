@@ -87,8 +87,15 @@ Scatter = lerp(Through, float3(0.3, 0.04, 0.04), saturate(heartA + liverA));
 // Nur auf der Gesichtsseite (x > −0,3 · Abstand), weicher Rand – ein Fleck unter der Haut, kein aufgemaltes Auge.
 // Side (AugenSeitlich) dreht die Blickachse der Augen von vorn (+X, Kind ab SSW 10) zur Seite (±Y): Beim Embryo in SSW 8
 // stehen die Augen noch seitlich und haben keine Lider – eine kleinere, scharf begrenzte Scheibe (Referenz SSW 8).
+// Embryo (GliedMaske = 1, Lookdev in Blender gegen Referenz 11: Tools/Blender/Gestation/lookdev_embryo_w08.py):
+// Hände, Füße und Glieder heller (Maske in UV 0, x), leichte Fleckigkeit (~2 mm, ungleich dicke Haut), matt
+float limb = LimbOn * saturate(LimbUV.x);
+color = lerp(color, float3(0.94, 0.86, 0.80), 0.75 * limb);
+float mottle = (0.08 + 0.12 * LimbOn) * smoothstep(0.35, 0.7, Mottle);
+color = lerp(color, float3(0.70, 0.40, 0.30), mottle);
 float eyeRadius = lerp(0.42, 0.2, Side) * EyeHalf;
 float eye = 0.0;
+float lens = 0.0;
 for (int k = 0; k < 2; ++k)
 {
     float s = k == 0 ? 1.0 : -1.0;
@@ -96,11 +103,16 @@ for (int k = 0; k < 2; ++k)
     float3 D = P - float3(0.0, s * EyeHalf, 0.0);
     float along = dot(D, A);
     float front = smoothstep(-0.3 * EyeHalf, 0.1 * EyeHalf, along);
-    eye = max(eye, (1.0 - smoothstep(lerp(0.45, 0.75, Side) * eyeRadius, eyeRadius, length(D - along * A))) * front);
+    float radial = length(D - along * A);
+    eye = max(eye, (1.0 - smoothstep(lerp(0.45, 0.75, Side) * eyeRadius, eyeRadius, radial)) * front);
+    // Ohne Lider (Embryo) sieht man die hellere Linse im dunklen Ring der Netzhaut (Referenz vergrößert)
+    lens = max(lens, (1.0 - smoothstep(0.35 * eyeRadius, 0.6 * eyeRadius, radial)) * front * Side);
 }
 eye = EyeHalf > 0.0 ? eye * Pigment : 0.0;
-color = lerp(color, float3(0.035, 0.03, 0.045), 0.95 * eye);
-Roughness = lerp(Rough, 0.68, cover);
+lens = EyeHalf > 0.0 ? lens * Pigment : 0.0;
+color = lerp(color, lerp(float3(0.035, 0.03, 0.045), float3(0.10, 0.12, 0.16), Side), 0.95 * eye);
+color = lerp(color, float3(0.42, 0.44, 0.48), 0.85 * lens);
+Roughness = lerp(lerp(Rough, 0.52, LimbOn), 0.68, cover);
 float3 V = normalize(Camera);
 float rim = pow(1.0 - saturate(abs(dot(normalize(NWorld), V))), 3.0);
 Emission = (Emit * (1.0 - 0.3 * cover) * organPass + Light * rim * Lanugo * 0.45) * (1.0 - 0.8 * eye);   // Käseschmiere: dünne Schicht
@@ -315,7 +327,7 @@ def create_tissue_material():
     body.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     entries = []
     for input_name in ("Base", "Rough", "Emit", "NLocal", "NWorld", "Camera", "Light", "Patch", "Body", "Vernix", "Lanugo",
-                       "P", "EyeHalf", "Pigment", "Side", "Heart", "HeartR", "Liver", "LiverR", "Through", "Vessel"):
+                       "P", "EyeHalf", "Pigment", "Side", "Heart", "HeartR", "Liver", "LiverR", "Through", "Vessel", "LimbUV", "LimbOn", "Mottle"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         entries.append(entry)
@@ -343,6 +355,14 @@ def create_tissue_material():
     patch.set_editor_property("output_min", 0.0)
     patch.set_editor_property("output_max", 1.0)
     lib.link(lib.expression(material, unreal.MaterialExpressionLocalPosition, -700, 60), patch, "Position")
+    # Fleckigkeit der Haut: ~2 mm (Lage im Netz in cm), eine Oktave
+    mottle_noise = lib.expression(material, unreal.MaterialExpressionNoise, -550, 940)
+    mottle_noise.set_editor_property("noise_function", unreal.NoiseFunction.NOISEFUNCTION_SIMPLEX_TEX)
+    mottle_noise.set_editor_property("scale", 5.0)
+    mottle_noise.set_editor_property("levels", 1)
+    mottle_noise.set_editor_property("output_min", 0.0)
+    mottle_noise.set_editor_property("output_max", 1.0)
+    lib.link(lib.expression(material, unreal.MaterialExpressionLocalPosition, -700, 940), mottle_noise, "Position")
     for node, pin in ((with_vernix, "Base"), (rough, "Rough"), (shaded, "Emit"), (normal_local, "NLocal"), (normal_ws, "NWorld"),
                       (camera, "Camera"), (light, "Light"), (patch, "Patch"),
                       (lib.scalar_param(material, "Koerper", -550, 160, 0.0), "Body"),
@@ -356,7 +376,10 @@ def create_tissue_material():
                       (lib.scalar_param(material, "HerzRadius", -550, 640, 0.0), "HeartR"),
                       (lib.vector_param(material, "Leber", -550, 700, (0.0, 0.0, 0.0)), "Liver"),
                       (lib.scalar_param(material, "LeberRadius", -550, 760, 0.0), "LiverR"),
-                      (through_colour, "Through"), (shade, "Vessel")):
+                      (through_colour, "Through"), (shade, "Vessel"),
+                      (lib.expression(material, unreal.MaterialExpressionTextureCoordinate, -550, 820), "LimbUV"),
+                      (lib.scalar_param(material, "GliedMaske", -550, 880, 0.0), "LimbOn"),
+                      (mottle_noise, "Mottle")):
         lib.link(node, body, pin)
     mel.connect_material_property(body, "", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(body, "Roughness", unreal.MaterialProperty.MP_ROUGHNESS)
@@ -530,6 +553,7 @@ def import_fetuses():
         stage.set_editor_property("crown_rump_cm", float(info["crl"]))
         stage.set_editor_property("eye_half_spacing_cm", float(info.get("eye_half_cm", 0.0)))
         stage.set_editor_property("eye_sideways", float(info.get("eye_sideways", 0.0)))
+        stage.set_editor_property("limb_mask_uv", float(info.get("limb_uv", 0.0)))
         # Organe unter der Haut (nur der Embryo): Mitte (cm, Y gespiegelt) und Radius
         for key, prop in (("heart", "heart_cm"), ("liver", "liver_cm")):
             o = info.get("organs", {}).get(key, [0.0, 0.0, 0.0, 0.0])

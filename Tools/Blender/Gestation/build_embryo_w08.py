@@ -58,9 +58,9 @@ HEAD = [
     (404, 345, (156, 124, 156), 2.4),   # Hirnschädel: rund, keine Kastenform
     (420, 470, (125, 108, 80), 1.6),    # Hinterkopf und Schädelbasis zum Nacken
     (478, 276, (80, 100, 76), 2.2),     # Vorderhirn (Hemisphären) wölbt sich nach vorn
-    (548, 380, (50, 64, 52), 1.8),      # Oberkiefer, Gesicht
-    (580, 334, (26, 34, 28), 1.8),      # Schnauze (Stirn-Nasen-Wulst)
-    (546, 428, (44, 58, 20), 1.8),      # Unterkiefer
+    (560, 366, (50, 62, 38), 1.8),      # Oberkiefer, Gesicht – endet über dem Mund und steht vor (Referenz vergrößert)
+    (586, 338, (30, 36, 30), 1.8),      # Schnauze (Stirn-Nasen-Wulst)
+    (528, 444, (36, 50, 18), 1.8),      # Unterkiefer, deutlich zurückliegend – dazwischen klafft der Mund
 ]
 
 
@@ -105,7 +105,12 @@ def catmull(points, samples):
     return np.stack([np.interp(target, arc, dense[:, k]) for k in range(dense.shape[1])], axis=1)
 
 
-def limb(mb, points_px, radii_px, side_px):
+# Glieder (Mitte in Baukoordinaten, Radius): daraus die Gliedmaske im UV-Kanal – Hände und Füße sind heller als der
+# Rumpf (Referenz SSW 8: weiße Platten vor dem rosigen Körper; wenig Blut, dünnes Gewebe)
+LIMB_PARTS = []
+
+
+def limb(mb, points_px, radii_px, side_px, pale=True):
     """Glied als dichte Kugelkette (Arm, Bein); side_px je Punkt oder für alle gleich."""
     sides = side_px if isinstance(side_px, (list, tuple)) else [side_px] * len(points_px)
     for x, y, r, sd in catmull([(p[0], p[1], r, sd) for p, r, sd in zip(points_px, radii_px, sides)], 30):
@@ -113,6 +118,14 @@ def limb(mb, points_px, radii_px, side_px):
         e.co = v3(x, y, sd)
         e.radius = s(r) / SINGLE_GAIN
         e.stiffness = 1.8
+        if pale:
+            LIMB_PARTS.append((Vector(e.co), s(r)))
+
+
+def plate(mb, x, y, side, semi, angle, stiffness=1.8):
+    """Hand- oder Fußplatte (zählt zur Gliedmaske)."""
+    ellipsoid(mb, v3(x, y, side), semi, angle, stiffness)
+    LIMB_PARTS.append((v3(x, y, side), s(max(semi))))
 
 
 def build_metaball():
@@ -142,10 +155,18 @@ def build_metaball():
         # aufgeklebte Perlen), in der Mitte die Grube
         for k in range(6):
             a = k * math.pi / 3.0
-            ellipsoid(mb, v3(485 + 15 * math.cos(a), 470 + 15 * math.sin(a), side * 92), (10, 6, 10), -a, 1.4)
-        ellipsoid(mb, v3(485, 470, side * 100), (8, 8, 8), 0.0, 1.6, negative=True)
+            ellipsoid(mb, v3(483 + 18 * math.cos(a), 482 + 18 * math.sin(a), side * 108), (11, 7, 11), -a, 1.8)
+        ellipsoid(mb, v3(483, 482, side * 116), (6, 5, 6), 0.0, 1.8, negative=True)
+        # Wangen-Kiefer-Wölbung unter dem Auge bis zum Ohr (Kiemenbogen-Abkömmlinge, Referenz vergrößert) – nur seitlich,
+        # der Umriss bleibt
+        ellipsoid(mb, v3(440, 495, side * 45), (85, 70, 62), 0.0, 1.8)
+        # Halsfurche zwischen Kopf und Rumpf: nur eine weiche Falte an der Oberfläche (erst ein Graben quer über die Brust)
+        ellipsoid(mb, v3(470, 566, side * 118), (70, 10, 8), 0.24, 1.2, negative=True)
     # Mundspalte zwischen Ober- und Unterkiefer (negativ = schneidet ein)
-    ellipsoid(mb, v3(566, 404), (26, 48, 5), -0.35, 2.0, negative=True)
+    # Mund: im Profil eine Kerbe zwischen vorstehendem Oberkiefer und zurückliegendem Unterkiefer, über die ganze Breite
+    # des Gesichts (Referenz vergrößert) – ein kleiner Schnitt gab nur ein schwarzes Loch
+    # Flach und nur vorn: Negative Metaballs schnitten sonst Löcher und Tunnel durch den Kopf (dreimal gesehen)
+    ellipsoid(mb, v3(598, 410), (26, 24, 7), -0.45, 1.4, negative=True)
 
     # Herz-Leber-Wölbung: die Körperwand wölbt sich über dem großen Herzen und der Leber
     ellipsoid(mb, v3(750, 412), (80, 96, 70), 0.0, 2.4)
@@ -153,17 +174,25 @@ def build_metaball():
     # Nabelstrang-Ansatz mit dem ausgetretenen Darm (physiologischer Nabelbruch ab Woche 6 nach der Befruchtung)
     ellipsoid(mb, v3(905, 352), (34, 36, 30), 0.0, 2.2)
 
-    # Arme: Schulter an der Flanke, Unterarm nach vorn-oben zur Mitte, Handplatten vor der Brust (Handflächen zueinander)
+    # Arme (Referenz SSW 8, Ausschnitt vergrößert): dicker Unterarm steht deutlich von der Flanke ab, darauf eine dicke
+    # Handplatte wie eine Pfote – fünf Fingerstrahlen am Rand, dazwischen Kerben
     for side in (-1.0, 1.0):
-        limb(mb, [(695, 548), (692, 505), (680, 462)], [28, 23, 20], [side * 104, side * 102, side * 100])
-        ellipsoid(mb, v3(676, 432, side * 102), (44, 11, 32), 0.25, 1.8)
-        # Fingerstrahlen: flache, längliche Rippen am Rand der Handplatte, radial – keine Kugeln
-        for fx, fy in ((644, 414), (662, 405), (684, 405), (704, 414)):
-            angle = math.atan2(-(fy - 432), fx - 676)
-            ellipsoid(mb, v3(fx, fy, side * 102), (14, 7, 7), angle, 1.6)
-        # Beine: kurz, noch Paddel an der Hüfte, Fußsohlen einander zugewandt – Fußplatte ohne Zehen
-        limb(mb, [(935, 545), (952, 502), (964, 462)], [28, 22, 18], [side * 90, side * 80, side * 68])
-        ellipsoid(mb, v3(962, 428, side * 64), (40, 11, 22), -0.2, 1.8)
+        limb(mb, [(672, 560), (675, 510), (677, 472)], [30, 26, 22], [side * 112, side * 118, side * 122])
+        plate(mb, 677, 444, side * 124, (48, 18, 38), 0.25)
+        # kurze, runde Fingerstrahlen, kaum länger als breit – eine Pfote, kein Seestern
+        for fx, fy in ((645, 424), (659, 413), (677, 409), (695, 412), (709, 422)):
+            angle = math.atan2(-(fy - 444), fx - 677)
+            ellipsoid(mb, v3(fx, fy, side * 124), (12, 14, 11), angle, 1.8)
+            LIMB_PARTS.append((v3(fx, fy, side * 124), s(14)))
+        for nx, ny in ((651, 412), (668, 404), (686, 404), (703, 411)):
+            ellipsoid(mb, v3(nx, ny, side * 124), (5, 14, 5), 0.0, 2.0, negative=True)
+    # Beine: dick, im Knie gebeugt, die Fußplatten vorn am Bauch – nicht spiegelgleich (Referenz: der ferne Fuß liegt
+    # höher, über dem Nabelstrang)
+    for side, chain, foot, foot_angle in (
+            (-1.0, [(915, 565), (962, 548), (990, 508), (968, 458)], (962, 428), 0.35),
+            (1.0, [(925, 560), (962, 515), (955, 440), (925, 385)], (905, 368), -0.6)):
+        limb(mb, chain, [40, 36, 30, 26], [side * 92, side * 104, side * 112, side * 114])
+        plate(mb, foot[0], foot[1], side * 114, (46, 16, 24), foot_angle)
 
     # Schwanzrest am Steiß
     limb(mb, [(1000, 505), (1006, 526), (996, 546)], [20, 14, 8], 0.0)
@@ -211,6 +240,7 @@ def frame():
 
 
 def build():
+    LIMB_PARTS.clear()
     for obj in list(bpy.data.objects):
         bpy.data.objects.remove(obj, do_unlink=True)
     mobj = bpy.data.objects.new("MB_Embryo_W08", build_metaball())
@@ -218,6 +248,20 @@ def build():
     obj = to_mesh(mobj, 694.0 / 520.0 * BUILD / CM)
     eye, basis = frame()
     co = np.array([v.co[:] for v in obj.data.vertices])
+    # Gliedmaske in UV-Kanal 0 (x): 1 auf Händen, Füßen und Gliedern, weich 0 am Rumpf. Vertexfarben kommen in Unreal
+    # nicht an (GENESIS-047), die UV schon (dort gespiegelt nur in y)
+    fade = s(14.0)
+    weight = np.zeros(len(co))
+    for centre, radius in LIMB_PARTS:
+        d = np.linalg.norm(co - np.array(centre[:]), axis=1) - radius
+        t = np.clip(1.0 - d / fade, 0.0, 1.0)
+        weight = np.maximum(weight, t * t * (3.0 - 2.0 * t))
+    uv = obj.data.uv_layers.new(name="Daten")
+    loop_vertex = np.zeros(len(obj.data.loops), dtype=np.int64)
+    obj.data.loops.foreach_get("vertex_index", loop_vertex)
+    uvs = np.zeros((len(loop_vertex), 2))
+    uvs[:, 0] = weight[loop_vertex]
+    uv.data.foreach_set("uv", uvs.ravel())
     local = (co - np.array(eye[:])) @ np.array(basis).T * TO_REAL
     for v, p in zip(obj.data.vertices, local):
         v.co = Vector(p)
@@ -238,7 +282,7 @@ def build():
         c = np.array(basis) @ (np.array(v3(x, y)[:]) - np.array(eye[:])) * TO_REAL / CM
         organs[key] = [float(c[0]), float(c[1]), float(c[2]), r * PX_CM]
     info = dict(navel=[float(x) / CM for x in navel], center=[float(x) / CM for x in local.mean(axis=0)], crl=CRL_CM,
-                hull=hull, eye_half_cm=104 * PX_CM, eye_sideways=1.0, organs=organs, source="build_embryo_w08.py")
+                hull=hull, eye_half_cm=104 * PX_CM, eye_sideways=1.0, limb_uv=1.0, organs=organs, source="build_embryo_w08.py")
     print("GENESIS: Embryo SSW 8 – %d Punkte, Ausdehnung %s cm" % (len(obj.data.vertices), [round(v / CM, 2) for v in obj.dimensions]))
     return obj, info
 
