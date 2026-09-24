@@ -125,6 +125,10 @@ public:
 	/** Die Nabelschnur: Skelettnetz mit Knochenkette, weich simuliert (SimulateCord). */
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UPoseableMeshComponent> Cord;
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UCineCameraComponent> Camera;
+	/** Kaltlicht an der Optik – nur in den frühen Momenten von außen, wenn durch den Bauch noch kein Licht kommt. */
+	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<class UPointLightComponent> ScopeLight;
+	/** Beleuchtungsstärke des Kaltlichts am Kind (lx, im echten Maßstab gerechnet). */
+	UPROPERTY(EditAnywhere, Category = "Fetus") float ScopeLux = 25.0f;
 	/** Das Kind selbst, von außen (Teil 2b) – nur während der Kamerafahrt in seine Augen sichtbar. */
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> Fetus;
 	/** Die gebauten Alter des Kindes (SSW 12–40). */
@@ -184,8 +188,11 @@ public:
 	FString GetCaption(float& OutAlpha) const;
 	/** Entwickler (genesis.Womb.Do): eine Handlung auslösen, als hätte der Spieler die Taste gedrückt. */
 	void DebugAction(const FString& Action, const FVector2D& Value);
-	/** Das Kind von außen zeigen, dann in seine Augen fahren (jeder neue Moment, genesis.Womb.Exterior). */
-	void StartExterior();
+	/**
+	 * Das Kind von außen zeigen, dann in seine Augen fahren (jeder neue Moment, genesis.Womb.Exterior).
+	 * StaySeconds > 0: draußen bleiben, so lange (frühe Wochen ohne bewusstes Erleben, Docs/37 Teil 2c).
+	 */
+	void StartExterior(float StaySeconds = 0.0f);
 	bool IsExterior() const { return ExteriorAge >= 0.0f; }
 
 private:
@@ -244,6 +251,8 @@ private:
 	bool bKickLineSaid = false;
 	bool bLateLineSaid = false;
 	int32 LastMomentIndex = -2;
+	/** > 0: Die Außenansicht bleibt so lange draußen und fährt nicht in die Augen. */
+	float ExteriorStaySeconds = 0.0f;
 
 	// Der Spieler (Teil 2a)
 	FGenesisWombInput Input;

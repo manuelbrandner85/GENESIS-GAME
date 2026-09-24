@@ -110,7 +110,8 @@ LOOKS = {
     "MI_GEN_Womb_FetusSkin": ((0.55, 0.33, 0.30), (0.85, 0.25, 0.18), 0.4, 0.95, 0.5, 0.0),
 }
 
-FETUS_WEEKS = (12, 16, 20, 24, 28, 32, 36, 40)
+# SSW 10 für den frühen Moment von außen (Docs/37 Teil 2c); SSW 8 ist noch ein Embryo – eigenes Modell, folgt
+FETUS_WEEKS = (10, 12, 16, 20, 24, 28, 32, 36, 40)
 
 
 def ensure_folders():

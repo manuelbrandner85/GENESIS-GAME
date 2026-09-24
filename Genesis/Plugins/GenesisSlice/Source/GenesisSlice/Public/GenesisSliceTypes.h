@@ -148,6 +148,11 @@ struct GENESISSLICE_API FGenesisGestationMoment
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Slice") FString Title;
 	/** Darunter: was sich in dieser Woche für das Kind ändert (Docs/34). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Slice") FString Subtitle;
+	/**
+	 * Nur von außen (Docs/37, Teil 2c): Vor SSW 19 nimmt das Kind weder Ton noch Licht bewusst wahr – die Kamera bleibt
+	 * draußen und zeigt, was es in dieser Woche schon tut, statt in seine Augen zu fahren.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Genesis|Slice") bool bOnlyFromOutside = false;
 };
 
 /** Wo der Ablauf der Schwangerschaft nach einer Echtzeit steht. */

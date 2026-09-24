@@ -198,3 +198,36 @@ Embryo, bisher nur in der Fruchthöhle); Gesicht mit offenen Augen ab SSW 28.
 
 ![Das Kind von außen, SSW 36, Kopf unten](Media/GENESIS-044_2b_Kind_aussen.png)
 ![Das Kind aus Blender, SSW 36](Media/GENESIS-044_2b_Fetus_Blender.png)
+
+## Teil 2c – die frühen Wochen von außen (2026-09-24, ALPHA)
+
+**Lücke:** Nach der Fruchthöhle (Tag 28 nach der Befruchtung = SSW 6) lief die Schwangerschaft bis SSW 19 als Zeitraffer
+hinter geschlossenen Lidern – die Wochen 6–18 waren nicht zu sehen.
+
+**Neue Momente, nur von außen** (das Kind nimmt vor SSW 19 nichts bewusst wahr; `bOnlyFromOutside`, die Kamera kreist
+über den ganzen Moment und fährt nicht in die Augen):
+
+| SSW | Zeile | Grundlage |
+|---|---|---|
+| 10 | „Es bewegt sich – und niemand spürt es“ | allgemeine Bewegungen und Schreck ab ~8, Arme/Beine einzeln 9–10 (de Vries, Visser & Prechtl 1982, DOI 10.1016/0378-3782(82)90033-0); die Mutter spürt erst ab 18–20 |
+| 12 | „Es gähnt, schluckt, legt die Hand ans Gesicht“ | Hand zum Gesicht 10–12, Gähnen ab 11, Saugen und Schlucken 12–13 (de Vries 1982) |
+| 16 | „Sie spricht mit ihm – hören kann es sie noch nicht“ | Sie spricht ab SSW 16 abends mit dem Bauch (Doc 34); Hören ab 19 |
+
+**Referenzen** (Wikimedia Commons, lokal in `ArtSource/Reference/Fetus`, nicht im Repository, Lizenzen in QUELLEN.md;
+Download mit Freigabe des Game Directors): Fetus SSW 10 mit und ohne Fruchtblase (drsuparna, CC BY-SA 2.0), Fetus
+10–12 Wochen (lunar caustic, CC BY 2.0), Embryo 9. Woche und 7. Woche (Ed Uthman, CC BY 2.0). Merkmale SSW 9–10: Kopf
+etwa die halbe Länge, die Augen als dunkle Pigmentflecke durch dünne Lider, schlanke, deutlich getrennte Gliedmaßen,
+eine Hand am Mund, durchscheinend rosige Haut ohne Fett.
+
+**Abgleich gegen die Referenzen – Fehler im Modell gefunden** (auch in SSW 12–16, die schon im Spiel waren):
+- Die Arme liefen hinter bzw. durch den Rumpf: Der Ellbogen-Zielpunkt der IK hing am Kopf-Rahmen – bei gebeugtem Kopf
+  zeigte „unten“ nach hinten. Jetzt im Rahmen des Körpers (unten-außen-vorn): Hände vor Mund und Kinn.
+- Der Kopf war so stark gebeugt, dass man von vorn den Scheitel sah; Hals und Kopf jetzt weniger (Gesicht sichtbar).
+- Das Kind hockte: Hüfte 95° gegen einen um ~50° vorgebeugten Oberkörper. Jetzt 115° (Knie am Bauch) und Knie 138°
+  (Unterschenkel an den Oberschenkeln) – die fetale Haltung als Walze.
+
+**Noch offen:** SSW 8 braucht ein eigenes Embryo-Modell (Carnegie ~17: Fingerstrahlen, Schwanzrest) – das MakeHuman-Baby
+taugt dafür nicht. Augen als Pigmentflecke, physiologischer Nabelbruch bis SSW ~12 und die Fruchtblase mit Dottersack
+fehlen im Modell. Das Kind ist starr: Bewegungen zeigt es von außen nur als Ganzkörper-Ruck (Schreck, Strecken).
+
+![SSW 12 von außen, im Kaltlicht – gebautes Spiel](Media/GENESIS-044_2c_SSW12_aussen.png)

@@ -43,7 +43,7 @@ def rahmen_zx(z, x):
 
 def modell_fuer(tabelle, woche):
     """AGenesisWombScene::CurrentFetusStage: das nächstkleinere gebaute Alter, auf die Scheitel-Steiß-Länge der Woche skaliert."""
-    wochen = sorted((float(w) for w in tabelle if float(w) >= 12), key=float)
+    wochen = sorted((float(w) for w in tabelle if float(w) >= 10), key=float)
     best = max([w for w in wochen if w <= woche], default=wochen[0])
     weiter = min([w for w in wochen if w > woche], default=None)
     crl = tabelle["%g" % best]["crl"]
@@ -90,8 +90,8 @@ def passung(huelle, woche, rand=0.96, massstab=1.0):
 
 if __name__ == "__main__":
     tabelle = json.load(open(TABELLE, encoding="utf-8"))
-    # Jede Woche so, wie das Spiel sie zeigt (Momente: 19, 20,5, 24, 28, 31, 34, 37; Drehung 31–33 im Zeitraffer)
-    for woche in [w * 0.5 for w in range(38, 81)]:
+    # Jede Woche so, wie das Spiel sie zeigt (Momente: 10, 12, 16, 19, 20,5, 24, 28, 31, 34, 37; Drehung 31–33 im Zeitraffer)
+    for woche in [w * 0.5 for w in range(20, 81)]:
         huelle, massstab, modell = modell_fuer(tabelle, woche)
         s, laenge, r = passung(huelle, woche, massstab=massstab)
         s_wand, _, _ = passung(huelle, woche, rand=1.0, massstab=massstab)

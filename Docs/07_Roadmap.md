@@ -643,3 +643,10 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - **Käseschmiere und Lanugo am Körper:** Käseschmiere in Flecken, zuerst Rücken und Kopf (Nishijima 2019), ab SSW 24, zum Termin teils abgelöst (Lamberti 1978); Lanugo ab SSW ~20 als Lichtsaum am Umriss, zum Termin größtenteils weg. Gleiche Wochenkurve für die Falten der eigenen Hand.
 - SSW 8–10: Im Spiel nicht zu sehen – nach der Fruchthöhle (Tag 28) läuft die Schwangerschaft bis SSW 19 als Zeitraffer mit geschlossenen Augen. Eigentliche Lücke (SSW 6–18 unsichtbar) als eigener Block vorgeschlagen; braucht ein Embryo-Modell für Carnegie 14–23.
 - Geprüft im gebauten Spiel (Eileiter, Mutterleib SSW 34 von außen); 160 von 160 Tests. Stand ALPHA.
+
+### GENESIS-044 (Teil 2c) – Die frühen Wochen sichtbar
+- 2026-09-24: Die Schwangerschaft sprang von Tag 28 (Fruchthöhle) auf SSW 19 – die Wochen dazwischen waren ein Zeitraffer hinter geschlossenen Lidern. Neue Momente SSW 10, 12, 16 nur von außen (vor SSW 19 kein bewusstes Erleben): Bewegungen, die niemand spürt; Gähnen, Schlucken, Hand am Gesicht; ihre Stimme, die das Kind noch nicht hört (de Vries, Visser & Prechtl 1982). Die Kamera kreist über den ganzen Moment.
+- Durch den Bauch kommt in diesen Wochen kein Licht (die Gebärmutter liegt im Becken) – der Beobachter bringt Kaltlicht an der Optik mit, wie bei einer Embryoskopie; Belichtung darauf abgestimmt (gemessen: Median 0,34 statt ausgebrannter Haut).
+- Neues Modell SSW 10. Referenzen aus Wikimedia Commons (lokal, Lizenzen in QUELLEN.md). Beim Abgleich Fehler im Modell aller frühen Wochen gefunden und behoben: Arme liefen durch den Rumpf (IK-Ellbogen im Kopf-Rahmen), Kopf zu stark gebeugt (von vorn nur der Scheitel), das Kind hockte (Hüfte 95°). Passung danach für jede Woche geprüft (`fetus_fit.py`): in jedem Moment innerhalb der Wand.
+- Tests: GestationPlan (frühe Momente, „nur von außen genau vor SSW 19“); 160 von 160. Gebautes Spiel geprüft (SSW 12). Stand ALPHA.
+- Offen: SSW 8 als Embryo (Carnegie ~17, eigenes Modell); Augen als Pigmentflecke, physiologischer Nabelbruch, Dottersack; das Kind ist starr (Bewegung von außen nur als Ganzkörper-Ruck).

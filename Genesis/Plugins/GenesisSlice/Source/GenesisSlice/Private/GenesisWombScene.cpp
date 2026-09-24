@@ -6,6 +6,7 @@
 #include "Components/PoseableMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -45,12 +46,12 @@ namespace
 	/** Entwickler: die Kamerafahrt von außen in die Augen des Kindes starten – genesis.Womb.Exterior. */
 	FAutoConsoleCommandWithWorldAndArgs GenesisWombExteriorCommand(
 		TEXT("genesis.Womb.Exterior"),
-		TEXT("Mutterleib: das Kind von außen zeigen und in seine Augen fahren"),
+		TEXT("Mutterleib: das Kind von außen zeigen und in seine Augen fahren; mit Sekunden: so lange draußen bleiben"),
 		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
 		{
 			for (TActorIterator<AGenesisWombScene> It(World); It; ++It)
 			{
-				It->StartExterior();
+				It->StartExterior(Args.Num() > 0 ? FCString::Atof(*Args[0]) : 0.0f);
 			}
 		}));
 
@@ -136,6 +137,18 @@ AGenesisWombScene::AGenesisWombScene()
 
 	Camera = CreateDefaultSubobject<UCineCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(Root);
+
+	// Kaltlicht an der Optik für die frühen Wochen von außen (Teil 2c): Bis SSW ~12–16 liegt die Gebärmutter im Becken,
+	// durch den Bauch kommt kein Licht. Wer dann hineinsieht, bringt das Licht mit – wie bei einer Embryoskopie.
+	ScopeLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ScopeLight"));
+	ScopeLight->SetupAttachment(Camera);
+	ScopeLight->SetMobility(EComponentMobility::Movable);
+	ScopeLight->bUseTemperature = true;
+	ScopeLight->SetTemperature(5600.0f);
+	ScopeLight->SetCastShadows(false);
+	ScopeLight->SetIntensityUnits(ELightUnits::Candelas);
+	ScopeLight->SetIntensity(0.0f);
+	ScopeLight->SetVisibility(false);
 
 	// Das Kind selbst – von außen zu sehen, bevor die Kamera in seine Augen fährt (Teil 2b)
 	Fetus = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Fetus"));
@@ -803,11 +816,19 @@ void AGenesisWombScene::UpdateTime()
 			// Ein neuer Moment: Sie spricht bald, wenn sie wach ist und spricht (erst ab SSW 16) – und zuerst sieht man das
 			// Kind von außen, dann fährt die Kamera in seine Augen
 			SinceVoice = 17.0f;
-			StartExterior();
+			const TArray<FGenesisGestationMoment>& Moments = Director->Tuning.GestationMoments;
+			const bool bOutside = Moments.IsValidIndex(MomentIndex) && Moments[MomentIndex].bOnlyFromOutside;
+			StartExterior(bOutside ? Moments[MomentIndex].Seconds : 0.0f);
 			const FGenesisMotherMoment Now = GenesisMotherDay::Evaluate(FGenesisMotherDayTuning(), HourOfDay, DayIndex, Weeks, Seed);
 			UE_LOG(LogGenesis, Display, TEXT("Mutterleib: Moment %d – SSW %.1f, %02d:%02d Uhr, Mutter: %s, %.2f lx im Mutterleib"),
 				MomentIndex, Weeks, FMath::FloorToInt32(HourOfDay), FMath::FloorToInt32(FMath::Fmod(HourOfDay, 1.0) * 60.0),
 				*GenesisMotherDay::GetActivityName(Now.Activity), Now.WombLux);
+		}
+		// Ein Moment von außen endet mit dem Moment: danach wieder der Zeitraffer hinter geschlossenen Lidern
+		if (MomentIndex < 0 && ExteriorStaySeconds > 0.0f && ExteriorAge >= 0.0f)
+		{
+			ExteriorAge = -1.0f;
+			ExteriorStaySeconds = 0.0f;
 		}
 		LastMomentIndex = MomentIndex;
 		bInRun = true;
@@ -972,8 +993,12 @@ void AGenesisWombScene::UpdateCamera(float DeltaSeconds, const TArray<EGenesisFe
 	if (ExteriorAge >= 0.0f)
 	{
 		// Von außen: ein Beobachter mit gewöhnlichen Augen – die Wahrnehmung des Kindes beginnt erst in seinen Augen
-		const float Inside = FMath::SmoothStep(ExteriorSeconds - 1.2f, ExteriorSeconds, ExteriorAge);
-		Camera->PostProcessSettings.AutoExposureBias = ExposureBias + Adapted + FMath::Lerp(1.8f, Felt - 2.0f * (1.0f - Perception.Presence), Inside);
+		const float Inside = ExteriorStaySeconds > 0.0f ? 0.0f : FMath::SmoothStep(ExteriorSeconds - 1.2f, ExteriorSeconds, ExteriorAge);
+		// Mit Kaltlicht belichtet der Beobachter auf dessen Licht, nicht auf das (fast fehlende) Licht durch den Bauch
+		const float Observed = ExteriorStaySeconds > 0.0f ? -FMath::Log2(FMath::Max(Mother.WombLux, ScopeLux) / ReferenceLux) : Adapted;
+		// +1,8 EV gilt für das schwache Durchlicht des Bauchs; unter Kaltlicht brannte damit die Haut weiß aus (P90 0,94)
+		const float Lift = ExteriorStaySeconds > 0.0f ? 0.3f : 1.8f;
+		Camera->PostProcessSettings.AutoExposureBias = ExposureBias + Observed + FMath::Lerp(Lift, Felt - 2.0f * (1.0f - Perception.Presence), Inside);
 		Camera->PostProcessSettings.bOverride_ColorOffset = true;
 		Camera->PostProcessSettings.ColorOffset = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
 		Camera->PostProcessSettings.bOverride_FilmGrainIntensity = true;
@@ -1111,12 +1136,13 @@ FVector AGenesisWombScene::FitFetus(const FGenesisFetusStage& Stage, const FQuat
 	return Eyes;
 }
 
-void AGenesisWombScene::StartExterior()
+void AGenesisWombScene::StartExterior(float StaySeconds)
 {
 	if (CurrentFetusStage())
 	{
 		ExteriorAge = 0.0f;
 		ExteriorSpin = Random.FRandRange(-1.0f, 1.0f);
+		ExteriorStaySeconds = FMath::Max(0.0f, StaySeconds);
 	}
 }
 
@@ -1125,6 +1151,7 @@ void AGenesisWombScene::UpdateExterior(float DeltaSeconds, const FVector& FirstP
 	const FGenesisFetusStage* Stage = CurrentFetusStage();
 	if (ExteriorAge < 0.0f || !Stage || !Fetus)
 	{
+		if (ScopeLight) { ScopeLight->SetVisibility(false); }
 		Camera->SetRelativeLocation(FirstPersonLocation);
 		Camera->SetRelativeRotation(FirstPersonRotation);
 		if (Fetus) { Fetus->SetVisibility(false); }
@@ -1138,7 +1165,9 @@ void AGenesisWombScene::UpdateExterior(float DeltaSeconds, const FVector& FirstP
 	const FVector Center = (Fetus->GetRelativeLocation() / WorldScale) + Fetus->GetRelativeRotation().RotateVector(Stage->Center * FetusScale);
 	const FVector Face = Fetus->GetRelativeLocation() / WorldScale;
 	const float Size = Stage->CrownRumpCm * FetusScale;
-	const float Orbit = FMath::Clamp(ExteriorAge / (ExteriorSeconds - 2.5f), 0.0f, 1.0f);
+	// Bleibt die Kamera draußen (frühe Wochen), kreist sie über den ganzen Moment, statt nach 6,5 s ins Gesicht zu gleiten
+	const bool bStay = ExteriorStaySeconds > 0.0f;
+	const float Orbit = FMath::Clamp(ExteriorAge / (bStay ? ExteriorStaySeconds : ExteriorSeconds - 2.5f), 0.0f, 1.0f);
 	const FRotator Gaze = Fetus->GetRelativeRotation();
 	// vorn-seitlich vor dem Kind, das Gesicht im Blick; innerhalb der Höhle
 	const FVector Around = Gaze.RotateVector(FVector(1.0f, 0.0f, 0.25f)).RotateAngleAxis(-45.0f + (25.0f + 20.0f * ExteriorSpin) * Orbit, FVector::UpVector).GetSafeNormal();
@@ -1149,7 +1178,7 @@ void AGenesisWombScene::UpdateExterior(float DeltaSeconds, const FVector& FirstP
 	const FVector Location = Look + Around * Distance;
 	const FRotator Rotation = (Look - Location).Rotation();
 	// Hineinfahren: die letzten 2,5 s zum Gesicht und durch die Augen in die Ich-Sicht
-	const float Dive = FMath::SmoothStep(ExteriorSeconds - 2.5f, ExteriorSeconds, ExteriorAge);
+	const float Dive = bStay ? 0.0f : FMath::SmoothStep(ExteriorSeconds - 2.5f, ExteriorSeconds, ExteriorAge);
 	const FVector FinalLocation = FMath::Lerp(Location * WorldScale, FirstPersonLocation, Dive);
 	const FQuat FinalRotation = FQuat::Slerp(Rotation.Quaternion(), FirstPersonRotation.Quaternion(), Dive);
 	Camera->SetRelativeLocation(FinalLocation);
@@ -1159,9 +1188,17 @@ void AGenesisWombScene::UpdateExterior(float DeltaSeconds, const FVector& FirstP
 	Focus.ManualFocusDistance = FMath::Max(0.5f * WorldScale, FVector::Dist(FinalLocation, Face * WorldScale));
 	Camera->SetFocusSettings(Focus);
 	Camera->SetCurrentAperture(2.8f / FMath::Max(1.0f, WorldScale));
+	// Kaltlicht: gleiche Beleuchtungsstärke am Gesicht, egal wie nah die Kamera kreist (I = E · d², d in m)
+	if (ScopeLight)
+	{
+		const float DistanceMeters = FVector::Dist(FinalLocation, Face * WorldScale) / 100.0f;
+		ScopeLight->SetVisibility(bStay);
+		ScopeLight->SetIntensity(bStay ? ScopeLux * DistanceMeters * DistanceMeters : 0.0f);
+		ScopeLight->SetAttenuationRadius(FMath::Max(10.0f, 4.0f * DistanceMeters * 100.0f));
+	}
 	Fetus->SetVisibility(Dive < 0.92f);
 	if (OwnHand) { OwnHand->SetVisibility(false); }
-	if (ExteriorAge >= ExteriorSeconds)
+	if (!bStay && ExteriorAge >= ExteriorSeconds)
 	{
 		ExteriorAge = -1.0f;
 		Fetus->SetVisibility(false);

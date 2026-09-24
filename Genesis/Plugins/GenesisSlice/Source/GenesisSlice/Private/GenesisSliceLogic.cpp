@@ -179,7 +179,7 @@ namespace GenesisSliceLogic
 		// SSW, Uhrzeit, Echtzeit (s), Kapitelzeile. Nach der Wochentafel in Docs/34 – jeder Moment zeigt, was sich in
 		// dieser Woche für das Kind verändert: der erste Ton (Signature Moment 4), die Mutter spürt das Kind, bewusstes
 		// Erleben, Licht durch den Bauch (Signature Moment 5), Mittag, Stimmen, Enge. Aus Sicht des Kindes beginnt es mit
-		// SSW 19: Davor nimmt es weder Ton noch Licht wahr – SSW 8 und 12 gehören zur Ansicht von außen (Teil 2).
+		// SSW 19: Davor nimmt es weder Ton noch Licht wahr – die frühen Wochen zeigt die Kamera von außen (Docs/37, Teil 2c).
 		auto Moment = [](float Weeks, float Hour, float Seconds, const TCHAR* Title, const TCHAR* Subtitle,
 			EGenesisGestationSituation Situation = EGenesisGestationSituation::AtHour)
 		{
@@ -190,9 +190,17 @@ namespace GenesisSliceLogic
 			Entry.Seconds = Seconds;
 			Entry.Title = Title;
 			Entry.Subtitle = Subtitle;
+			Entry.bOnlyFromOutside = Weeks < 19.0f;
 			return Entry;
 		};
 		return {
+			// Was das Kind in diesen Wochen tut, nach Ultraschall-Beobachtungen (de Vries, Visser & Prechtl 1982): ab
+			// SSW ~8 allgemeine Bewegungen und Schreck, ab 9–10 Schluckauf, Arme und Beine einzeln, Hand zum Gesicht,
+			// ab 11 Gähnen, ab 12–13 Saugen und Schlucken. Die Mutter spürt davon erst ab SSW 18–20 etwas.
+			Moment(10.0f, 11.0f, 20.0f, TEXT("Woche 10"), TEXT("Es bewegt sich – und niemand spürt es")),
+			Moment(12.0f, 15.0f, 20.0f, TEXT("Woche 12"), TEXT("Es gähnt, schluckt, legt die Hand ans Gesicht")),
+			Moment(16.0f, 21.0f, 24.0f, TEXT("Woche 16"), TEXT("Sie spricht mit ihm – hören kann es sie noch nicht"),
+				EGenesisGestationSituation::BellyTalk),
 			Moment(19.0f, 21.0f, 40.0f, TEXT("Woche 19"), TEXT("Das Hören beginnt"), EGenesisGestationSituation::BellyTalk),
 			Moment(20.5f, 21.0f, 35.0f, TEXT("Woche 20"), TEXT("Sie spürt die ersten Bewegungen"), EGenesisGestationSituation::BellyTalk),
 			Moment(24.0f, 3.0f, 30.0f, TEXT("Woche 24"), TEXT("Nachts: ihr Herz, ihr Atem")),

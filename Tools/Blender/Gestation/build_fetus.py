@@ -204,15 +204,22 @@ def pose(rig, week):
     term = smooth(32.0, 40.0, week)
     for name, deg in (("spine05", 8), ("spine04", 10), ("spine03", 10), ("spine02", 8), ("spine01", 6)):
         rotate_world(rig, name, X, deg * (1.0 + 0.6 * early + 0.3 * late + 0.35 * term))
+    # Hals und Kopf: gebeugt, aber das Gesicht bleibt von vorn sichtbar (Referenz SSW 9–10: Kinn zur Brust, Hand am Mund).
+    # Mit 36° Grundbeugung plus Zuschlag zeigte das frühe Kind von vorn nur den Scheitel.
+    # Ab SSW ~20 wieder voll (Kinn an der Brust): sonst ist das Kind am Termin zu lang für die Höhle (fetus_fit.py).
+    neck = 0.65 + 0.35 * smooth(12.0, 20.0, week) + 0.3 * late + 0.2 * term
     for name, deg in (("neck01", 10), ("neck02", 10), ("neck03", 8), ("head", 8)):
-        rotate_world(rig, name, X, deg * (1.0 + 0.4 * early + 0.3 * late + 0.2 * term))
+        rotate_world(rig, name, X, deg * neck)
     for side, sx in ((".L", 1.0), (".R", -1.0)):
         # Fetale Haltung (Williams Obstetrics): Oberschenkel über den Bauch gebeugt, Knie ganz gebeugt, Unterschenkel
         # gekreuzt, Füße an Gesäß und Gegenseite – so kompakt, dass das Kind in die Fruchtblase passt
         # Oberschenkel seitlich am Bauch vorbei (gespreizt, nicht in ihn hinein), Knie ganz gebeugt, Füße gekreuzt
-        rotate_world(rig, "upperleg01" + side, X, -(95.0 + 10.0 * late + 12.0 * term))
+        # Hüfte weit gebeugt, die Knie am Bauch: Der Oberkörper beugt sich schon ~50° vor – mit 95° standen die
+        # Oberschenkel dazu nur ~45° ab, das Kind hockte statt zu liegen
+        rotate_world(rig, "upperleg01" + side, X, -(115.0 + 2.0 * late))
         rotate_world(rig, "upperleg01" + side, Y, (42.0 - 10.0 * term) * sx)  # gespreizt, Knie neben dem Bauch
-        rotate_world(rig, "lowerleg01" + side, X, 122.0 + 6.0 * late + 10.0 * term)
+        # Knie fast ganz gebeugt (beim Fetus 140–160°): die Unterschenkel an den Oberschenkeln, nicht hängend
+        rotate_world(rig, "lowerleg01" + side, X, 138.0 + 4.0 * late)
         rotate_world(rig, "lowerleg01" + side, Z, 45.0 * sx)                  # Unterschenkel zur Mitte, Füße kreuzen
         rotate_world(rig, "foot" + side, X, -35.0)
     # Arme per IK: das Handgelenk vor Kinn bzw. Wange, Ellbogen nach unten-außen. Richtungen aus dem Kopf-Rahmen
@@ -237,7 +244,9 @@ def pose(rig, week):
         pole = bpy.data.objects.new("Pol" + side, None)
         bpy.context.scene.collection.objects.link(pole)
         elbow = rig.pose.bones["lowerarm01" + side].head
-        pole.location = rig.matrix_world @ (elbow + (left * 0.7 * sx - up * 1.0 - fwd * 0.2).normalized() * 6 * hand)
+        # Ellbogen nach unten-außen-vorn im Rahmen des KÖRPERS (Modell: links +X, vorn −Y, oben +Z). Im Kopf-Rahmen zeigte
+        # „unten" bei gebeugtem Kopf nach hinten – die Arme liefen hinter bzw. durch den Rumpf (gesehen in SSW 10–12).
+        pole.location = rig.matrix_world @ (elbow + Vector((0.7 * sx, -0.35, -1.0)).normalized() * 6 * hand)
         ik = rig.pose.bones["lowerarm02" + side].constraints.new("IK")
         ik.target = target
         ik.pole_target = pole
