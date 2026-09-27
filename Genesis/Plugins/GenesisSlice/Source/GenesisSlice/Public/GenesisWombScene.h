@@ -140,6 +140,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Fetus") float ScopeLux = 25.0f;
 	/** Das Kind selbst, von außen (Teil 2b) – nur während der Kamerafahrt in seine Augen sichtbar. */
 	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> Fetus;
+	/** Die Hüllen der frühen Wochen (Docs/37 Teil 2c): Amnionblase eng um den Embryo (1,1 × SSL, Horrow 1992), der
+	 *  Dottersack (4–5 mm, bis SSW ~12) am dünnen Stiel in der Chorionhöhle. Netze mit Einheitsgröße 1 cm. */
+	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> Amnion;
+	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> YolkSac;
+	UPROPERTY(VisibleAnywhere, Category = "Components") TObjectPtr<UStaticMeshComponent> YolkStalk;
 	/** Die gebauten Alter des Kindes (SSW 12–40). */
 	UPROPERTY(EditAnywhere, Category = "Fetus") TArray<FGenesisFetusStage> FetusStages;
 	/** Dauer der Fahrt von außen in die Augen (s). */
@@ -227,6 +232,10 @@ private:
 	FVector FitFetus(const FGenesisFetusStage& Stage, const FQuat& Orientation, float Radius) const;
 	/** Lage des Kindes: Körperlängsachse längs in der Höhle (Kopf oben bzw. unten), Gesicht zum Bauch. */
 	FQuat FetusOrientation(const FGenesisFetusStage& Stage, const FVector& HeadUp) const;
+	/** Amnion, Dottersack und Stiel an das Kind dieser Woche legen (nur sichtbar, solange es sie gibt). */
+	void UpdateEarlySac(const FGenesisFetusStage* Stage);
+	/** Blickrichtung zur Mitte der Außen-Kreisfahrt (vom Kind zur Kamera, Szene). */
+	FVector ExteriorViewDirection = FVector(1.0f, 0.0f, 0.0f);
 	/** Knochen im Komponentenraum bei gegebener Beugung je Fingergelenk (Reihenfolge wie CurlBones). */
 	TArray<FTransform> HandComponentPose(const TArray<float>& Curl) const;
 	/** Berührt dieses Fingerglied (als Kapsel) die Nabelschnur? */

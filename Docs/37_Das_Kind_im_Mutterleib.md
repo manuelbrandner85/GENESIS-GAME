@@ -303,3 +303,28 @@ starr: Bewegungen zeigt es von außen nur als Ganzkörper-Ruck. Frisch ist das f
 Haut (Referenz SSW 10 frisch gegen die Präparate in Alkohol).
 
 ![SSW 8 von außen, im Kaltlicht – gebautes Spiel](Media/GENESIS-044_2c_SSW08_aussen.png)
+
+### Die Hüllen der frühen Wochen (Nachtrag 2026-09-27, ALPHA)
+
+In SSW 8 schwimmt der Embryo in der dünnen, glasklaren **Amnionblase**; sie liegt in der größeren Chorionhöhle, und
+dort schwimmt auch der **Dottersack** an seinem dünnen Stiel. Maße (PubMed): Amnion-Durchmesser ≈ 1,1 × SSL − 0,07 cm
+(Horrow 1992, DOI 10.2214/ajr.158.2.1729798); Dottersack normal 4–5 mm, sichtbar SSW 5–10, Chorionhöhle SSW 10 ~50 mm
+(Rempen 1987, DOI 10.1055/s-2008-1035856). Referenzen (Commons, lokal): Embryo in der Amnionblase 6–7 Wochen und
+Fruchtsäcke mit intakten Hüllen (lunar caustic, CC BY 2.0), Dottersack nach Cullen (gemeinfrei).
+
+- Netze: `Tools/Blender/Gestation/build_early_sac.py` (Amnion, Dottersack, Stiel in Einheitsgröße); Lookdev in Cycles:
+  `lookdev_early_sac.py` (Kamera und Kaltlicht wie im Spiel).
+- **Amnion** als dünner Film: Im Fruchtwasser ist die relative Brechzahl nur ~1,03 – fast unsichtbar, schwache
+  Spiegelung, zum Rand milchiger. Als Glaskugel gerechnet ließ Cycles kein Licht zum Embryo durch. Die Blase ist die
+  kleinste umschließende Kugel des Kindes (mindestens 1,1 × SSL); um den Mittelwert der Punkte zentriert ragten Kopf und
+  Beine hinaus. Liegt sie an der Wand an (SSW ~12–14), verschwindet sie als eigene Blase.
+- **Dottersack** 4,4 mm bis SSW 10, Rückbildung bis ~12,5; auf der von der Kamera abgewandten Seite, Stiel zum
+  Nabelstrang dort, wo er das Amnion verlässt; Dottergefäße im Material.
+- **Wand** in den frühen Wochen als blasse Chorionhaut (Parameter „Chorion“ bis SSW ~10,5, weg bis 14).
+- Fehler auf dem Weg: Die Plazenta auszublenden hinterließ ein schwarzes Loch (die Wand ist dort ausgespart) – sie
+  bleibt vorerst; der Dottersack hing groß vor der Linse – jetzt fest zur Mitte der Kreisfahrt abgewandt.
+
+**Noch offen:** Zottenplatte statt Plazentascheibe in SSW 8–11; feine Fasern der Chorionhöhle (Magma reticulare) als
+Dunst; Dottergefäße deutlicher; die Wand hat konzentrische Streifen.
+
+![SSW 8 mit Amnionblase und Dottersack – gebautes Spiel](Media/GENESIS-044_2c_SSW08_Huellen.png)

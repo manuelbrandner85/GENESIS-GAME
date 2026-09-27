@@ -157,7 +157,20 @@ AGenesisWombScene::AGenesisWombScene()
 	Fetus->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Fetus->SetVisibility(false);
 
-	OwnHand = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("OwnHand"));
+	// Die Hüllen der frühen Wochen (Teil 2c): Amnion, Dottersack, Dottergang – gelegt in UpdateEarlySac
+	for (TObjectPtr<UStaticMeshComponent>* Part : { &Amnion, &YolkSac, &YolkStalk })
+	{
+		const TCHAR* Name = Part == &Amnion ? TEXT("Amnion") : (Part == &YolkSac ? TEXT("YolkSac") : TEXT("YolkStalk"));
+		*Part = CreateDefaultSubobject<UStaticMeshComponent>(Name);
+		(*Part)->SetupAttachment(Root);
+		(*Part)->SetMobility(EComponentMobility::Movable);
+		(*Part)->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		(*Part)->SetVisibility(false);
+	}
+	// Die Blase ist ein dünner Film: kein Schatten auf den Embryo
+	Amnion->SetCastShadow(false);
+
+	OwnHand =CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("OwnHand"));
 	OwnHand->SetupAttachment(Camera);
 	OwnHand->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	OwnHand->SetCastShadow(false);
@@ -1003,6 +1016,7 @@ void AGenesisWombScene::UpdateCamera(float DeltaSeconds, const TArray<EGenesisFe
 		bHasNavel = true;
 	}
 	UpdateExterior(DeltaSeconds, FirstPersonLocation, FirstPersonRotation);
+	UpdateEarlySac(Stage);
 
 	// Wahrnehmung: Das Auge im Dunkeln passt sich an die Lichtmenge an (die Wand leuchtet linear mit den lx) –
 	// wie hell es sich anfühlt, folgt der Wahrnehmung (logarithmisch, Lider, Pupille). Was nicht ankommt, bleibt
@@ -1047,6 +1061,110 @@ void AGenesisWombScene::UpdateCamera(float DeltaSeconds, const TArray<EGenesisFe
 	Camera->SetCurrentAperture(FMath::Lerp(5.6f, 1.4f, Perception.Blur) / FMath::Max(1.0f, WorldScale));
 	Camera->PostProcessSettings.bOverride_ColorSaturation = true;
 	Camera->PostProcessSettings.ColorSaturation = FVector4(1.0f, 1.0f, 1.0f, FMath::Lerp(0.5f, 0.9f, Perception.EyesOpen));
+}
+
+void AGenesisWombScene::UpdateEarlySac(const FGenesisFetusStage* Stage)
+{
+	const bool bFetusShown = Stage && Fetus && Fetus->IsVisible() && Stage->Hull.Num() > 3;
+	const float Radius = Perception.CavityRadiusCm;
+	// Die Wand wird in den frühen Wochen zur blassen Chorionhaut (Referenzen: aufgeschnittene Fruchtsäcke SSW 6–9).
+	// Die Plazenta bleibt sichtbar: Die Wand ist dort ausgespart, ohne sie klaffte ein schwarzes Loch (offen: in diesen
+	// Wochen eine Zottenplatte statt der Scheibe wie am Termin).
+	if (LitMaterials.Num() > 0 && LitMaterials[0])
+	{
+		const float Early = 1.0f - FMath::SmoothStep(10.5f, 14.0f, Weeks);
+		LitMaterials[0]->SetScalarParameterValue(TEXT("Chorion"), Early);
+	}
+	if (!bFetusShown)
+	{
+		for (UStaticMeshComponent* Part : { Amnion.Get(), YolkSac.Get(), YolkStalk.Get() })
+		{
+			if (Part) { Part->SetVisibility(false); }
+		}
+		return;
+	}
+	// Kleinste umschließende Kugel der Hülle des Kindes (Ritter, dreimal verfeinert) – im Raum der Szene (cm)
+	const FTransform FetusToScene(Fetus->GetRelativeRotation(), Fetus->GetRelativeLocation() / WorldScale, FVector(FetusScale));
+	TArray<FVector> Points;
+	for (const FVector& P : Stage->Hull) { Points.Add(FetusToScene.TransformPosition(P)); }
+	FVector A = Points[0];
+	FVector B = A, C = A;
+	for (const FVector& P : Points) { if (FVector::DistSquared(P, A) > FVector::DistSquared(B, A)) { B = P; } }
+	for (const FVector& P : Points) { if (FVector::DistSquared(P, B) > FVector::DistSquared(C, B)) { C = P; } }
+	FVector Centre = 0.5f * (B + C);
+	float HullRadius = 0.5f * FVector::Dist(B, C);
+	for (int32 Pass = 0; Pass < 3; ++Pass)
+	{
+		for (const FVector& P : Points)
+		{
+			const float D = FVector::Dist(P, Centre);
+			if (D > HullRadius)
+			{
+				const float Grow = 0.5f * (D - HullRadius);
+				HullRadius += Grow;
+				Centre += (P - Centre).GetSafeNormal() * Grow;
+			}
+		}
+	}
+	// Amnion: Durchmesser ≈ 1,1 × SSL − 0,07 cm (Horrow 1992), aber nie enger als das Kind; liegt es an der Wand an
+	// (um SSW 12–14 verschmelzen Amnion und Chorion), ist es nicht mehr als eigene Blase zu sehen
+	const float Crl = Stage->CrownRumpCm * FetusScale;
+	const float AmnionRadius = FMath::Max(0.5f * (1.1f * Crl - 0.07f), 1.06f * HullRadius);
+	const bool bAmnion = AmnionRadius + Centre.Size() < 0.94f * Radius;
+	if (Amnion)
+	{
+		Amnion->SetVisibility(bAmnion);
+		Amnion->SetRelativeLocation(Centre * WorldScale);
+		Amnion->SetRelativeScale3D(FVector(AmnionRadius * WorldScale));
+	}
+	// Dottersack: 4–5 mm bis SSW 10 (Rempen 1987), danach Rückbildung bis SSW ~12
+	const float YolkRadius = 0.22f * (1.0f - FMath::SmoothStep(10.0f, 12.5f, Weeks));
+	const bool bYolk = bAmnion && YolkRadius > 0.03f;
+	if (!YolkSac || !YolkStalk)
+	{
+		return;
+	}
+	YolkSac->SetVisibility(bYolk);
+	YolkStalk->SetVisibility(bYolk);
+	if (!bYolk)
+	{
+		return;
+	}
+	// Er schwimmt in der Chorionhöhle zwischen Amnion und Wand, näher an der Wand – auf der von der Kamera
+	// abgewandten Seite des Kindes (vorher hing er groß vor der Linse)
+	const FVector ToCamera = ExteriorViewDirection;
+	const FVector Down = Fetus->GetRelativeRotation().RotateVector(FVector(0.2f, 0.0f, -1.0f)).GetSafeNormal();
+	const FVector Side = (Down - 1.2f * ToCamera).GetSafeNormal();
+	const float Gap = FMath::Max(0.0f, Radius - Centre.Size() - AmnionRadius);
+	FVector YolkPos = Centre + Side * (AmnionRadius + YolkRadius + 0.55f * FMath::Max(0.0f, Gap - 2.0f * YolkRadius));
+	if (YolkPos.Size() > Radius - 1.3f * YolkRadius)
+	{
+		YolkPos = YolkPos.GetSafeNormal() * (Radius - 1.3f * YolkRadius);
+	}
+	// Der Stiel geht zum Nabelstrang, dort wo er das Amnion verlässt
+	FVector StalkEnd = NavelWorld;
+	if (Cord && CordX.Num() > 2)
+	{
+		const FTransform CordToWorld = Cord->GetComponentTransform();
+		const FTransform SceneToWorld = GetRootComponent()->GetComponentTransform();
+		for (int32 Index = CordX.Num() - 1; Index >= 0; --Index)
+		{
+			const FVector Point = SceneToWorld.InverseTransformPosition(CordToWorld.TransformPosition(CordX[Index])) / WorldScale;
+			if (FVector::Dist(Point, Centre) > AmnionRadius)
+			{
+				StalkEnd = SceneToWorld.TransformPosition(Point * WorldScale);
+				break;
+			}
+		}
+	}
+	const FVector End = GetRootComponent()->GetComponentTransform().InverseTransformPosition(StalkEnd) / WorldScale;
+	const FVector ToEnd = End - YolkPos;
+	YolkSac->SetRelativeLocationAndRotation(YolkPos * WorldScale, FRotationMatrix::MakeFromX(-ToEnd.GetSafeNormal()).Rotator());
+	YolkSac->SetRelativeScale3D(FVector(YolkRadius * WorldScale));
+	const FVector Start = YolkPos + ToEnd.GetSafeNormal() * YolkRadius * 0.9f;
+	YolkStalk->SetRelativeLocationAndRotation(Start * WorldScale, FRotationMatrix::MakeFromX((End - Start).GetSafeNormal()).Rotator());
+	// Dottergang: dünn (~0,3 mm), so lang wie der Weg zur Schnur
+	YolkStalk->SetRelativeScale3D(FVector(FMath::Max(0.01f, FVector::Dist(Start, End)) * WorldScale, 0.015f * WorldScale, 0.015f * WorldScale));
 }
 
 const FGenesisFetusStage* AGenesisWombScene::CurrentFetusStage()
@@ -1198,6 +1316,8 @@ void AGenesisWombScene::UpdateExterior(float DeltaSeconds, const FVector& FirstP
 	const float Start = bStay ? FMath::Lerp(50.0f, 100.0f, Stage->EyeSideways) : -45.0f;
 	const float Sweep = (bStay ? -1.0f : 1.0f) * (25.0f + 20.0f * ExteriorSpin) * Orbit;
 	const FVector Around = Gaze.RotateVector(FVector(1.0f, 0.0f, 0.25f)).RotateAngleAxis(Start + Sweep, FVector::UpVector).GetSafeNormal();
+	// Mitte der Kreisfahrt: Die Hüllen legen sich danach (der Dottersack auf die abgewandte Seite, UpdateEarlySac)
+	ExteriorViewDirection = Gaze.RotateVector(FVector(1.0f, 0.0f, 0.25f)).RotateAngleAxis(Start + 0.5f * Sweep / FMath::Max(0.01f, Orbit), FVector::UpVector).GetSafeNormal();
 	// Wie ein 3D-Ultraschall: Der Blick geht von außen durch die Wand (sie ist nur von innen sichtbar) auf das ganze Kind,
 	// langsam näher an sein Gesicht
 	const float Distance = FMath::Lerp(1.6f, 0.9f, Orbit) * Size;

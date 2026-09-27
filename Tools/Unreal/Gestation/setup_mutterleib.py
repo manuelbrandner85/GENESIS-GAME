@@ -425,10 +425,21 @@ def create_wall_material():
     material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_SUBSURFACE)
     material.set_editor_property("used_with_nanite", True)
     colour = lib.vector_param(material, "Farbe", -900, -200, (0.20, 0.050, 0.045))
-    mel.connect_material_property(colour, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    # Frühe Wochen (Chorion = 1 bis SSW ~10,5, die Szene setzt es): Innen die glatte, blasse Chorionhaut, dahinter rot die
+    # Zotten (Referenzen: aufgeschnittene Fruchtsäcke SSW 6–9; Lookdev lookdev_early_sac.py)
+    chorion = lib.scalar_param(material, "Chorion", -1100, -120, 0.0)
+    base = lib.expression(material, unreal.MaterialExpressionLinearInterpolate, -700, -200)
+    lib.link(colour, base, "A")
+    lib.link(lib.vector_param(material, "Chorionfarbe", -900, -300, (0.50, 0.30, 0.28)), base, "B")
+    lib.link(chorion, base, "Alpha")
+    mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(lib.scalar_param(material, "Rauheit", -900, -100, 0.3), "", unreal.MaterialProperty.MP_ROUGHNESS)
     mel.connect_material_property(lib.scalar_param(material, "Glanz", -900, 0, 0.35), "", unreal.MaterialProperty.MP_SPECULAR)
-    mel.connect_material_property(lib.vector_param(material, "Durchschein", -900, 100, (0.45, 0.07, 0.05)), "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
+    scatter = lib.expression(material, unreal.MaterialExpressionLinearInterpolate, -700, 100)
+    lib.link(lib.vector_param(material, "Durchschein", -900, 100, (0.45, 0.07, 0.05)), scatter, "A")
+    lib.link(lib.vector_param(material, "Chorionstreuung", -900, 180, (0.50, 0.20, 0.17)), scatter, "B")
+    lib.link(chorion, scatter, "Alpha")
+    mel.connect_material_property(scatter, "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
     mel.connect_material_property(lib.scalar_param(material, "Streuung", -900, 200, 0.85), "", unreal.MaterialProperty.MP_OPACITY)
 
     # Leuchten: Glow × Rotlicht × (Grundanteil + Vorderseite²) × Fleckung
@@ -478,6 +489,71 @@ def create_wall_material():
     mel.recompile_material(material)
     eal.save_loaded_asset(material)
     return material
+
+
+def create_early_sac_materials():
+    """
+    Hüllen der frühen Wochen (Lookdev: Tools/Blender/Gestation/lookdev_early_sac.py).
+    - Amnion: dünner Film in Flüssigkeit (relative Brechzahl ~1,03) – fast unsichtbar, schwache Spiegelung, zum Rand
+      milchiger (schräg ist der Weg durch die Haut länger). Durchscheinend, vor der Tiefenunschärfe gezeichnet (sonst
+      stünde die Blase scharf vor dem unscharfen Kind).
+    - Dottersack: gelblich-rosa, durchscheinend, mit Dottergefäßen (Cullen); der Stiel in derselben Farbe.
+    """
+    result = {}
+    path = MATERIALS + "/M_GEN_Amnion"
+    if eal.does_asset_exist(path):
+        eal.delete_asset(path)
+    amnion = lib.asset_tools.create_asset("M_GEN_Amnion", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+    amnion.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    amnion.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_DEFAULT_LIT)
+    amnion.set_editor_property("translucency_lighting_mode", unreal.TranslucencyLightingMode.TLM_SURFACE_PER_PIXEL_LIGHTING)
+    amnion.set_editor_property("translucency_pass", unreal.MaterialTranslucencyPass.MTP_BEFORE_DOF)
+    amnion.set_editor_property("two_sided", False)
+    mel.connect_material_property(lib.vector_param(amnion, "Farbe", -600, -200, (0.92, 0.88, 0.86)), "", unreal.MaterialProperty.MP_BASE_COLOR)
+    mel.connect_material_property(lib.scalar_param(amnion, "Rauheit", -600, -100, 0.2), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(lib.scalar_param(amnion, "Glanz", -600, 0, 0.15), "", unreal.MaterialProperty.MP_SPECULAR)
+    rim = lib.expression(amnion, unreal.MaterialExpressionFresnel, -700, 150, exponent=3.0, base_reflect_fraction=0.0)
+    opacity = lib.expression(amnion, unreal.MaterialExpressionLinearInterpolate, -450, 150)
+    lib.link(lib.scalar_param(amnion, "Mitte", -650, 250, 0.015), opacity, "A")
+    lib.link(lib.scalar_param(amnion, "Rand", -650, 310, 0.16), opacity, "B")
+    lib.link(rim, opacity, "Alpha")
+    mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
+    mel.recompile_material(amnion)
+    eal.save_loaded_asset(amnion)
+    result["amnion"] = amnion
+
+    path = MATERIALS + "/M_GEN_YolkSac"
+    if eal.does_asset_exist(path):
+        eal.delete_asset(path)
+    yolk = lib.asset_tools.create_asset("M_GEN_YolkSac", MATERIALS, unreal.Material, unreal.MaterialFactoryNew())
+    yolk.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_SUBSURFACE)
+    yolk.set_editor_property("used_with_nanite", True)
+    # Dottergefäße: gewundene Linien aus dem Nulldurchgang eines Rauschens (Lage im Netz, 1 cm Radius)
+    noise = lib.expression(yolk, unreal.MaterialExpressionNoise, -900, 0)
+    noise.set_editor_property("noise_function", unreal.NoiseFunction.NOISEFUNCTION_SIMPLEX_TEX)
+    noise.set_editor_property("scale", 1.6)
+    noise.set_editor_property("levels", 2)
+    noise.set_editor_property("output_min", 0.0)
+    noise.set_editor_property("output_max", 1.0)
+    lib.link(lib.expression(yolk, unreal.MaterialExpressionLocalPosition, -1100, 0), noise, "Position")
+    vessels = lib.expression(yolk, unreal.MaterialExpressionCustom, -650, 0)
+    vessels.set_editor_property("description", "Dottergefaesse")
+    vessels.set_editor_property("code", "float v = 1.0 - smoothstep(0.0, 0.035, abs(N - 0.5));\n"
+                                        "return lerp(float3(0.86, 0.66, 0.44), float3(0.55, 0.10, 0.10), 0.8 * v);")
+    vessels.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    entry = unreal.CustomInput()
+    entry.set_editor_property("input_name", "N")
+    vessels.set_editor_property("inputs", [entry])
+    lib.link(noise, vessels, "N")
+    mel.connect_material_property(vessels, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    mel.connect_material_property(lib.scalar_param(yolk, "Rauheit", -600, 150, 0.3), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(lib.scalar_param(yolk, "Glanz", -600, 220, 0.3), "", unreal.MaterialProperty.MP_SPECULAR)
+    mel.connect_material_property(lib.vector_param(yolk, "Durchschein", -600, 290, (0.8, 0.45, 0.25)), "", unreal.MaterialProperty.MP_SUBSURFACE_COLOR)
+    mel.connect_material_property(lib.scalar_param(yolk, "Streuung", -600, 360, 0.6), "", unreal.MaterialProperty.MP_OPACITY)
+    mel.recompile_material(yolk)
+    eal.save_loaded_asset(yolk)
+    result["yolk"] = yolk
+    return result
 
 
 def import_skinned(name, material):
@@ -580,6 +656,12 @@ def build_level(meshes, wall_material, looks):
         component.set_material(0, materials[asset])
     scene.set_editor_property("fetus_stages", meshes.get("fetus_stages", []))
     scene.get_editor_property("fetus").set_material(0, looks["MI_GEN_Womb_FetusSkin"])
+    sac = meshes.get("early_sac_materials", {})
+    for asset, prop, look in (("SM_GEN_Amnion", "amnion", "amnion"), ("SM_GEN_YolkSac", "yolk_sac", "yolk"), ("SM_GEN_YolkStalk", "yolk_stalk", "yolk")):
+        if meshes.get(asset) and sac.get(look):
+            component = scene.get_editor_property(prop)
+            component.set_static_mesh(meshes[asset])
+            component.set_material(0, sac[look])
     for asset, prop, look in (("SK_GEN_FetalHand", "own_hand", "MI_GEN_Womb_Skin"), ("SK_GEN_Womb_Cord", "cord", "MI_GEN_Womb_Cord")):
         skinned = meshes.get(asset)
         if skinned:
@@ -628,6 +710,11 @@ def main():
         if eal.does_asset_exist(old):
             eal.delete_asset(old)
     meshes["fetus_stages"] = import_fetuses()
+    # Hüllen der frühen Wochen (Tools/Blender/Gestation/build_early_sac.py); das Amnion ist durchscheinend – kein Nanite
+    for asset, nanite in (("SM_GEN_Amnion", False), ("SM_GEN_YolkSac", True), ("SM_GEN_YolkStalk", True)):
+        fresh = asset in reimport or not eal.does_asset_exist(MESHES + "/" + asset)
+        meshes[asset] = lib.import_part(asset, nanite, SOURCE, MESHES) if fresh else eal.load_asset(MESHES + "/" + asset)
+    meshes["early_sac_materials"] = create_early_sac_materials()
     build_level(meshes, wall, looks)
 
 
