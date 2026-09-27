@@ -138,3 +138,20 @@ Dazu drei Glättungen, alle gemessen mit `genesis.Conception.TraceMotion`:
   DOI 10.1093/oxfordjournals.humrep.a137656; Hamster: Talbot 1984, DOI 10.1002/jez.1402290216). Im Lichtmikroskop ist
   die expandierte Gallerte klar; die Zellen liegen außen ~45 µm auseinander. Sichtbare Fäden dort wären erfunden.
   Die Fäden zwischen den dicht liegenden Coronazellen bleiben (dort ziehen sich beim Auseinanderdriften Stränge).
+
+## Teil 2f – Lenken und Sieg im Rennen (2026-09-27, Game Director: „am Anfang sehr sensibel, nach dem Eindringen wiederholt es sich von vorn“)
+
+- **Lenken ging gar nicht.** Die Belegung von WASD und linkem Stick (GenesisSteerRight/Up) stand seit GENESIS-037 im
+  Abschnitt `[EnhancedInputPlatformSettings_Windows …]` der DefaultInput.ini statt unter `[/Script/Engine.InputSettings]`
+  und wurde nie geladen. Man konnte nur die Kamera drehen – das war das „sensible“ Gefühl. Jetzt am richtigen Ort;
+  der Test Genesis.Frontend.EveryActionHasAGamepadKey prüft die Lenkachsen mit.
+- **Kamera mit der Maus:** Die Mausbewegung wurde mit der Bildzeit multipliziert – bei niedriger Bildrate drehte die
+  Kamera stärker. Jetzt fester Winkel je Mausschritt (0,03°), der Stick mit fester Geschwindigkeit.
+- **Kein Neustart nach dem Eindringen.** Bisher hatte jede Zelle im Spalt unter der Zona ihren eigenen Zeitgeber bis
+  zur Verschmelzung; eine früher angekommene konnte die eigene Zelle nach dem Eindringen noch schlagen (Protokoll
+  2026-09-24: eigene Zelle im Spalt, 0,9 s später verschmolz eine andere, Neustart). Beim Menschen verschmilzt meist die
+  erste Zelle, die durch die Zona kommt; weitere im Spalt sind selten. Jetzt verschmilzt die erste durch die Zona
+  (`GenesisSpermRace::FirstThroughZonaFuses`). Ist es eine andere, endet das Rennen in diesem Moment („Eine andere
+  Zelle war zuerst durch die Hülle.“) – nicht erst, nachdem die eigene noch eingedrungen ist. Test SkillDecides:
+  gelenkt 5 von 5 gewonnen, ohne Führung 0 von 5. Gebautes Spiel: gewonnen, gezeugt, weiter zur Zygote.
+- Bekannt, noch offen: Nach einem ganzen Leben setzt „Von vorn beginnen“ den Befruchtungs-Datensatz nicht zurück.

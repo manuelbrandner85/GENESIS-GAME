@@ -73,4 +73,15 @@ namespace GenesisSpermRace
 
 	/** Ergebnis nach einer Verschmelzung. */
 	GENESISCONCEPTION_API EGenesisRaceOutcome OutcomeAfterFusion(int32 PlayerIndex, int32 FusedIndex);
+
+	/**
+	 * Die erste Zelle, die durch die Zona in den Spalt darunter kommt, verschmilzt: Alle später Angekommenen warten
+	 * mindestens MarginSeconds länger. Beim Menschen verschmilzt meist die erste Zelle, die durch die Zona kommt;
+	 * weitere im Spalt sind selten (Docs/38). Vorher lief ein eigener Zeitgeber je Zelle – wer früher im Spalt lag,
+	 * konnte die eigene Zelle nach dem Eindringen noch schlagen, und das Rennen begann von vorn (Game Director,
+	 * 2026-09-27: „nach dem Eindringen wiederholt es sich von vorn“).
+	 * FirstIndex merkt sich die erste Zelle (INDEX_NONE = noch keine); gibt sie zurück.
+	 */
+	GENESISCONCEPTION_API int32 FirstThroughZonaFuses(TArray<FGenesisSpermCell>& Cells, const FGenesisOocyteState& Oocyte, int32& FirstIndex,
+		float MarginSeconds = 60.0f);
 }

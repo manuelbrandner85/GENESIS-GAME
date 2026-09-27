@@ -299,12 +299,34 @@ void AGenesisSlicePlayerController::PlayerTick(float DeltaTime)
 	const EGenesisBootStage Stage = FrontendForLook ? FrontendForLook->GetBootStage() : EGenesisBootStage::Aus;
 	if (Stage == EGenesisBootStage::Aus || Stage == EGenesisBootStage::Spiel)
 	{
+		// Maus und Stick getrennt: Die Maus dreht um einen festen Winkel je Bewegung, der Stick mit fester
+		// Geschwindigkeit. Vorher wurde auch die Mausbewegung mit der Bildzeit multipliziert – bei niedriger
+		// Bildrate (das Rennen ist aufwendig) drehte die Kamera dadurch stärker und wirkte überempfindlich
+		// (Game Director 2026-09-27: „am Anfang sehr sensibel“).
+		FVector2D Orbit = FVector2D::ZeroVector;
+		if (!IsMenuOpen())
+		{
+			float MouseX = 0.0f, MouseY = 0.0f, StickX = 0.0f, StickY = 0.0f;
+			GetInputMouseDelta(MouseX, MouseY);
+			GetInputAnalogStickState(EControllerAnalogStick::CAS_RightStick, StickX, StickY);
+			auto DeadZone = [](float Value)
+			{
+				return FMath::Abs(Value) < 0.25f ? 0.0f : (Value - FMath::Sign(Value) * 0.25f) / 0.75f;
+			};
+			Orbit.X = MouseX * MicroscopeDegreesPerMouseCount + DeadZone(StickX) * 50.0f * DeltaTime;
+			Orbit.Y = MouseY * MicroscopeDegreesPerMouseCount + DeadZone(StickY) * 35.0f * DeltaTime;
+			if (FrontendForLook)
+			{
+				const FGenesisPlayerSettings& Settings = FrontendForLook->GetSettings();
+				Orbit.X *= Settings.LookSensitivity;
+				Orbit.Y *= Settings.LookSensitivity * (Settings.bInvertLookY ? -1.0f : 1.0f);
+			}
+		}
 		for (TActorIterator<AGenesisMicroscopeCameraRig> It(GetWorld()); It; ++It)
 		{
-			It->PlayerOrbitDegrees.X = FMath::Fmod(It->PlayerOrbitDegrees.X + LookInput.X * 50.0f * DeltaTime, 360.0f);
-			It->PlayerOrbitDegrees.Y = FMath::Clamp(It->PlayerOrbitDegrees.Y + LookInput.Y * 35.0f * DeltaTime,
-				-It->MaxPlayerPitchDegrees, It->MaxPlayerPitchDegrees);
-			if (!LookInput.IsNearlyZero())
+			It->PlayerOrbitDegrees.X = FMath::Fmod(It->PlayerOrbitDegrees.X + Orbit.X, 360.0f);
+			It->PlayerOrbitDegrees.Y = FMath::Clamp(It->PlayerOrbitDegrees.Y + Orbit.Y, -It->MaxPlayerPitchDegrees, It->MaxPlayerPitchDegrees);
+			if (!Orbit.IsNearlyZero())
 			{
 				bMicroscopeMoved = true;
 			}

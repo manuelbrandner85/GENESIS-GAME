@@ -32,6 +32,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Genesis|Input")
 	float CryRampPerSecond = 2.5f;
 
+	/** Mikroskop schwenken mit der Maus: Grad je Mauszählschritt (unabhängig von der Bildrate). */
+	UPROPERTY(EditAnywhere, Category = "Genesis|Input")
+	float MicroscopeDegreesPerMouseCount = 0.03f;
+
 	/** Wie schnell das Suchen an- und abschwillt. */
 	UPROPERTY(EditAnywhere, Category = "Genesis|Input")
 	float RootRampPerSecond = 1.6f;

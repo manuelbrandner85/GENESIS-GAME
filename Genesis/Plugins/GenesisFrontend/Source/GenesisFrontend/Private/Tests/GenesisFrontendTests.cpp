@@ -212,7 +212,9 @@ bool FGenesisEveryActionHasAGamepadKeyTest::RunTest(const FString& Parameters)
 	}
 
 	// Und der Blick ebenso: ohne rechten Stick keine Kopfdrehung mit dem Controller
-	const TArray<FName> Axes = { TEXT("GenesisLookRight"), TEXT("GenesisLookUp") };
+	// Das Lenken im Rennen ebenso: Es stand bis 2026-09-27 in der falschen Abschnitt der DefaultInput.ini und wurde nie
+	// geladen – man konnte die eigene Zelle nicht lenken, ohne dass ein Test es bemerkte
+	const TArray<FName> Axes = { TEXT("GenesisLookRight"), TEXT("GenesisLookUp"), TEXT("GenesisSteerRight"), TEXT("GenesisSteerUp") };
 	for (const FName& Axis : Axes)
 	{
 		bool bGamepad = false;
@@ -224,9 +226,9 @@ bool FGenesisEveryActionHasAGamepadKeyTest::RunTest(const FString& Parameters)
 				continue;
 			}
 			bGamepad |= Mapping.Key.IsGamepadKey();
-			bMouse |= Mapping.Key.IsMouseButton() || Mapping.Key == EKeys::MouseX || Mapping.Key == EKeys::MouseY;
+			bMouse |= !Mapping.Key.IsGamepadKey();
 		}
-		TestTrue(FString::Printf(TEXT("%s liegt auf der Maus"), *Axis.ToString()), bMouse);
+		TestTrue(FString::Printf(TEXT("%s liegt auf Maus oder Tastatur"), *Axis.ToString()), bMouse);
 		TestTrue(FString::Printf(TEXT("%s liegt auf dem Stick"), *Axis.ToString()), bGamepad);
 	}
 

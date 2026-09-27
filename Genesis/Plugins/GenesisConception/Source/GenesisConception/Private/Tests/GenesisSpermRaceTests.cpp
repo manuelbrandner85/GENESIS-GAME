@@ -90,6 +90,7 @@ namespace GenesisSpermRaceTests
 		AtZona.Init(false, Cells.Num());
 		InSpalt.Init(false, Cells.Num());
 		FGenesisFertilizationResult Fusion;
+		int32 FirstThroughZona = INDEX_NONE;
 		float Now = 0.0f;
 		float NextPlace = 0.0f;
 		while (Now < 3.0f * 3600.0f)
@@ -109,6 +110,14 @@ namespace GenesisSpermRaceTests
 			}
 			// Wie im Spiel: Zeitraffer, sobald die eigene Zelle an der Eizelle hängt
 			const float Dt = GenesisFertilizationLogic::IsAttached(Mine) || Oocyte.IsFertilized() ? TimeLapseStepSeconds : StepSeconds;
+			// Wie im Spiel: Die erste Zelle durch die Zona verschmilzt; ist es eine andere, ist das Rennen sofort verloren
+			const int32 First = GenesisSpermRace::FirstThroughZonaFuses(Cells, Oocyte, FirstThroughZona);
+			if (First != INDEX_NONE && First != Player)
+			{
+				Result.Outcome = EGenesisRaceOutcome::Lost;
+				Result.Seconds = Now;
+				break;
+			}
 			if (GenesisFertilizationLogic::Step(Cells, Oocyte, Channel, SwimTuning, Tuning, Dt, Fusion))
 			{
 				Result.Outcome = GenesisSpermRace::OutcomeAfterFusion(Player, Fusion.CellIndex);
@@ -266,6 +275,41 @@ bool FGenesisSpermRaceOutcomeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Noch keine Verschmelzung"), static_cast<int32>(GenesisSpermRace::OutcomeAfterFusion(3, INDEX_NONE)), static_cast<int32>(EGenesisRaceOutcome::Running));
 	TestEqual(TEXT("Eigene Zelle verschmolzen"), static_cast<int32>(GenesisSpermRace::OutcomeAfterFusion(3, 3)), static_cast<int32>(EGenesisRaceOutcome::Won));
 	TestEqual(TEXT("Eine andere war schneller"), static_cast<int32>(GenesisSpermRace::OutcomeAfterFusion(3, 7)), static_cast<int32>(EGenesisRaceOutcome::Lost));
+
+	// Die erste Zelle durch die Zona verschmilzt – auch wenn eine später angekommene einen früheren Zeitgeber hätte
+	// (Game Director 2026-09-27: nach dem Eindringen begann das Rennen von vorn)
+	FGenesisOviductChannel Channel;
+	const FGenesisSpermSwimTuning SwimTuning;
+	const FGenesisFertilizationTuning Tuning;
+	FGenesisOocyteState Oocyte;
+	Oocyte.Position = FVector(1500.0, 0.0, 0.0);
+	TArray<FGenesisSpermCell> Cells;
+	for (int32 Index = 0; Index < 3; ++Index)
+	{
+		FGenesisSpermCell Cell = GenesisSpermSwimLogic::CreateCell(300 + Index, 0.9f, Channel, SwimTuning);
+		Cell.Position = Oocyte.Position - FVector(Oocyte.OoplasmRadiusUm + 1.0, 0.0, 0.0);
+		Cells.Add(Cell);
+	}
+	int32 First = INDEX_NONE;
+	GenesisFertilizationLogic::SetPhase(Cells[0], EGenesisSpermPhase::Perivitelline);
+	Cells[0].FusionTimer = 400.0f;      // als erste durch die Zona
+	TestEqual(TEXT("Die erste im Spalt ist gemerkt"), GenesisSpermRace::FirstThroughZonaFuses(Cells, Oocyte, First), 0);
+	GenesisFertilizationLogic::SetPhase(Cells[1], EGenesisSpermPhase::Perivitelline);
+	Cells[1].FusionTimer = 1.0f;        // später angekommen, aber mit früherem Zeitgeber
+	GenesisSpermRace::FirstThroughZonaFuses(Cells, Oocyte, First);
+	TestTrue(TEXT("Die spätere wartet länger als die erste"), Cells[1].FusionTimer > Cells[0].FusionTimer);
+	TestEqual(TEXT("Die erste bleibt die erste"), First, 0);
+	FGenesisFertilizationResult Fusion;
+	int32 Fused = INDEX_NONE;
+	for (int32 Step = 0; Step < 20000 && Fused == INDEX_NONE; ++Step)
+	{
+		GenesisSpermRace::FirstThroughZonaFuses(Cells, Oocyte, First);
+		if (GenesisFertilizationLogic::Step(Cells, Oocyte, Channel, SwimTuning, Tuning, 0.1f, Fusion))
+		{
+			Fused = Fusion.CellIndex;
+		}
+	}
+	TestEqual(TEXT("Die erste durch die Zona verschmilzt"), Fused, 0);
 	return true;
 }
 

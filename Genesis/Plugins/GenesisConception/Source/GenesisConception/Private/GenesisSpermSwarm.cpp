@@ -177,6 +177,7 @@ void AGenesisSpermSwarm::RebuildSwarm()
 	PlayerCellIndex = INDEX_NONE;
 	PlayerAtEggSeconds = -1.0;
 	RaceOutcome = EGenesisRaceOutcome::None;
+	FirstThroughZona = INDEX_NONE;
 	PlayerVigor = 0.0f;
 	PlayerPlace = 0;
 	if (bRaceLayout && Oocyte && Cells.Num() > 0)
@@ -480,6 +481,14 @@ void AGenesisSpermSwarm::SimulateFor(float SimulationDelta, float RequestedStepS
 
 		if (Oocyte)
 		{
+			// Die erste Zelle durch die Zona verschmilzt. Ist es eine andere, ist das Rennen in diesem Moment verloren –
+			// die eigene Zelle kann dann nicht mehr eindringen und hinterher doch verlieren (kein Neustart nach dem Eindringen)
+			const int32 First = GenesisSpermRace::FirstThroughZonaFuses(Cells, Oocyte->GetState(), FirstThroughZona);
+			if (IsRacing() && RaceOutcome == EGenesisRaceOutcome::Running && First != INDEX_NONE && First != PlayerCellIndex)
+			{
+				RaceOutcome = EGenesisRaceOutcome::Lost;
+				UE_LOG(LogGenesis, Display, TEXT("Conception: Eine andere Zelle ist zuerst durch die Zona (Zelle %d)."), First);
+			}
 			if (GenesisFertilizationLogic::Step(Cells, Oocyte->GetMutableState(), Channel, Tuning, Oocyte->Tuning, StepSeconds, FertilizationResult))
 			{
 				UE_LOG(LogGenesis, Log, TEXT("Conception: Zelle %d verschmilzt mit der Eizelle nach %.1f s (Vitalität %.2f, %d Mitbewerber an der Zona)."),

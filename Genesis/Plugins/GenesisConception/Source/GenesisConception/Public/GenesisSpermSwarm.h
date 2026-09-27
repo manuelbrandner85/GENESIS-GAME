@@ -206,6 +206,8 @@ private:
 	int32 PendingStrokes = 0;
 	float PlayerVigor = 0.0f;
 	EGenesisRaceOutcome RaceOutcome = EGenesisRaceOutcome::None;
+	/** Die erste Zelle durch die Zona – sie verschmilzt (GenesisSpermRace::FirstThroughZonaFuses). */
+	int32 FirstThroughZona = INDEX_NONE;
 	int32 PlayerPlace = 0;
 	float PlaceTimer = 0.0f;
 	/** Protokoll der Stationen der eigenen Zelle – für die Abstimmung des Rennens im Spiel. */

@@ -633,6 +633,11 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - Geprüft: Zeitlupenfolgen (Engine-`slomo 0.1`) im freien Kanal und in der Gallerte, gebautes Spiel; 160 von 160 Tests. Stand ALPHA.
 - Nachtrag 2026-09-24 – dieselbe V-Spiegelung in den übrigen Szenen gesucht (am Netz in Unreal gemessen, Geometry Script): Embryo und Geburtskanal nutzen die UV nur für Rauschen (Richtung egal). Im Mutterleib zwei echte Fehler: (1) Die Faltenmaske der eigenen Hand (UV-Kanal 2, y) lag auf 91 % der Hand bei 1 – ganze Hand abgedunkelt, ab SSW 36 ganz mit Käseschmiere. Jetzt 1 − y. (2) Die Nabelgefäße wanden sich rechtsherum; echte Nabelschnüre sind 7:1 linksgewunden (Lacro 1987, DOI 10.1016/s0002-9378(87)80067-4). Jetzt 1 − V, dazu folgen die Wülste der Schnur (Blender) genau den drei Gefäßen im selben Drehsinn – vorher liefen sie gegensinnig. Nabelschnur neu exportiert und einzeln neu importiert (`GENESIS_REIMPORT`); gebautes Spiel geprüft.
 
+### GENESIS-047 (Teil 2f) – Lenken und Sieg im Rennen
+- 2026-09-27, Game Director: „Am Anfang ist die Steuerung sehr sensibel, und nach dem Eindringen in die Eizelle wiederholt es sich von vorn.“
+- Lenkbelegung (WASD, linker Stick) stand im falschen Abschnitt der DefaultInput.ini und wurde nie geladen – man drehte nur die Kamera. Verschoben, Test prüft sie jetzt. Mauskamera nicht mehr bildratenabhängig (fester Winkel je Mausschritt).
+- Die erste Zelle durch die Zona verschmilzt; ist es eine andere, endet das Rennen sofort mit klarer Meldung. Kein Neustart mehr, nachdem die eigene Zelle eingedrungen ist. SkillDecides: gelenkt 5/5, ohne Führung 0/5. 160 von 160 Tests; gebautes Spiel: Rennen gewonnen → gezeugt → Zygote. Doc 38 Teil 2f.
+
 ### GENESIS-047 (Teil 2e) / GENESIS-044 (Teil 2c) – Offene Punkte abgearbeitet
 - 2026-09-24, Game Director: „Mache weiter, für alles bekommst du meine Erlaubnis.“
 - **Vertexfarben kommen aus Blender nicht an – auch nicht an Eileiterwand und Spermium** (gemessen). Die Wand war deshalb überall „tiefste Spalte“ (45 % zu dunkel, ohne Faltengliederung), das Spermium überall so dicht wie der Kopf. Jetzt: Faltenhöhe aus dem Abstand zur Kanalachse, Zonen der Zelle aus der Lage entlang der Zelle. Die ferne Wand bleibt dunkel – richtig so (Endoskoplicht, 2–4 mm voraus; Messreihe Streulicht 18/72/250 cd ohne Wirkung dort). Prüfhilfe `genesis.Conception.Fill`.

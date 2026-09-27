@@ -75,3 +75,37 @@ EGenesisRaceOutcome GenesisSpermRace::OutcomeAfterFusion(int32 PlayerIndex, int3
 	}
 	return FusedIndex == PlayerIndex ? EGenesisRaceOutcome::Won : EGenesisRaceOutcome::Lost;
 }
+
+int32 GenesisSpermRace::FirstThroughZonaFuses(TArray<FGenesisSpermCell>& Cells, const FGenesisOocyteState& Oocyte, int32& FirstIndex, float MarginSeconds)
+{
+	if (Oocyte.IsFertilized())
+	{
+		return FirstIndex;
+	}
+	if (!Cells.IsValidIndex(FirstIndex))
+	{
+		// Kommen im selben Schritt mehrere an, zählt die, deren Membran zuerst bereit ist
+		FirstIndex = INDEX_NONE;
+		for (int32 Index = 0; Index < Cells.Num(); ++Index)
+		{
+			if (GenesisFertilizationLogic::GetPhase(Cells[Index]) == EGenesisSpermPhase::Perivitelline
+				&& (FirstIndex == INDEX_NONE || Cells[Index].FusionTimer < Cells[FirstIndex].FusionTimer))
+			{
+				FirstIndex = Index;
+			}
+		}
+	}
+	if (!Cells.IsValidIndex(FirstIndex))
+	{
+		return INDEX_NONE;
+	}
+	const float First = Cells[FirstIndex].FusionTimer;
+	for (int32 Index = 0; Index < Cells.Num(); ++Index)
+	{
+		if (Index != FirstIndex && GenesisFertilizationLogic::GetPhase(Cells[Index]) == EGenesisSpermPhase::Perivitelline)
+		{
+			Cells[Index].FusionTimer = FMath::Max(Cells[Index].FusionTimer, First + MarginSeconds);
+		}
+	}
+	return FirstIndex;
+}

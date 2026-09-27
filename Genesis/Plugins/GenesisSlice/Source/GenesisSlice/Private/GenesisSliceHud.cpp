@@ -607,8 +607,9 @@ bool AGenesisSliceHud::DrawRace(const UGenesisSliceDirector& Director)
 	// Niederlage: groß, ruhig, ohne Häme
 	if (Swarm->GetRaceOutcome() == EGenesisRaceOutcome::Lost)
 	{
-		// Viele kommen an, eine verschmilzt – nicht die schnellste (Docs/38)
-		DrawCentered(TEXT("Eine andere Zelle ist verschmolzen."), 0.40f * Canvas->SizeY, Scale * 2.0f, 0.95f, true);
+		// Viele kommen an, eine verschmilzt: die erste, die durch die Zona ist (Docs/38). Das Rennen endet in dem Moment,
+		// in dem eine andere durch ist – nicht erst, nachdem die eigene noch eingedrungen ist
+		DrawCentered(TEXT("Eine andere Zelle war zuerst durch die Hülle."), 0.40f * Canvas->SizeY, Scale * 2.0f, 0.95f, true);
 		DrawCentered(TEXT("Dieses Leben beginnt nicht. Noch einmal."), 0.40f * Canvas->SizeY + 70.0f * Scale, Scale * 1.3f, 0.8f, false);
 		return true;
 	}
