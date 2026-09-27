@@ -639,7 +639,7 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - Die erste Zelle durch die Zona verschmilzt; ist es eine andere, endet das Rennen sofort mit klarer Meldung. Kein Neustart mehr, nachdem die eigene Zelle eingedrungen ist. SkillDecides: gelenkt 5/5, ohne Führung 0/5. 160 von 160 Tests; gebautes Spiel: Rennen gewonnen → gezeugt → Zygote. Doc 38 Teil 2f.
 
 - Nachtrag 2026-09-27 – **„Von vorn beginnen“ nach einem ganzen Leben** übersprang das Rennen (die Zeugung blieb stehen). Jetzt setzt jeder neue Durchlauf Zeugung, Embryo, Geburt und erste Stunde zurück und lädt den Eileiter frisch. Geprüft im Spiel: Sieg → neuer Durchlauf → neues Rennen. 160 von 160 Tests.
-- Offen: rote Entwickler-Warnung „Ray Tracing Geometry … exceeds 20 % of the budget“ im gebauten Spiel (Development-Build).
+- Nachtrag 2026-09-27 – **Rote Raytracing-Warnung weg:** „Ray Tracing Geometry – always resident memory exceeds 20 % of the budget“. Gemessen mit `r.RayTracing.DumpUnreferencedAlwaysResidentGeometries`: 122 von 130 MB waren die Flimmerhärchen (`SM_GEN_OviductCilia`, 4,1 Mio. Dreiecke) – ihre Komponenten waren schon aus der Strahlenszene, das Netz hielt seine Raytracing-Geometrie aber dauerhaft vor. Jetzt ohne Raytracing-Unterstützung am Netz (`setup_conception_scene.py`): 6,5 MB. Den Vorrat zu vergrößern war schon einmal der falsche Weg (Grafikspeicher lief über, DefaultEngine.ini). Gebautes Spiel geprüft.
 
 ### GENESIS-047 (Teil 2e) / GENESIS-044 (Teil 2c) – Offene Punkte abgearbeitet
 - 2026-09-24, Game Director: „Mache weiter, für alles bekommst du meine Erlaubnis.“

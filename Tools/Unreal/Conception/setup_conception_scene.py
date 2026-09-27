@@ -657,6 +657,10 @@ def build_level(mesh, material, wall_mesh=None, wall_material=None):
         cilia_material = eal.load_asset(MATERIALS + "/M_GEN_Cilia")
         if cilia_mesh and cilia_material:
             cilia_mesh.set_material(0, cilia_material)
+            # Ohne Raytracing-Geometrie am Netz selbst: Die Komponenten sind schon aus der Strahlenszene, das Netz hielt
+            # seine 4,1 Mio. Dreiecke aber dauerhaft im Raytracing-Speicher (122 MB; rote Budget-Warnung im Spiel,
+            # r.RayTracing.DumpUnreferencedAlwaysResidentGeometries, 2026-09-27)
+            cilia_mesh.set_editor_property("support_ray_tracing", False)
             eal.save_loaded_asset(cilia_mesh)
 
         for index in range(-1, 3):
