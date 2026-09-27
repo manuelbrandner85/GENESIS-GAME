@@ -154,4 +154,8 @@ Dazu drei Glättungen, alle gemessen mit `genesis.Conception.TraceMotion`:
   (`GenesisSpermRace::FirstThroughZonaFuses`). Ist es eine andere, endet das Rennen in diesem Moment („Eine andere
   Zelle war zuerst durch die Hülle.“) – nicht erst, nachdem die eigene noch eingedrungen ist. Test SkillDecides:
   gelenkt 5 von 5 gewonnen, ohne Führung 0 von 5. Gebautes Spiel: gewonnen, gezeugt, weiter zur Zygote.
-- Bekannt, noch offen: Nach einem ganzen Leben setzt „Von vorn beginnen“ den Befruchtungs-Datensatz nicht zurück.
+- **„Von vorn beginnen“ nach einem ganzen Leben:** Der Start eines Durchlaufs setzte nur die Regie zurück. Zeugung,
+  Embryo, Geburt und erste Stunde behielten ihren Stand – der nächste Durchlauf sprang am Rennen vorbei gleich zum
+  Embryo (Conceive() lehnt eine zweite Zeugung ab). Jetzt beginnen diese vier leer; Welt, Gene und Seele bleiben.
+  Außerdem lädt jeder Durchlauf den Eileiter frisch (ein schon entschiedener Schwarm startet kein neues Rennen).
+  Geprüft: Rennen gewonnen → gezeugt → neuer Durchlauf → Eileiter neu geladen → „Das Rennen beginnt (Seed 6)“.

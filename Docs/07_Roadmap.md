@@ -638,6 +638,9 @@ Die finale Architektur steht dabei bereits: Soul Seed, DNA, Karma, Memory Graph,
 - Lenkbelegung (WASD, linker Stick) stand im falschen Abschnitt der DefaultInput.ini und wurde nie geladen – man drehte nur die Kamera. Verschoben, Test prüft sie jetzt. Mauskamera nicht mehr bildratenabhängig (fester Winkel je Mausschritt).
 - Die erste Zelle durch die Zona verschmilzt; ist es eine andere, endet das Rennen sofort mit klarer Meldung. Kein Neustart mehr, nachdem die eigene Zelle eingedrungen ist. SkillDecides: gelenkt 5/5, ohne Führung 0/5. 160 von 160 Tests; gebautes Spiel: Rennen gewonnen → gezeugt → Zygote. Doc 38 Teil 2f.
 
+- Nachtrag 2026-09-27 – **„Von vorn beginnen“ nach einem ganzen Leben** übersprang das Rennen (die Zeugung blieb stehen). Jetzt setzt jeder neue Durchlauf Zeugung, Embryo, Geburt und erste Stunde zurück und lädt den Eileiter frisch. Geprüft im Spiel: Sieg → neuer Durchlauf → neues Rennen. 160 von 160 Tests.
+- Offen: rote Entwickler-Warnung „Ray Tracing Geometry … exceeds 20 % of the budget“ im gebauten Spiel (Development-Build).
+
 ### GENESIS-047 (Teil 2e) / GENESIS-044 (Teil 2c) – Offene Punkte abgearbeitet
 - 2026-09-24, Game Director: „Mache weiter, für alles bekommst du meine Erlaubnis.“
 - **Vertexfarben kommen aus Blender nicht an – auch nicht an Eileiterwand und Spermium** (gemessen). Die Wand war deshalb überall „tiefste Spalte“ (45 % zu dunkel, ohne Faltengliederung), das Spermium überall so dicht wie der Kopf. Jetzt: Faltenhöhe aus dem Abstand zur Kanalachse, Zonen der Zelle aus der Lage entlang der Zelle. Die ferne Wand bleibt dunkel – richtig so (Endoskoplicht, 2–4 mm voraus; Messreihe Streulicht 18/72/250 cd ohne Wirkung dort). Prüfhilfe `genesis.Conception.Fill`.
