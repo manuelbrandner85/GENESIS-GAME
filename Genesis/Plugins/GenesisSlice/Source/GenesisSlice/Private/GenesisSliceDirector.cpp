@@ -148,6 +148,21 @@ void UGenesisSliceDirector::StartRun(uint64 Seed)
 	bEndReported = false;
 	EndedSeconds = 0.0f;
 
+	// Ein neues Leben beginnt leer: Zeugung, Embryo, Geburt und erste Stunde gehören zu genau einem Leben. Welt, Gene,
+	// Körper der anderen und die Seele bleiben. Vorher blieb die Zeugung des letzten Lebens stehen – nach einem ganzen
+	// Leben sprang „Von vorn beginnen“ am Rennen vorbei gleich zum Embryo (Conceive() lehnte eine zweite Zeugung ab).
+	if (UGameInstance* Instance = GetGameInstance())
+	{
+		if (UGenesisConceptionSubsystem* Conception = Instance->GetSubsystem<UGenesisConceptionSubsystem>()) { Conception->ResetState(); }
+		if (UGenesisEmbryoSubsystem* Embryo = Instance->GetSubsystem<UGenesisEmbryoSubsystem>()) { Embryo->ResetState(); }
+		if (UGenesisBirthSubsystem* Birth = Instance->GetSubsystem<UGenesisBirthSubsystem>()) { Birth->ResetState(); }
+		if (UGenesisEarlyLifeSubsystem* EarlyLife = Instance->GetSubsystem<UGenesisEarlyLifeSubsystem>()) { EarlyLife->ResetState(); }
+	}
+
+	// Jeder Durchlauf beginnt in einem frisch geladenen Eileiter: Ein Schwarm, dessen Rennen schon entschieden ist,
+	// startet kein neues (vorher blieb genesis.Slice.Start nach einem Sieg ohne Rennen stehen)
+	bForceTravel = true;
+
 	UE_LOG(LogGenesis, Display, TEXT("Durchlauf: beginnt (Seed %llu)."), State.RunSeed);
 	EnterPhase(EGenesisSlicePhase::Conception, EGenesisSliceEnding::None);
 }
